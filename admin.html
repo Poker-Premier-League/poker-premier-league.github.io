@@ -78,9 +78,12 @@
   table.res td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   table.res td.name { font-weight: 600; }
   table.res td.name small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
-  table.res input { padding: 9px 6px; text-align: center; }
+  table.res input { padding: 9px 2px; text-align: center; min-width: 0; }
   table.res td.posc { width: 74px; }
-  table.res td.bonc { width: 66px; }
+  table.res td.cnt { width: 50px; }
+  table.res td.posc { width: 52px !important; }
+  table.res td.koc { width: 46px !important; }
+  table.res th { font-size: 11px !important; }
   table.res td.koc { width: 52px; }
   table.res td.ptsc { width: 50px; text-align: right; font-weight: 800; }
   .tag-in { font-size: 11px; color: #1b7a46; font-weight: 700; }
@@ -136,6 +139,10 @@
           <div><label for="evHost">Host <span class="opt">(optional)</span></label><input id="evHost" type="text"></div>
           <div><label for="evBuyin">Buy-in £</label><input id="evBuyin" type="number" inputmode="decimal" min="0" step="0.01" placeholder="20"></div>
         </div>
+        <div class="row2">
+          <div><label for="evRebuy">Rebuy £ <span class="opt">(blank = buy-in)</span></label><input id="evRebuy" type="number" inputmode="decimal" min="0" step="0.01"></div>
+          <div><label for="evAddon">Add-on £ <span class="opt">(blank = buy-in)</span></label><input id="evAddon" type="number" inputmode="decimal" min="0" step="0.01"></div>
+        </div>
         <label for="evNotes">Notes <span class="opt">(optional)</span></label>
         <textarea id="evNotes" placeholder="e.g. Bring cash. Doors open 7pm."></textarea>
         <div id="evStatusWrap" class="hidden">
@@ -166,7 +173,7 @@
       <h2>Enter results</h2>
       <label for="resEvent">Event</label>
       <select id="resEvent"></select>
-      <p class="muted" style="margin-top:10px">Type each player's finishing position (1 = winner). Leave blank if they didn't play. <strong>Spent £</strong> starts at the buy-in: change it only for anyone who rebought or took an add-on. <strong>KOs</strong> = knockouts (bounty games). Points work out automatically.</p>
+      <p class="muted" style="margin-top:10px">Type each player's finishing position (1 = winner). Leave blank if they didn't play. Enter the <strong>number</strong> of rebuys and add-ons each player took (blank = none). <strong>KOs</strong> = knockouts (bounty games). Points work out automatically.</p>
       <p id="resFormula" class="muted"></p>
       <div id="resTable"></div>
       <label class="check"><input type="checkbox" id="resComplete" checked> Mark this event as completed</label>
@@ -191,6 +198,8 @@
         <div><label for="setFinalPlayers">Players in the final</label><input id="setFinalPlayers" type="number" inputmode="numeric" min="2"></div>
         <div><label for="setChips">Final chips per point</label><input id="setChips" type="number" inputmode="numeric" min="1"></div>
       </div>
+      <label class="check"><input type="checkbox" id="setReview"> Season review on the home page</label>
+      <p class="muted" style="margin:4px 0 0">Turn this on after the last event before the final. Everyone then sees the year’s rankings and awards (Big Money Spender, Wooden Spoon, Rebuy King…) on the home page.</p>
       <button id="setSave" class="btn full" type="button">Save settings</button>
       <div id="setMsg" class="msg"></div>
     </div>
@@ -290,6 +299,8 @@
     $('evVenue').value = ev.venue || '';
     $('evHost').value = ev.host || '';
     $('evBuyin').value = ev.buy_in ?? '';
+    $('evRebuy').value = ev.rebuy_price ?? '';
+    $('evAddon').value = ev.addon_price ?? '';
     $('evNotes').value = ev.notes || '';
     $('evStatus').value = ev.status;
     $('evFormTitle').textContent = 'Edit event';
@@ -316,6 +327,8 @@
       venue: $('evVenue').value.trim() || null,
       host: $('evHost').value.trim() || null,
       buy_in: $('evBuyin').value === '' ? null : Number($('evBuyin').value),
+      rebuy_price: $('evRebuy').value === '' ? null : Number($('evRebuy').value),
+      addon_price: $('evAddon').value === '' ? null : Number($('evAddon').value),
       notes: $('evNotes').value.trim() || null
     };
     const id = $('evId').value;
@@ -362,6 +375,12 @@
   $('resEvent').onchange = renderResults;
 
   // Phil's formula: sqrt(n x b^2 / e) / (f + 1) + knockouts x KO points
+  function spentFor(ev, r) {
+    const b = Number(ev?.buy_in || 0);
+    const rp = ev?.rebuy_price != null ? Number(ev.rebuy_price) : b;
+    const ap = ev?.addon_price != null ? Number(ev.addon_price) : b;
+    return b + (r.rebuys || 0) * rp + (r.addons || 0) * ap;
+  }
   function scoreFor(n, b, e, f, kos) {
     if (!(b > 0) || !(e > 0) || !(f > 0)) return 0;
     return Math.sqrt(n * b * b / e) / (f + 1) + kos * Number(settings.ko_points || 0);
@@ -374,7 +393,7 @@
     $('resTable').innerHTML = '<p class="muted">Loading…</p>';
 
     const [resR, attR] = await Promise.all([
-      db.from('results').select('player_id, position, total_spent, knockouts').eq('event_id', eventId),
+      db.from('results').select('player_id, position, rebuys, addons, knockouts').eq('event_id', eventId),
       db.from('attendance').select('player_id, reply').eq('event_id', eventId)
     ]);
     if (resR.error || attR.error) { $('resTable').innerHTML = '<p class="muted">Couldn’t load: ' + esc((resR.error || attR.error).message) + '</p>'; return; }
@@ -393,18 +412,21 @@
     });
 
     const buyIn = ev && ev.buy_in != null ? Number(ev.buy_in) : null;
+    const rebuyP = ev && ev.rebuy_price != null ? Number(ev.rebuy_price) : buyIn;
+    const addonP = ev && ev.addon_price != null ? Number(ev.addon_price) : buyIn;
     $('resFormula').innerHTML = buyIn
-      ? 'Buy-in for this event: <strong>£' + buyIn + '</strong>'
+      ? 'Buy-in <strong>£' + buyIn + '</strong> · rebuy <strong>£' + rebuyP + '</strong> · add-on <strong>£' + addonP + '</strong>'
       : '<span style="color:var(--red)">This event has no buy-in yet. Add one in the Events tab so points can be worked out.</span>';
     $('resTable').innerHTML =
-      '<table class="res"><thead><tr><th>Player</th><th>Pos</th><th>Spent £</th><th>KOs</th><th style="text-align:right">Pts</th></tr></thead><tbody>' +
+      '<table class="res"><thead><tr><th>Player</th><th>Pos</th><th>Rebuys</th><th>Add-ons</th><th>KOs</th><th style="text-align:right">Pts</th></tr></thead><tbody>' +
       list.map(p => {
         const r = existing[p.id];
         return '<tr data-id="' + p.id + '">' +
           '<td class="name">' + esc(p.display_name) + (saidIn.has(p.id) ? ' <span class="tag-in">IN</span>' : '') +
             (p.nickname ? '<small>“' + esc(p.nickname) + '”</small>' : '') + '</td>' +
           '<td class="posc"><input class="pos" type="number" inputmode="numeric" min="1" value="' + (r ? r.position : '') + '"></td>' +
-          '<td class="bonc"><input class="spent" type="number" inputmode="decimal" min="0" step="0.01" value="' + (r && r.total_spent != null ? Number(r.total_spent) : '') + '" placeholder="' + (buyIn ?? '') + '"></td>' +
+          '<td class="cnt"><input class="rb" type="number" inputmode="numeric" min="0" value="' + (r && r.rebuys ? r.rebuys : '') + '" placeholder="0"></td>' +
+          '<td class="cnt"><input class="ad" type="number" inputmode="numeric" min="0" value="' + (r && r.addons ? r.addons : '') + '" placeholder="0"></td>' +
           '<td class="koc"><input class="ko" type="number" inputmode="numeric" min="0" value="' + (r && r.knockouts ? r.knockouts : '') + '" placeholder="0"></td>' +
           '<td class="ptsc"></td></tr>';
       }).join('') + '</tbody></table>' +
@@ -418,7 +440,8 @@
     return [...$('resTable').querySelectorAll('tr[data-id]')].map(tr => ({
       player_id: tr.dataset.id,
       position: tr.querySelector('.pos').value === '' ? null : Number(tr.querySelector('.pos').value),
-      spent: tr.querySelector('.spent').value === '' ? null : Number(tr.querySelector('.spent').value),
+      rebuys: tr.querySelector('.rb').value === '' ? 0 : Number(tr.querySelector('.rb').value),
+      addons: tr.querySelector('.ad').value === '' ? 0 : Number(tr.querySelector('.ad').value),
       knockouts: tr.querySelector('.ko').value === '' ? 0 : Number(tr.querySelector('.ko').value),
       tr
     }));
@@ -430,7 +453,7 @@
       const ev = events.find(e => e.id === Number($('resEvent').value));
       const b = ev && ev.buy_in != null ? Number(ev.buy_in) : 0;
       const n = rowsNow.filter(x => x.position).length;
-      r.tr.querySelector('.ptsc').textContent = scoreFor(n, b, r.spent ?? b, r.position, r.knockouts).toFixed(2);
+      r.tr.querySelector('.ptsc').textContent = scoreFor(n, b, spentFor(ev, r), r.position, r.knockouts).toFixed(2);
     });
   }
 
@@ -445,8 +468,7 @@
     if (played.some(r => !Number.isInteger(r.position) || r.position < 1)) return msg('resMsg', 'Positions must be whole numbers from 1 upwards.');
     const evNow = events.find(e => e.id === eventId);
     if (played.length && !(evNow && Number(evNow.buy_in) > 0)) return msg('resMsg', 'Add a buy-in to this event first (Events tab, then Edit) so points can be worked out.');
-    if (played.some(r => r.spent !== null && !(r.spent > 0))) return msg('resMsg', 'Spent £ must be more than 0 (or leave it blank to use the buy-in).');
-    if (played.some(r => r.spent !== null && r.spent < Number(evNow.buy_in))) return msg('resMsg', 'Spent £ can\u2019t be less than the buy-in (£' + Number(evNow.buy_in) + ').');
+    if (played.some(r => !Number.isInteger(r.rebuys) || r.rebuys < 0 || !Number.isInteger(r.addons) || r.addons < 0)) return msg('resMsg', 'Rebuys and add-ons must be whole numbers (0 or more).');
     if (played.some(r => !Number.isInteger(r.knockouts) || r.knockouts < 0)) return msg('resMsg', 'Knockouts must be whole numbers (0 or more).');
     const seen = {};
     for (const r of played) {
@@ -469,7 +491,7 @@
     if (played.length) {
       const { error } = await db.from('results').upsert(
         played.map(r => ({ event_id: eventId, player_id: r.player_id, position: r.position,
-          total_spent: (r.spent === null || r.spent === Number(evNow.buy_in)) ? null : r.spent,
+          rebuys: r.rebuys, addons: r.addons,
           knockouts: r.knockouts })),
         { onConflict: 'event_id,player_id' });
       if (error) { busy($('resSave'), false); return msg('resMsg', 'Couldn’t save: ' + error.message); }
@@ -495,7 +517,7 @@
   // ================= POINTS & SETTINGS =================
   async function loadSettings() {
     const { data } = await db.from('league_settings')
-      .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point').maybeSingle();
+      .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point, season_review').maybeSingle();
     if (!data) return;
     settings = data;
     $('setSeason').value = data.season_name;
@@ -504,6 +526,7 @@
     $('setKo').value = Number(data.ko_points);
     $('setFinalPlayers').value = data.final_players;
     $('setChips').value = data.final_chips_per_point;
+    $('setReview').checked = !!data.season_review;
   }
   $('setSave').onclick = async () => {
     clear('setMsg');
@@ -513,7 +536,8 @@
       min_events: Number($('setMinEvents').value),
       ko_points: Number($('setKo').value),
       final_players: Number($('setFinalPlayers').value),
-      final_chips_per_point: Number($('setChips').value)
+      final_chips_per_point: Number($('setChips').value),
+      season_review: $('setReview').checked
     };
     if (!row.season_name) return msg('setMsg', 'Enter a season name.');
     if (!Number.isInteger(row.best_n) || row.best_n < 1) return msg('setMsg', '"Best finishes that count" must be 1 or more.');

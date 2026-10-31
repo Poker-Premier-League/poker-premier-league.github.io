@@ -200,6 +200,30 @@
   table.final td.chips { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
   table.final tr.cut td { border-top: 2px dashed var(--gold); }
 
+  /* Season review */
+  .review { background: #fffaf0; border: 2px solid var(--gold); }
+  .review h2 { margin: 0; font-size: 24px; text-align: center; }
+  .review .sub { text-align: center; color: var(--muted); margin: 4px 0 14px; font-size: 14px; }
+  .review .preview-tag { display: block; text-align: center; font-size: 12px; font-weight: 800; color: var(--red); letter-spacing: 1px; margin-bottom: 6px; }
+  .podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end; margin-bottom: 16px; }
+  .podium .step { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .podium .block { width: 100%; border-radius: 10px 10px 0 0; color: #fff; font-weight: 800; padding: 8px 4px; }
+  .podium .p1 .block { background: var(--gold); color: #2a2200; height: 74px; font-size: 22px; }
+  .podium .p2 .block { background: #9aa0a6; color: #1d1d1b; height: 54px; font-size: 18px; }
+  .podium .p3 .block { background: #b8763e; color: #1d1d1b; height: 40px; font-size: 16px; }
+  .podium .nm { font-weight: 700; font-size: 14px; line-height: 1.2; }
+  .podium .pp { font-size: 13px; color: var(--muted); }
+  .awards { display: grid; gap: 10px; }
+  .award { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .award .t { font-weight: 800; font-size: 16px; }
+  .award .d { color: var(--muted); font-size: 13px; margin: 2px 0 8px; }
+  .award ol { margin: 0; padding: 0; list-style: none; }
+  .award li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 15px; }
+  .award li .r { width: 22px; font-weight: 800; color: var(--muted); }
+  .award li.top { font-weight: 800; }
+  .award li.top .r { color: var(--gold); }
+  .award li .v { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; }
+
   /* ---- Avatars ---- */
   .av { display: inline-flex; align-items: center; justify-content: center; flex: none;
     border-radius: 50%; overflow: hidden; vertical-align: middle; font-weight: 800; color: #fff;
@@ -316,6 +340,9 @@
     </span>
   </div>
 
+  <!-- SEASON REVIEW (shown when admins switch it on) -->
+  <div id="reviewCard" class="card section review hidden"></div>
+
   <!-- NEXT EVENT -->
   <div class="card section">
     <div class="section-title">Next event</div>
@@ -327,6 +354,7 @@
     <div class="section-title">League table <span id="seasonName" class="season"></span></div>
     <p class="hint">Best <span id="bestN">4</span> finishes count · play <span id="minEv">2</span>+ events to qualify. Tap a player to see their results.</p>
     <div id="tableBody"><p class="empty">Loading…</p></div>
+    <button id="reviewPreviewBtn" class="textlink hidden" type="button">Preview season review (only admins see this)</button>
   </div>
 
   <!-- FINAL NIGHT -->
@@ -628,7 +656,7 @@
   async function loadLeague() {
     const box = $('tableBody');
     const [settingsRes, tableRes, resultsRes] = await Promise.all([
-      db.from('league_settings').select('season_name, best_n, min_events, final_players, final_chips_per_point').maybeSingle(),
+      db.from('league_settings').select('season_name, best_n, min_events, final_players, final_chips_per_point, season_review').maybeSingle(),
       db.from('league_table').select('*'),
       db.from('player_results').select('player_id, event_id, event_date, position, field_size, knockouts, spent, points, counts')
     ]);
@@ -641,14 +669,17 @@
     $('minEv').textContent = st.min_events;
 
     const pts = (v) => Number(v || 0);
-    // Ranking: qualified first, then points, most wins, fewest last places, best single finish
-    const tieKey = (p) => [pts(p.league_points).toFixed(2), p.wins, p.last_places, p.best_finish ?? 999].join('|');
+    // Ranking (Phil's rules): qualified first, then points, most wins, fewest last places,
+    // best (lowest) average finish, fewest rebuys. Still level = shared place.
+    const avg = (p) => p.avg_finish == null ? 999 : Number(p.avg_finish);
+    const tieKey = (p) => [pts(p.league_points).toFixed(2), p.wins, p.last_places, avg(p).toFixed(2), p.rebuys].join('|');
     const rows = (tableRes.data || []).sort((a, b) =>
       (b.qualified - a.qualified) ||
       pts(b.league_points) - pts(a.league_points) ||
       b.wins - a.wins ||
       a.last_places - b.last_places ||
-      (a.best_finish ?? 999) - (b.best_finish ?? 999) ||
+      avg(a) - avg(b) ||
+      a.rebuys - b.rebuys ||
       a.display_name.localeCompare(b.display_name));
 
     if (!rows.length) { box.innerHTML = '<p class="empty">No players yet.</p>'; renderFinal([], st); return; }
@@ -690,6 +721,8 @@
     if (!qualified.length) html = '<p class="empty">Nobody has qualified yet. Players need ' + st.min_events + ' events.</p>' + html;
     box.innerHTML = html;
     renderFinal(qualified, st);
+    lastLeague = { rows, qualified, st };
+    renderReview();
 
     const byId = {}; rows.forEach(p => byId[p.player_id] = p);
     box.querySelectorAll('tr.player').forEach(tr => {
@@ -706,7 +739,9 @@
             '<span>Avg finish <b>' + (p.avg_finish ?? '\u2013') + '</b></span>' +
             '<span>Best <b>' + (p.best_finish ? ordinal(p.best_finish) : '\u2013') + '</b></span>' +
             '<span>Last places <b>' + p.last_places + '</b></span>' +
-            '<span>Knockouts <b>' + p.knockouts + '</b></span></div>' : '') +
+            '<span>Knockouts <b>' + p.knockouts + '</b></span>' +
+            '<span>Rebuys <b>' + p.rebuys + '</b></span>' +
+            '<span>Spent <b>£' + Number(p.total_spent || 0).toLocaleString('en-GB') + '</b></span></div>' : '') +
           (res.length
           ? '<div class="finishes">' + res.map(r =>
               '<span class="fin' + (r.counts ? ' counts' : '') + '">' + niceDate(r.event_date) + ': ' + ordinal(r.position) + ' of ' + r.field_size +
@@ -784,6 +819,64 @@
     showTab('login');
     showScreen('auth');
   };
+
+  // ---- Season review: podium + awards ----
+  let lastLeague = null;
+  let reviewPreview = false;
+  $('reviewPreviewBtn').onclick = () => { reviewPreview = !reviewPreview; renderReview(); if (reviewPreview) window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  function rankedList(rows, valueOf, fmt, opts = {}) {
+    const list = rows.filter(p => p.events_played > 0 && valueOf(p) > 0)
+      .sort((a, b) => valueOf(b) - valueOf(a) || a.display_name.localeCompare(b.display_name))
+      .slice(0, opts.limit || 3);
+    if (!list.length) return '<p class="empty">Nobody yet.</p>';
+    let lastV = null, lastR = 0;
+    return '<ol>' + list.map((p, i) => {
+      const v = valueOf(p);
+      const r = v === lastV ? lastR : i + 1; lastV = v; lastR = r;
+      return '<li class="' + (r === 1 ? 'top' : '') + '"><span class="r">' + r + '</span>' + avatarHtml(p.player_id, 26) +
+        '<span>' + esc(p.display_name) + '</span><span class="v">' + fmt(v) + '</span></li>';
+    }).join('') + '</ol>';
+  }
+
+  function renderReview() {
+    const card = $('reviewCard');
+    if (!lastLeague) return;
+    const { rows, qualified, st } = lastLeague;
+    const live = !!st.season_review;
+    $('reviewPreviewBtn').classList.toggle('hidden', !me.is_admin || live);
+    $('reviewPreviewBtn').textContent = reviewPreview ? 'Hide season review preview' : 'Preview season review (only admins see this)';
+    if (!live && !reviewPreview) { card.classList.add('hidden'); return; }
+
+    const top3 = qualified.slice(0, 3);
+    const step = (p, cls, label) => p
+      ? '<div class="step ' + cls + '">' + avatarHtml(p.player_id, cls === 'p1' ? 56 : 44) +
+        '<div class="nm">' + esc(p.display_name) + '</div><div class="pp">' + Number(p.league_points).toFixed(2) + ' pts</div>' +
+        '<div class="block">' + label + '</div></div>'
+      : '<div class="step ' + cls + '"></div>';
+    const money = (v) => '£' + Number(v).toLocaleString('en-GB', { maximumFractionDigits: 2 });
+
+    card.innerHTML =
+      (live ? '' : '<span class="preview-tag">PREVIEW · ONLY ADMINS CAN SEE THIS</span>') +
+      '<h2>🏆 ' + esc(st.season_name) + ' review</h2>' +
+      '<p class="sub">The year so far, ahead of the final</p>' +
+      (top3.length
+        ? '<div class="podium">' + step(top3[1], 'p2', '2nd') + step(top3[0], 'p1', '1st') + step(top3[2], 'p3', '3rd') + '</div>'
+        : '<p class="empty">Nobody has qualified yet.</p>') +
+      '<div class="awards">' +
+        '<div class="award"><div class="t">💰 Big Money Spender</div><div class="d">Most money spent across the season (buy-ins, rebuys and add-ons)</div>' +
+          rankedList(rows, p => Number(p.total_spent || 0), money) + '</div>' +
+        '<div class="award"><div class="t">🔁 Rebuy King</div><div class="d">Most rebuys</div>' +
+          rankedList(rows, p => p.rebuys, v => v + (v === 1 ? ' rebuy' : ' rebuys'), { limit: 5 }) + '</div>' +
+        '<div class="award"><div class="t">🥄 Wooden Spoon</div><div class="d">Most last-place finishes</div>' +
+          rankedList(rows, p => p.last_places, v => v + '\u00D7') + '</div>' +
+        '<div class="award"><div class="t">🥇 Most Wins</div><div class="d">Most events won</div>' +
+          rankedList(rows, p => p.wins, v => v + (v === 1 ? ' win' : ' wins')) + '</div>' +
+        '<div class="award"><div class="t">🎯 Bounty Hunter</div><div class="d">Most knockouts</div>' +
+          rankedList(rows, p => p.knockouts, v => v + ' KO' + (v === 1 ? '' : 's')) + '</div>' +
+      '</div>';
+    card.classList.remove('hidden');
+  }
 
   // ---- Final night: top N qualified, chips = points x chips-per-point ----
   function renderFinal(qualified, st) {
