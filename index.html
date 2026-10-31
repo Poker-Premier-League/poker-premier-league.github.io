@@ -132,7 +132,7 @@
     display: flex; justify-content: space-between; align-items: center;
     color: #fff; font-size: 15px;
   }
-  .linkbtn { background: none; border: 1px solid rgba(255,255,255,0.4); color: #fff;
+  .linkbtn { display: inline-block; text-decoration: none; margin-left: 6px; background: none; border: 1px solid rgba(255,255,255,0.4); color: #fff;
     padding: 6px 12px; border-radius: 999px; font-size: 14px; cursor: pointer; }
   .card.section { max-width: 560px; margin: 0 auto 16px; }
   .section-title { font-size: 13px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--felt); margin-bottom: 10px; }
@@ -232,7 +232,10 @@
 <div id="homeCard" class="hidden">
   <div class="userbar">
     <span>Hi, <strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
-    <button id="logoutBtn" class="linkbtn" type="button">Log out</button>
+    <span>
+      <a id="adminLink" class="linkbtn hidden" href="admin.html">Admin</a>
+      <button id="logoutBtn" class="linkbtn" type="button">Log out</button>
+    </span>
   </div>
 
   <!-- NEXT EVENT -->
@@ -320,6 +323,7 @@
     me = { id: user.id, ...profile };
     $('whoName').textContent = profile.display_name;
     $('adminBadge').classList.toggle('hidden', !profile.is_admin);
+    $('adminLink').classList.toggle('hidden', !profile.is_admin);
     showScreen('home');
     await Promise.all([loadEvent(), loadLeague()]);
   }

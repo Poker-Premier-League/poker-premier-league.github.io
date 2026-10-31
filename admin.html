@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin · Poker Premier League</title>
+<meta name="theme-color" content="#0f3d2a">
+<style>
+  :root {
+    --felt: #0f3d2a; --felt-dark: #0a2a1d; --card: #fdfbf6; --ink: #1d1d1b;
+    --muted: #6b6b66; --gold: #c9a227; --red: #b3261e; --line: #e4e0d5; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--felt-dark); }
+  html, body { margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(ellipse at top, #165238 0%, var(--felt) 45%, var(--felt-dark) 100%) no-repeat;
+    background-color: var(--felt-dark);
+    color: var(--ink); min-height: 100vh;
+    padding: env(safe-area-inset-top) 16px 40px;
+  }
+  header { text-align: center; color: #fff; padding: 22px 0 14px; }
+  .suits { color: var(--gold); letter-spacing: 6px; font-size: 16px; }
+  h1 { margin: 4px 0 0; font-size: 22px; }
+  .topbar { max-width: 640px; margin: 0 auto 12px; display: flex; justify-content: space-between; align-items: center; color: #fff; }
+  .topbar a { color: #fff; text-decoration: none; border: 1px solid rgba(255,255,255,0.4); padding: 6px 12px; border-radius: 999px; font-size: 14px; }
+  .badge { background: var(--gold); color: #2a2200; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+
+  .card { background: var(--card); max-width: 640px; margin: 0 auto 16px; border-radius: var(--radius); padding: 20px 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  .tabs { display: flex; background: #efebe0; border-radius: 10px; padding: 4px; max-width: 640px; margin: 0 auto 14px; }
+  .tabs button { flex: 1; border: 0; background: transparent; padding: 10px 4px; font-size: 15px; font-weight: 600; color: var(--muted); border-radius: 8px; cursor: pointer; }
+  .tabs button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+  h2 { font-size: 13px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--felt); margin: 0 0 12px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 5px; }
+  label .opt { font-weight: 400; color: var(--muted); }
+  input, select, textarea {
+    width: 100%; padding: 11px; font-size: 16px; font-family: inherit;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+  }
+  textarea { min-height: 70px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1; min-width: 0; }
+
+  .btn { display: inline-block; padding: 12px 18px; font-size: 16px; font-weight: 700; border: 0; border-radius: 10px; background: var(--felt); color: #fff; cursor: pointer; }
+  .btn.full { display: block; width: 100%; margin-top: 16px; }
+  .btn.secondary { background: #efebe0; color: var(--ink); }
+  .btn.small { padding: 7px 12px; font-size: 14px; }
+  .btn.danger { background: #fbe9e7; color: var(--red); }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .btnrow { display: flex; gap: 8px; margin-top: 16px; }
+  .btnrow .btn { flex: 1; }
+
+  .msg { margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 14px; display: none; }
+  .msg.error { display: block; background: #fbe9e7; color: var(--red); }
+  .msg.ok { display: block; background: #e7f4ec; color: #1b5e3a; }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .loading { text-align: center; color: #cfe3d7; padding: 30px; }
+
+  /* Event list */
+  .evlist { list-style: none; margin: 0; padding: 0; }
+  .evlist li { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .evlist li:last-child { border-bottom: 0; }
+  .evlist .info { flex: 1; min-width: 0; }
+  .evlist .d { font-weight: 700; }
+  .evlist .v { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; padding: 3px 7px; border-radius: 999px; text-transform: uppercase; }
+  .status.upcoming { background: #e3eefc; color: #1d4f91; }
+  .status.completed { background: #e7f4ec; color: #1b5e3a; }
+  .status.cancelled { background: #eee; color: #777; }
+
+  /* Results entry */
+  table.res { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  table.res th { text-align: left; font-size: 12px; color: var(--muted); padding: 6px 4px; border-bottom: 2px solid var(--line); }
+  table.res td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.res td.name { font-weight: 600; }
+  table.res td.name small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  table.res input { padding: 9px 6px; text-align: center; }
+  table.res td.posc { width: 74px; }
+  table.res td.bonc { width: 70px; }
+  table.res td.ptsc { width: 50px; text-align: right; font-weight: 800; }
+  .tag-in { font-size: 11px; color: #1b7a46; font-weight: 700; }
+  .check { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-weight: 600; }
+  .check input { width: auto; transform: scale(1.3); }
+
+  /* Points table */
+  table.pts { width: 100%; border-collapse: collapse; }
+  table.pts td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+  table.pts td.p { font-weight: 700; width: 60px; }
+  table.pts input { max-width: 120px; padding: 9px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="suits">♠ ♥ ♦ ♣</div>
+  <h1>League Admin</h1>
+</header>
+
+<div id="loading" class="loading">Checking you're allowed in…</div>
+
+<div id="denied" class="card hidden">
+  <p id="deniedText">You need to be an admin to use this page.</p>
+  <a class="btn" href="index.html">Back to the league</a>
+</div>
+
+<div id="app" class="hidden">
+  <div class="topbar">
+    <span><strong id="whoName"></strong> <span class="badge">ADMIN</span></span>
+    <a href="index.html">← Back to league</a>
+  </div>
+
+  <div class="tabs">
+    <button type="button" data-tab="events" class="active">Events</button>
+    <button type="button" data-tab="results">Results</button>
+    <button type="button" data-tab="points">Points</button>
+  </div>
+
+  <!-- ================= EVENTS ================= -->
+  <section id="tab-events">
+    <div class="card">
+      <h2 id="evFormTitle">New event</h2>
+      <form id="evForm" novalidate>
+        <input type="hidden" id="evId">
+        <div class="row2">
+          <div><label for="evDate">Date</label><input id="evDate" type="date" required></div>
+          <div><label for="evTime">Start time</label><input id="evTime" type="time" value="19:30"></div>
+        </div>
+        <label for="evVenue">Venue</label>
+        <input id="evVenue" type="text" placeholder="e.g. Phil's house">
+        <div class="row2">
+          <div><label for="evHost">Host <span class="opt">(optional)</span></label><input id="evHost" type="text"></div>
+          <div><label for="evBuyin">Buy-in £</label><input id="evBuyin" type="number" inputmode="decimal" min="0" step="0.01" placeholder="20"></div>
+        </div>
+        <label for="evNotes">Notes <span class="opt">(optional)</span></label>
+        <textarea id="evNotes" placeholder="e.g. Bring cash. Doors open 7pm."></textarea>
+        <div id="evStatusWrap" class="hidden">
+          <label for="evStatus">Status</label>
+          <select id="evStatus">
+            <option value="upcoming">Upcoming</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="btnrow">
+          <button id="evCancelEdit" class="btn secondary hidden" type="button">Cancel edit</button>
+          <button id="evSave" class="btn" type="submit">Create event</button>
+        </div>
+        <div id="evMsg" class="msg"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>All events</h2>
+      <ul id="evList" class="evlist"><li class="muted">Loading…</li></ul>
+    </div>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section id="tab-results" class="hidden">
+    <div class="card">
+      <h2>Enter results</h2>
+      <label for="resEvent">Event</label>
+      <select id="resEvent"></select>
+      <p class="muted" style="margin-top:10px">Type each player's finishing position (1 = winner). Leave blank if they didn't play. Points fill in automatically.</p>
+      <div id="resTable"></div>
+      <label class="check"><input type="checkbox" id="resComplete" checked> Mark this event as completed</label>
+      <button id="resSave" class="btn full" type="button">Save results</button>
+      <div id="resMsg" class="msg"></div>
+    </div>
+  </section>
+
+  <!-- ================= POINTS ================= -->
+  <section id="tab-points" class="hidden">
+    <div class="card">
+      <h2>Season</h2>
+      <div class="row2">
+        <div><label for="setSeason">Season name</label><input id="setSeason" type="text"></div>
+        <div><label for="setBestN">Best finishes that count</label><input id="setBestN" type="number" inputmode="numeric" min="1"></div>
+      </div>
+      <button id="setSave" class="btn full" type="button">Save season settings</button>
+      <div id="setMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Points for each position</h2>
+      <p class="muted">These are placeholders until Phil decides. Changing them updates the whole league table straight away.</p>
+      <table class="pts"><tbody id="ptsBody"></tbody></table>
+      <div class="btnrow">
+        <button id="ptsRemove" class="btn secondary" type="button">− Remove last</button>
+        <button id="ptsAdd" class="btn secondary" type="button">+ Add position</button>
+      </div>
+      <button id="ptsSave" class="btn full" type="button">Save points</button>
+      <div id="ptsMsg" class="msg"></div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://oxjudidrchhaqjidijrc.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_rWfaZr0wzRTu9rmOJm8C4g_1WuDthnM';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function niceDate(iso) {
+    return new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function msg(id, text, type) { const m = $(id); m.textContent = text; m.className = 'msg ' + (type || 'error'); }
+  function clear(id) { const m = $(id); m.textContent = ''; m.className = 'msg'; }
+  function busy(btn, on, label) {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.disabled = on; btn.textContent = on ? label : btn.dataset.label;
+  }
+
+  let players = [];   // approved players
+  let points = [];    // [{position, points}]
+  let events = [];
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('active', x === b));
+    ['events', 'results', 'points'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    if (b.dataset.tab === 'results') renderResults();
+  });
+
+  // ---------- Start ----------
+  (async () => {
+    const { data: s } = await db.auth.getSession();
+    if (!s.session) { location.href = 'index.html'; return; }
+    const { data: profile } = await db.from('profiles')
+      .select('display_name, is_admin, approved').eq('id', s.session.user.id).maybeSingle();
+    $('loading').classList.add('hidden');
+    if (!profile || !profile.is_admin || !profile.approved) { $('denied').classList.remove('hidden'); return; }
+    $('whoName').textContent = profile.display_name;
+    $('app').classList.remove('hidden');
+    await Promise.all([loadPlayers(), loadPoints(), loadSettings(), loadEvents()]);
+  })();
+
+  async function loadPlayers() {
+    const { data } = await db.from('profiles').select('id, display_name, nickname').eq('approved', true).order('display_name');
+    players = data || [];
+  }
+
+  // ================= EVENTS =================
+  async function loadEvents() {
+    const { data, error } = await db.from('events').select('*').order('event_date', { ascending: false });
+    if (error) { $('evList').innerHTML = '<li class="muted">Couldn’t load events: ' + esc(error.message) + '</li>'; return; }
+    events = data || [];
+    $('evList').innerHTML = events.length ? events.map(ev =>
+      '<li><div class="info"><div class="d">' + niceDate(ev.event_date) + '</div>' +
+      '<div class="v">' + esc([ev.venue, ev.buy_in != null ? '£' + Number(ev.buy_in) : ''].filter(Boolean).join(' · ') || 'No venue yet') + '</div></div>' +
+      '<span class="status ' + ev.status + '">' + ev.status + '</span>' +
+      '<button class="btn small secondary" data-edit="' + ev.id + '">Edit</button></li>').join('')
+      : '<li class="muted">No events yet. Create the first one above.</li>';
+    $('evList').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => startEdit(Number(b.dataset.edit)));
+    fillResultsDropdown();
+  }
+
+  function resetEventForm() {
+    $('evForm').reset();
+    $('evId').value = '';
+    $('evTime').value = '19:30';
+    $('evFormTitle').textContent = 'New event';
+    $('evSave').textContent = 'Create event'; $('evSave').dataset.label = '';
+    $('evStatusWrap').classList.add('hidden');
+    $('evCancelEdit').classList.add('hidden');
+    $('evDelete')?.remove();
+  }
+
+  function startEdit(id) {
+    const ev = events.find(e => e.id === id);
+    if (!ev) return;
+    resetEventForm();
+    $('evId').value = ev.id;
+    $('evDate').value = ev.event_date;
+    $('evTime').value = ev.start_time ? ev.start_time.slice(0, 5) : '';
+    $('evVenue').value = ev.venue || '';
+    $('evHost').value = ev.host || '';
+    $('evBuyin').value = ev.buy_in ?? '';
+    $('evNotes').value = ev.notes || '';
+    $('evStatus').value = ev.status;
+    $('evFormTitle').textContent = 'Edit event';
+    $('evSave').textContent = 'Save changes'; $('evSave').dataset.label = '';
+    $('evStatusWrap').classList.remove('hidden');
+    $('evCancelEdit').classList.remove('hidden');
+
+    const del = document.createElement('button');
+    del.id = 'evDelete'; del.type = 'button'; del.className = 'btn danger full'; del.textContent = 'Delete this event';
+    del.onclick = deleteEvent;
+    $('evMsg').before(del);
+    clear('evMsg');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  $('evCancelEdit').onclick = () => { resetEventForm(); clear('evMsg'); };
+
+  $('evForm').onsubmit = async (e) => {
+    e.preventDefault();
+    clear('evMsg');
+    if (!$('evDate').value) return msg('evMsg', 'Pick a date.');
+    const row = {
+      event_date: $('evDate').value,
+      start_time: $('evTime').value || null,
+      venue: $('evVenue').value.trim() || null,
+      host: $('evHost').value.trim() || null,
+      buy_in: $('evBuyin').value === '' ? null : Number($('evBuyin').value),
+      notes: $('evNotes').value.trim() || null
+    };
+    const id = $('evId').value;
+    if (id) row.status = $('evStatus').value;
+
+    busy($('evSave'), true, 'Saving…');
+    const { error } = id
+      ? await db.from('events').update(row).eq('id', Number(id))
+      : await db.from('events').insert(row);
+    busy($('evSave'), false);
+    if (error) return msg('evMsg', 'Couldn’t save: ' + error.message);
+
+    resetEventForm();
+    msg('evMsg', id ? '✓ Event updated' : '✓ Event created. It’s now showing on the home page.', 'ok');
+    await loadEvents();
+  };
+
+  async function deleteEvent() {
+    const id = Number($('evId').value);
+    if (!confirm('Delete this event? Its replies and results will be deleted too. This can’t be undone.')) return;
+    const { error } = await db.from('events').delete().eq('id', id);
+    if (error) return msg('evMsg', 'Couldn’t delete: ' + error.message);
+    resetEventForm();
+    msg('evMsg', '✓ Event deleted', 'ok');
+    await loadEvents();
+  }
+
+  // ================= RESULTS =================
+  function fillResultsDropdown() {
+    const sel = $('resEvent');
+    const keep = sel.value;
+    const usable = events.filter(e => e.status !== 'cancelled');
+    sel.innerHTML = usable.length
+      ? usable.map(e => '<option value="' + e.id + '">' + niceDate(e.event_date) + (e.venue ? ' · ' + esc(e.venue) : '') + ' (' + e.status + ')</option>').join('')
+      : '<option value="">No events yet</option>';
+    if (keep && usable.some(e => String(e.id) === keep)) sel.value = keep;
+    else {
+      // Default: most recent event that isn't in the future
+      const today = new Date().toISOString().slice(0, 10);
+      const past = usable.find(e => e.event_date <= today);
+      if (past) sel.value = past.id;
+    }
+  }
+  $('resEvent').onchange = renderResults;
+
+  const pointsFor = (pos) => (points.find(p => p.position === pos)?.points) ?? 0;
+
+  async function renderResults() {
+    clear('resMsg');
+    const eventId = Number($('resEvent').value);
+    if (!eventId) { $('resTable').innerHTML = '<p class="muted">Create an event first.</p>'; return; }
+    $('resTable').innerHTML = '<p class="muted">Loading…</p>';
+
+    const [resR, attR] = await Promise.all([
+      db.from('results').select('player_id, position, bonus_points').eq('event_id', eventId),
+      db.from('attendance').select('player_id, reply').eq('event_id', eventId)
+    ]);
+    if (resR.error || attR.error) { $('resTable').innerHTML = '<p class="muted">Couldn’t load: ' + esc((resR.error || attR.error).message) + '</p>'; return; }
+
+    const existing = {}; (resR.data || []).forEach(r => existing[r.player_id] = r);
+    const saidIn = new Set((attR.data || []).filter(a => a.reply === 'in').map(a => a.player_id));
+    const ev = events.find(e => e.id === eventId);
+    $('resComplete').checked = true;
+
+    // Order: already-placed by position, then those who said "In", then everyone else
+    const list = [...players].sort((a, b) => {
+      const pa = existing[a.id]?.position ?? 999, pb = existing[b.id]?.position ?? 999;
+      if (pa !== pb) return pa - pb;
+      const ia = saidIn.has(a.id) ? 0 : 1, ib = saidIn.has(b.id) ? 0 : 1;
+      return ia - ib || a.display_name.localeCompare(b.display_name);
+    });
+
+    $('resTable').innerHTML =
+      '<table class="res"><thead><tr><th>Player</th><th>Position</th><th>Bonus</th><th style="text-align:right">Pts</th></tr></thead><tbody>' +
+      list.map(p => {
+        const r = existing[p.id];
+        return '<tr data-id="' + p.id + '">' +
+          '<td class="name">' + esc(p.display_name) + (saidIn.has(p.id) ? ' <span class="tag-in">IN</span>' : '') +
+            (p.nickname ? '<small>“' + esc(p.nickname) + '”</small>' : '') + '</td>' +
+          '<td class="posc"><input class="pos" type="number" inputmode="numeric" min="1" value="' + (r ? r.position : '') + '"></td>' +
+          '<td class="bonc"><input class="bon" type="number" inputmode="numeric" value="' + (r && r.bonus_points ? r.bonus_points : '') + '" placeholder="0"></td>' +
+          '<td class="ptsc"></td></tr>';
+      }).join('') + '</tbody></table>' +
+      (players.length ? '' : '<p class="muted">No players have signed up yet.</p>');
+
+    $('resTable').querySelectorAll('input').forEach(i => i.oninput = updatePreview);
+    updatePreview();
+  }
+
+  function readResultRows() {
+    return [...$('resTable').querySelectorAll('tr[data-id]')].map(tr => ({
+      player_id: tr.dataset.id,
+      position: tr.querySelector('.pos').value === '' ? null : Number(tr.querySelector('.pos').value),
+      bonus_points: Number(tr.querySelector('.bon').value || 0),
+      tr
+    }));
+  }
+  function updatePreview() {
+    readResultRows().forEach(r => {
+      r.tr.querySelector('.ptsc').textContent = r.position ? pointsFor(r.position) + r.bonus_points : '';
+    });
+  }
+
+  $('resSave').onclick = async () => {
+    clear('resMsg');
+    const eventId = Number($('resEvent').value);
+    if (!eventId) return;
+    const rows = readResultRows();
+    const played = rows.filter(r => r.position !== null);
+
+    // Checks
+    if (played.some(r => !Number.isInteger(r.position) || r.position < 1)) return msg('resMsg', 'Positions must be whole numbers from 1 upwards.');
+    if (rows.some(r => !Number.isInteger(r.bonus_points))) return msg('resMsg', 'Bonus points must be whole numbers.');
+    const seen = {};
+    for (const r of played) {
+      if (seen[r.position]) {
+        const a = players.find(p => p.id === seen[r.position])?.display_name, b = players.find(p => p.id === r.player_id)?.display_name;
+        return msg('resMsg', 'Two players are both in position ' + r.position + ' (' + a + ' and ' + b + '). Each position can only be used once.');
+      }
+      seen[r.position] = r.player_id;
+    }
+    if (played.length) {
+      const max = Math.max(...played.map(r => r.position));
+      if (max !== played.length) {
+        const missing = []; for (let i = 1; i <= max; i++) if (!seen[i]) missing.push(i);
+        if (!confirm('Nobody is in position ' + missing.join(', ') + '. Save anyway?')) return;
+      }
+    }
+
+    busy($('resSave'), true, 'Saving…');
+    // 1) Save/update the positions entered
+    if (played.length) {
+      const { error } = await db.from('results').upsert(
+        played.map(r => ({ event_id: eventId, player_id: r.player_id, position: r.position, bonus_points: r.bonus_points })),
+        { onConflict: 'event_id,player_id' });
+      if (error) { busy($('resSave'), false); return msg('resMsg', 'Couldn’t save: ' + error.message); }
+    }
+    // 2) Remove anyone whose position was cleared
+    const cleared = rows.filter(r => r.position === null).map(r => r.player_id);
+    if (cleared.length) {
+      const { error } = await db.from('results').delete().eq('event_id', eventId).in('player_id', cleared);
+      if (error) { busy($('resSave'), false); return msg('resMsg', 'Saved positions, but couldn’t clear blanks: ' + error.message); }
+    }
+    // 3) Mark the event completed
+    if ($('resComplete').checked) {
+      const { error } = await db.from('events').update({ status: 'completed' }).eq('id', eventId);
+      if (error) { busy($('resSave'), false); return msg('resMsg', 'Results saved, but couldn’t mark the event completed: ' + error.message); }
+    }
+    busy($('resSave'), false);
+    await loadEvents();
+    $('resEvent').value = eventId;
+    await renderResults();
+    msg('resMsg', '✓ Results saved for ' + played.length + ' player' + (played.length === 1 ? '' : 's') + '. The league table is updated.', 'ok');
+  };
+
+  // ================= POINTS & SETTINGS =================
+  async function loadSettings() {
+    const { data } = await db.from('league_settings').select('season_name, best_n').maybeSingle();
+    if (data) { $('setSeason').value = data.season_name; $('setBestN').value = data.best_n; }
+  }
+  $('setSave').onclick = async () => {
+    clear('setMsg');
+    const name = $('setSeason').value.trim();
+    const n = Number($('setBestN').value);
+    if (!name) return msg('setMsg', 'Enter a season name.');
+    if (!Number.isInteger(n) || n < 1) return msg('setMsg', '"Best finishes that count" must be 1 or more.');
+    busy($('setSave'), true, 'Saving…');
+    const { error } = await db.from('league_settings').update({ season_name: name, best_n: n }).eq('id', 1);
+    busy($('setSave'), false);
+    if (error) return msg('setMsg', 'Couldn’t save: ' + error.message);
+    msg('setMsg', '✓ Season settings saved', 'ok');
+  };
+
+  async function loadPoints() {
+    const { data } = await db.from('points_table').select('position, points').order('position');
+    points = data || [];
+    renderPoints();
+  }
+  function renderPoints() {
+    $('ptsBody').innerHTML = points.map(p =>
+      '<tr><td class="p">' + ordinal(p.position) + '</td><td><input type="number" inputmode="numeric" data-pos="' + p.position + '" value="' + p.points + '"></td></tr>').join('');
+  }
+  const ordinal = (n) => n + (['th','st','nd','rd'][(n % 100 - 20) % 10] || ['th','st','nd','rd'][n % 100] || 'th');
+  function readPoints() {
+    return [...$('ptsBody').querySelectorAll('input')].map(i => ({ position: Number(i.dataset.pos), points: i.value === '' ? NaN : Number(i.value) }));
+  }
+  $('ptsAdd').onclick = () => { points = readPoints(); points.push({ position: points.length + 1, points: 0 }); renderPoints(); };
+  $('ptsRemove').onclick = () => { points = readPoints(); if (points.length > 1) points.pop(); renderPoints(); };
+
+  $('ptsSave').onclick = async () => {
+    clear('ptsMsg');
+    const rows = readPoints();
+    if (rows.some(r => !Number.isInteger(r.points))) return msg('ptsMsg', 'Every position needs a whole number of points (0 is fine).');
+    busy($('ptsSave'), true, 'Saving…');
+    const { error } = await db.from('points_table').upsert(rows, { onConflict: 'position' });
+    if (error) { busy($('ptsSave'), false); return msg('ptsMsg', 'Couldn’t save: ' + error.message); }
+    const { error: delErr } = await db.from('points_table').delete().gt('position', rows.length);
+    busy($('ptsSave'), false);
+    if (delErr) return msg('ptsMsg', 'Saved, but couldn’t remove extra positions: ' + delErr.message);
+    points = rows;
+    msg('ptsMsg', '✓ Points saved. The league table is updated.', 'ok');
+  };
+</script>
+</body>
+</html>
