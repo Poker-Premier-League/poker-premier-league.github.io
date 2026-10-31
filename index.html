@@ -102,6 +102,10 @@
   .msg.ok { display: block; background: #e7f4ec; color: #1b5e3a; }
 
   .hidden { display: none !important; }
+  .textlink { display: block; margin: 14px auto 0; background: none; border: 0; color: var(--felt);
+    font-size: 15px; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 8px; }
+  .formtitle { margin: 0 0 6px; font-size: 19px; }
+  .formhelp { margin: 0 0 4px; color: var(--muted); font-size: 14px; line-height: 1.45; }
 
   .welcome h2 { margin: 0 0 4px; font-size: 22px; }
   .welcome p { color: var(--muted); margin: 0 0 10px; }
@@ -249,6 +253,26 @@
     <label for="loginPassword">Password</label>
     <input id="loginPassword" type="password" autocomplete="current-password" required>
     <button class="btn" type="submit">Log in</button>
+    <button id="forgotLink" class="textlink" type="button">Forgot password?</button>
+  </form>
+
+  <form id="forgotForm" class="hidden" novalidate>
+    <h3 class="formtitle">Reset your password</h3>
+    <p class="formhelp">Enter the email you signed up with and we’ll send you a link to choose a new password.</p>
+    <label for="fpEmail">Email</label>
+    <input id="fpEmail" type="email" autocomplete="email" required>
+    <button class="btn" type="submit">Send reset link</button>
+    <button id="backToLogin" class="textlink" type="button">← Back to log in</button>
+  </form>
+
+  <form id="newPwForm" class="hidden" novalidate>
+    <h3 class="formtitle">Choose a new password</h3>
+    <label for="npPassword">New password <span class="opt">(at least 6 characters)</span></label>
+    <input id="npPassword" type="password" autocomplete="new-password" required>
+    <label for="npConfirm">Type it again</label>
+    <input id="npConfirm" type="password" autocomplete="new-password" required>
+    <button class="btn" type="submit">Save new password</button>
+    <button id="backToLogin2" class="textlink" type="button">← Back to log in</button>
   </form>
 
   <form id="signupForm" class="hidden" novalidate>
@@ -336,7 +360,15 @@
   // ---- Supabase connection (poker project) ----
   const SUPABASE_URL = 'https://oxjudidrchhaqjidijrc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_rWfaZr0wzRTu9rmOJm8C4g_1WuDthnM';
+  // Read the address bar BEFORE Supabase tidies it (reset-password links land here)
+  const urlInfo = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
+  const cameFromReset = urlInfo.get('type') === 'recovery';
+  const resetLinkError = urlInfo.get('error_code') || urlInfo.get('error');
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let inRecovery = cameFromReset;
+  db.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') { inRecovery = true; showScreen('auth'); showTab('newpw'); }
+  });
 
   const $ = (id) => document.getElementById(id);
 
@@ -369,13 +401,18 @@
 
   // ---- Tabs ----
   function showTab(which) {
-    const login = which === 'login';
-    $('tabLogin').classList.toggle('active', login);
-    $('tabSignup').classList.toggle('active', !login);
-    $('loginForm').classList.toggle('hidden', !login);
-    $('signupForm').classList.toggle('hidden', login);
+    $('tabLogin').classList.toggle('active', which === 'login');
+    $('tabSignup').classList.toggle('active', which === 'signup');
+    document.querySelector('#authCard .tabs').classList.toggle('hidden', which === 'forgot' || which === 'newpw');
+    $('loginForm').classList.toggle('hidden', which !== 'login');
+    $('signupForm').classList.toggle('hidden', which !== 'signup');
+    $('forgotForm').classList.toggle('hidden', which !== 'forgot');
+    $('newPwForm').classList.toggle('hidden', which !== 'newpw');
     clearMsg();
   }
+  $('forgotLink').onclick = () => { $('fpEmail').value = $('loginEmail').value.trim(); showTab('forgot'); };
+  $('backToLogin').onclick = () => showTab('login');
+  $('backToLogin2').onclick = async () => { inRecovery = false; await db.auth.signOut(); showTab('login'); };
   $('tabLogin').onclick = () => showTab('login');
   $('tabSignup').onclick = () => showTab('signup');
 
@@ -847,9 +884,50 @@
     await refreshAvatars();
   };
 
+  // ---- Forgot password: send the email ----
+  $('forgotForm').onsubmit = async (e) => {
+    e.preventDefault();
+    clearMsg();
+    const email = $('fpEmail').value.trim();
+    if (!email) return showMsg('Enter your email.');
+    setBusy(e.target, true, 'Sending…');
+    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    setBusy(e.target, false);
+    if (error) return showMsg(friendlyError(error));
+    showMsg('If that email has an account, a reset link is on its way. It can take a few minutes, so check your spam or junk folder too.', 'ok');
+  };
+
+  // ---- Reset link clicked: choose a new password ----
+  $('newPwForm').onsubmit = async (e) => {
+    e.preventDefault();
+    clearMsg();
+    const pw = $('npPassword').value, pw2 = $('npConfirm').value;
+    if (pw.length < 6) return showMsg('Password must be at least 6 characters.');
+    if (pw !== pw2) return showMsg('The two passwords don’t match.');
+    setBusy(e.target, true, 'Saving…');
+    const { data, error } = await db.auth.updateUser({ password: pw });
+    setBusy(e.target, false);
+    if (error) {
+      const t = (error.message || '').toLowerCase();
+      if (t.includes('session') || t.includes('jwt') || t.includes('expired')) return showMsg('That reset link has expired. Tap “Back to log in”, then “Forgot password?” to get a new one.');
+      if (t.includes('different from the old')) return showMsg('Choose a password different from your old one.');
+      return showMsg(friendlyError(error));
+    }
+    inRecovery = false;
+    $('npPassword').value = $('npConfirm').value = '';
+    await loadHome(data.user);
+  };
+
   // ---- Start: already logged in? ----
   (async () => {
     const { data } = await db.auth.getSession();
+    if (resetLinkError && !data.session) {
+      showScreen('auth'); showTab('forgot');
+      showMsg('That reset link has expired or already been used. Enter your email to get a new one.');
+      history.replaceState(null, '', location.pathname);
+      return;
+    }
+    if (inRecovery && data.session) { showScreen('auth'); showTab('newpw'); return; }
     if (data.session) await loadHome(data.session.user);
     else showScreen('auth');
   })();
