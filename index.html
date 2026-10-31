@@ -184,6 +184,46 @@
   .fin.counts { background: var(--felt); color: #fff; font-weight: 700; }
   .fin small { opacity: 0.8; margin-left: 3px; }
   .legend { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  /* ---- Avatars ---- */
+  .av { display: inline-flex; align-items: center; justify-content: center; flex: none;
+    border-radius: 50%; overflow: hidden; vertical-align: middle; font-weight: 800; color: #fff;
+    background: #8a8a80; box-shadow: 0 0 0 2px #fff; }
+  .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .me-wrap { display: inline-flex; align-items: center; gap: 10px; }
+  .av-btn { position: relative; border: 0; background: none; padding: 0; cursor: pointer; line-height: 0; }
+  .av-btn .av { box-shadow: 0 0 0 2px var(--gold); }
+  .av-edit { position: absolute; right: -4px; bottom: -4px; background: var(--gold); color: #2a2200;
+    font-size: 11px; line-height: 18px; width: 18px; height: 18px; border-radius: 50%; text-align: center; }
+  .pl { display: flex; align-items: center; gap: 10px; }
+  .who li { display: flex; align-items: center; gap: 8px; }
+  .photo-actions { margin-top: 10px; display: flex; gap: 8px; }
+  .photo-actions .btn { width: auto; margin: 0; padding: 8px 12px; font-size: 14px; }
+
+  /* ---- Modal + cropper ---- */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50;
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-card { background: var(--card); width: 100%; max-width: 380px; border-radius: var(--radius);
+    padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-height: 100%; overflow: auto; }
+  .modal-card h3 { margin: 0 0 12px; font-size: 18px; text-align: center; }
+  .modal-card .btn { margin-top: 10px; }
+  .btn.danger { background: #fbe9e7; color: var(--red); }
+  .photo-current { display: flex; justify-content: center; margin: 4px 0 8px; }
+  .crop-help { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+  .crop-stage { position: relative; width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+    background: #222; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .crop-stage:active { cursor: grabbing; }
+  .crop-stage canvas { width: 100%; height: 100%; display: block; }
+  .crop-ring { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at center, transparent 0 calc(43.3% - 1px), rgba(255,255,255,0.9) calc(43.3% - 1px) 43.3%, rgba(0,0,0,0.55) 43.3%); }
+  .zoom-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-weight: 800; color: var(--muted); }
+  .zoom-row input { flex: 1; padding: 0; border: 0; background: none; accent-color: var(--felt); }
+  .zoom-row input:focus { outline: none; }
+  .crop-preview-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; }
+  .crop-preview-row canvas { border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--line); }
+  #cropPreview { width: 64px; height: 64px; }
+  #cropPreviewSmall { width: 32px; height: 32px; }
+  .muted { color: var(--muted); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -231,7 +271,10 @@
 <!-- LOGGED IN -->
 <div id="homeCard" class="hidden">
   <div class="userbar">
-    <span>Hi, <strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
+    <span class="me-wrap">
+      <button id="myAvatarBtn" class="av-btn" type="button" title="Change your photo"><span id="myAvatar"></span><span class="av-edit">✎</span></button>
+      <span>Hi, <strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
+    </span>
     <span>
       <a id="adminLink" class="linkbtn hidden" href="admin.html">Admin</a>
       <button id="logoutBtn" class="linkbtn" type="button">Log out</button>
@@ -249,6 +292,42 @@
     <div class="section-title">League table <span id="seasonName" class="season"></span></div>
     <p class="hint">Best <span id="bestN">4</span> finishes count. Tap a player to see their results.</p>
     <div id="tableBody"><p class="empty">Loading…</p></div>
+  </div>
+</div>
+
+<!-- PHOTO: menu + cropper -->
+<input id="photoFile" type="file" accept="image/*" class="hidden">
+<div id="photoModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h3 id="photoTitle">Your photo</h3>
+
+    <div id="photoMenu">
+      <div id="photoCurrent" class="photo-current"></div>
+      <button id="photoChoose" class="btn" type="button">Choose a photo</button>
+      <button id="photoRemove" class="btn danger hidden" type="button">Remove photo</button>
+      <button class="btn secondary photoClose" type="button">Close</button>
+    </div>
+
+    <div id="cropper" class="hidden">
+      <p class="crop-help">Drag to move · pinch or use the slider to zoom</p>
+      <div id="cropStage" class="crop-stage">
+        <canvas id="cropCanvas" width="600" height="600"></canvas>
+        <div class="crop-ring"></div>
+      </div>
+      <div class="zoom-row">
+        <span>−</span><input id="cropZoom" type="range" min="1" max="4" step="0.01" value="1"><span>+</span>
+      </div>
+      <div class="crop-preview-row">
+        <span class="muted">Preview</span>
+        <canvas id="cropPreview" width="96" height="96"></canvas>
+        <canvas id="cropPreviewSmall" width="64" height="64"></canvas>
+      </div>
+      <div class="btnrow">
+        <button id="cropBack" class="btn secondary" type="button">Back</button>
+        <button id="cropSave" class="btn" type="button">Save photo</button>
+      </div>
+    </div>
+    <div id="photoMsg" class="msg"></div>
   </div>
 </div>
 
@@ -323,6 +402,8 @@
     me = { id: user.id, ...profile };
     $('whoName').textContent = profile.display_name;
     $('adminBadge').classList.toggle('hidden', !profile.is_admin);
+    await loadProfiles();
+    $('myAvatar').innerHTML = avatarHtml(me.id, 36);
     $('adminLink').classList.toggle('hidden', !profile.is_admin);
     showScreen('home');
     await Promise.all([loadEvent(), loadLeague()]);
@@ -330,6 +411,36 @@
 
   // ---- Helpers ----
   let me = null;
+  let people = {};      // id -> { display_name, nickname, avatar_path }
+  let avatarUrls = {};  // id -> signed image URL
+
+  async function loadProfiles() {
+    const { data } = await db.from('profiles').select('id, display_name, nickname, avatar_path');
+    people = {}; avatarUrls = {};
+    (data || []).forEach(p => people[p.id] = p);
+    const withPhoto = (data || []).filter(p => p.avatar_path);
+    if (withPhoto.length) {
+      const { data: signed } = await db.storage.from('avatars')
+        .createSignedUrls(withPhoto.map(p => p.avatar_path), 60 * 60 * 24);
+      (signed || []).forEach((s, i) => { if (s.signedUrl) avatarUrls[withPhoto[i].id] = s.signedUrl; });
+    }
+  }
+
+  const AV_COLOURS = ['#1b7a46', '#b3261e', '#1d4f91', '#8a5a00', '#6a3d9a', '#00796b', '#c2185b', '#5d4037'];
+  function avatarHtml(id, size) {
+    const p = people[id] || {};
+    const st = 'width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.42) + 'px;';
+    if (avatarUrls[id]) return '<span class="av" style="' + st + '"><img src="' + esc(avatarUrls[id]) + '" alt=""></span>';
+    const name = (p.display_name || '?').trim();
+    const initials = name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return '<span class="av" style="' + st + 'background:' + AV_COLOURS[h % AV_COLOURS.length] + '">' + esc(initials) + '</span>';
+  }
+  async function refreshAvatars() {
+    await loadProfiles();
+    $('myAvatar').innerHTML = avatarHtml(me.id, 36);
+    await Promise.all([currentEvent ? renderEvent() : null, loadLeague()]);
+  }
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const todayStr = () => {
     const d = new Date();
@@ -399,8 +510,8 @@
       const arr = groups[key].sort(byName);
       if (!arr.length) return '';
       return '<h4><span class="dot ' + key + '"></span>' + title + ' <span class="n">(' + arr.length + ')</span></h4><ul>' +
-        arr.map(r => '<li>' + esc(r.profiles?.display_name || 'Player') +
-          (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</li>').join('') + '</ul>';
+        arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span>' + esc(r.profiles?.display_name || 'Player') +
+          (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span></li>').join('') + '</ul>';
     };
     const whoHtml = list('in', 'In') + list('maybe', 'Maybe') + list('out', 'Out');
 
@@ -498,7 +609,7 @@
       if (pos === 1 && p.league_points > 0) cls.push('leader');
       html += '<tr class="' + cls.join(' ') + '" data-id="' + p.player_id + '">' +
         '<td class="pos">' + (shared && p.league_points > 0 ? '=' : '') + pos + '</td>' +
-        '<td>' + esc(p.display_name) + (p.nickname ? '<span class="nick">“' + esc(p.nickname) + '”</span>' : '') + '</td>' +
+        '<td><div class="pl">' + avatarHtml(p.player_id, 34) + '<div>' + esc(p.display_name) + (p.nickname ? '<span class="nick">“' + esc(p.nickname) + '”</span>' : '') + '</div></div></td>' +
         '<td class="num">' + p.events_played + '</td>' +
         '<td class="num pts">' + p.league_points + '</td></tr>';
     });
@@ -517,8 +628,14 @@
               '<span class="fin' + (r.counts ? ' counts' : '') + '">' + niceDate(r.event_date) + ': ' + ordinal(r.position) +
               '<small>' + r.points + 'pts</small></span>').join('') + '</div>' +
             '<div class="legend">Dark green = counts towards league points</div>'
-          : '<span class="empty">No results yet.</span>') + '</td>';
+          : '<span class="empty">No results yet.</span>') +
+          ((tr.dataset.id === me.id || me.is_admin)
+            ? '<div class="photo-actions"><button class="btn secondary" type="button" data-photo="' + tr.dataset.id + '">📷 ' +
+              (tr.dataset.id === me.id ? 'Change my photo' : 'Change ' + esc(people[tr.dataset.id]?.display_name || '') + '\u2019s photo') + '</button></div>'
+            : '') + '</td>';
         tr.after(d);
+        const pb = d.querySelector('[data-photo]');
+        if (pb) pb.onclick = (ev) => { ev.stopPropagation(); openPhoto(pb.dataset.photo); };
       };
     });
   }
@@ -582,6 +699,152 @@
     $('loginPassword').value = '';
     showTab('login');
     showScreen('auth');
+  };
+
+  // ---- Photo: menu, cropper, upload ----
+  const crop = { img: null, scale: 1, minScale: 1, x: 0, y: 0, forId: null };
+  const STAGE = 600;                 // canvas pixels
+  const CIRCLE = STAGE * 0.866;      // circle diameter (matches the ring)
+  const OUT = 400;                   // saved photo size
+
+  $('myAvatarBtn').onclick = () => openPhoto(me.id);
+  document.querySelectorAll('.photoClose').forEach(b => b.onclick = closePhoto);
+  $('photoModal').onclick = (e) => { if (e.target === $('photoModal')) closePhoto(); };
+
+  function openPhoto(id) {
+    crop.forId = id;
+    const mine = id === me.id;
+    $('photoTitle').textContent = mine ? 'Your photo' : (people[id]?.display_name || 'Player') + '’s photo';
+    $('photoCurrent').innerHTML = avatarHtml(id, 120);
+    $('photoRemove').classList.toggle('hidden', !people[id]?.avatar_path);
+    $('photoMenu').classList.remove('hidden');
+    $('cropper').classList.add('hidden');
+    pmsg('');
+    $('photoModal').classList.remove('hidden');
+  }
+  function closePhoto() { $('photoModal').classList.add('hidden'); $('photoFile').value = ''; }
+  function pmsg(t, type) { const m = $('photoMsg'); m.textContent = t; m.className = t ? 'msg ' + (type || 'error') : 'msg'; }
+
+  $('photoChoose').onclick = () => { $('photoFile').value = ''; $('photoFile').click(); };
+  $('photoFile').onchange = () => {
+    const f = $('photoFile').files[0];
+    if (!f) return;
+    if (f.type && !f.type.startsWith('image/')) return pmsg('That file isn’t a photo.');
+    pmsg('');
+    const img = new Image();
+    img.onload = () => {
+      crop.img = img;
+      crop.minScale = CIRCLE / Math.min(img.width, img.height); // photo always fills the circle
+      crop.scale = crop.minScale;
+      crop.x = (STAGE - img.width * crop.scale) / 2;
+      crop.y = (STAGE - img.height * crop.scale) / 2;
+      $('cropZoom').value = 1;
+      $('photoMenu').classList.add('hidden');
+      $('cropper').classList.remove('hidden');
+      drawCrop();
+    };
+    img.onerror = () => pmsg('Couldn’t open that photo. Try a different one (JPG or PNG).');
+    img.src = URL.createObjectURL(f);
+  };
+  $('cropBack').onclick = () => { $('cropper').classList.add('hidden'); $('photoMenu').classList.remove('hidden'); pmsg(''); };
+
+  function clampCrop() {
+    const c0 = (STAGE - CIRCLE) / 2, c1 = c0 + CIRCLE;
+    const w = crop.img.width * crop.scale, h = crop.img.height * crop.scale;
+    crop.x = Math.min(c0, Math.max(c1 - w, crop.x));
+    crop.y = Math.min(c0, Math.max(c1 - h, crop.y));
+  }
+  function drawCrop() {
+    clampCrop();
+    const ctx = $('cropCanvas').getContext('2d');
+    ctx.fillStyle = '#222'; ctx.fillRect(0, 0, STAGE, STAGE);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(crop.img, crop.x, crop.y, crop.img.width * crop.scale, crop.img.height * crop.scale);
+    renderCropTo($('cropPreview'));
+    renderCropTo($('cropPreviewSmall'));
+  }
+  // Draws the area inside the circle onto any canvas
+  function renderCropTo(canvas) {
+    const size = canvas.width, c0 = (STAGE - CIRCLE) / 2, k = size / CIRCLE;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(crop.img, (crop.x - c0) * k, (crop.y - c0) * k, crop.img.width * crop.scale * k, crop.img.height * crop.scale * k);
+  }
+  // Zoom around a point, keeping that point still
+  function zoomTo(newScale, cx = STAGE / 2, cy = STAGE / 2) {
+    newScale = Math.max(crop.minScale, Math.min(crop.minScale * 4, newScale));
+    const r = newScale / crop.scale;
+    crop.x = cx - (cx - crop.x) * r;
+    crop.y = cy - (cy - crop.y) * r;
+    crop.scale = newScale;
+    $('cropZoom').value = (crop.scale / crop.minScale).toFixed(2);
+    drawCrop();
+  }
+  $('cropZoom').oninput = () => zoomTo(crop.minScale * Number($('cropZoom').value));
+
+  // Drag + pinch (mouse, finger or pen)
+  const pointers = new Map();
+  let pinchStart = null;
+  const stage = $('cropStage');
+  const toStage = (e) => { const r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) * STAGE / r.width, y: (e.clientY - r.top) * STAGE / r.height }; };
+  stage.addEventListener('pointerdown', (e) => {
+    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+    pointers.set(e.pointerId, toStage(e));
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchStart = { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, scale: crop.scale };
+    }
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId) || !crop.img) return;
+    const prev = pointers.get(e.pointerId), now = toStage(e);
+    pointers.set(e.pointerId, now);
+    if (pointers.size === 1) {
+      crop.x += now.x - prev.x; crop.y += now.y - prev.y; drawCrop();
+    } else if (pointers.size === 2 && pinchStart) {
+      const [a, b] = [...pointers.values()];
+      zoomTo(pinchStart.scale * Math.hypot(a.x - b.x, a.y - b.y) / pinchStart.dist, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    }
+  });
+  const endPointer = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinchStart = null; };
+  stage.addEventListener('pointerup', endPointer);
+  stage.addEventListener('pointercancel', endPointer);
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (!crop.img) return;
+    const p = toStage(e);
+    zoomTo(crop.scale * (e.deltaY < 0 ? 1.08 : 1 / 1.08), p.x, p.y);
+  }, { passive: false });
+
+  $('cropSave').onclick = async () => {
+    const out = document.createElement('canvas');
+    out.width = OUT; out.height = OUT;
+    renderCropTo(out);
+    const blob = await new Promise(res => out.toBlob(res, 'image/jpeg', 0.85));
+    if (!blob) return pmsg('Couldn’t prepare the photo. Try again.');
+
+    const btn = $('cropSave');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const path = crop.forId + '/avatar.jpg';
+    let { error } = await db.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '60' });
+    if (!error) ({ error } = await db.from('profiles').update({ avatar_path: path }).eq('id', crop.forId));
+    btn.disabled = false; btn.textContent = 'Save photo';
+    if (error) return pmsg('Couldn’t save: ' + error.message);
+
+    closePhoto();
+    await refreshAvatars();
+  };
+
+  $('photoRemove').onclick = async () => {
+    if (!confirm('Remove this photo?')) return;
+    const id = crop.forId;
+    const path = people[id]?.avatar_path;
+    if (path) await db.storage.from('avatars').remove([path]);
+    const { error } = await db.from('profiles').update({ avatar_path: null }).eq('id', id);
+    if (error) return pmsg('Couldn’t remove: ' + error.message);
+    closePhoto();
+    await refreshAvatars();
   };
 
   // ---- Start: already logged in? ----
