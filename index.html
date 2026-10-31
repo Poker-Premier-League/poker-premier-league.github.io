@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Poker Premier League</title>
+<meta name="theme-color" content="#0f3d2a">
+<style>
+  :root {
+    --felt: #0f3d2a;
+    --felt-dark: #0a2a1d;
+    --card: #fdfbf6;
+    --ink: #1d1d1b;
+    --muted: #6b6b66;
+    --gold: #c9a227;
+    --red: #b3261e;
+    --line: #e4e0d5;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(ellipse at top, #165238 0%, var(--felt) 45%, var(--felt-dark) 100%) fixed;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) 16px 40px;
+  }
+  header {
+    text-align: center;
+    color: #fff;
+    padding: 28px 0 18px;
+  }
+  .suits { color: var(--gold); letter-spacing: 6px; font-size: 18px; }
+  h1 {
+    margin: 6px 0 2px;
+    font-size: 26px;
+    letter-spacing: 0.5px;
+  }
+  .tagline { color: #cfe3d7; font-size: 14px; margin: 0; }
+
+  .card {
+    background: var(--card);
+    max-width: 420px;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+  .tabs {
+    display: flex;
+    background: #efebe0;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 18px;
+  }
+  .tabs button {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .tabs button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+  label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 5px; }
+  label .opt { font-weight: 400; color: var(--muted); }
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px; /* 16px stops iPhone zooming in */
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+  }
+  input:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding: 13px;
+    font-size: 16px;
+    font-weight: 700;
+    border: 0;
+    border-radius: 10px;
+    background: var(--felt);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn:disabled { opacity: 0.6; cursor: wait; }
+  .btn.secondary { background: #efebe0; color: var(--ink); }
+
+  .msg { margin-top: 14px; padding: 10px 12px; border-radius: 10px; font-size: 14px; display: none; }
+  .msg.error { display: block; background: #fbe9e7; color: var(--red); }
+  .msg.ok { display: block; background: #e7f4ec; color: #1b5e3a; }
+
+  .hidden { display: none !important; }
+
+  .welcome h2 { margin: 0 0 4px; font-size: 22px; }
+  .welcome p { color: var(--muted); margin: 0 0 10px; }
+  .badge {
+    display: inline-block;
+    background: var(--gold);
+    color: #2a2200;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  .coming {
+    border: 2px dashed var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    color: var(--muted);
+    margin: 16px 0 4px;
+  }
+  .loading { text-align: center; color: #cfe3d7; padding: 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="suits">♠ ♥ ♦ ♣</div>
+  <h1>Poker Premier League</h1>
+  <p class="tagline">Best four finishes count</p>
+</header>
+
+<div id="loading" class="loading">Shuffling the deck…</div>
+
+<!-- LOGGED OUT: log in / sign up -->
+<div id="authCard" class="card hidden">
+  <div class="tabs">
+    <button id="tabLogin" class="active" type="button">Log in</button>
+    <button id="tabSignup" type="button">Sign up</button>
+  </div>
+
+  <form id="loginForm" novalidate>
+    <label for="loginEmail">Email</label>
+    <input id="loginEmail" type="email" autocomplete="email" required>
+    <label for="loginPassword">Password</label>
+    <input id="loginPassword" type="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">Log in</button>
+  </form>
+
+  <form id="signupForm" class="hidden" novalidate>
+    <label for="suName">Your name</label>
+    <input id="suName" type="text" autocomplete="name" placeholder="e.g. Alex Persaud" required>
+    <label for="suNick">Nickname <span class="opt">(optional)</span></label>
+    <input id="suNick" type="text" placeholder="e.g. The Kid">
+    <label for="suEmail">Email</label>
+    <input id="suEmail" type="email" autocomplete="email" required>
+    <label for="suPassword">Password <span class="opt">(at least 6 characters)</span></label>
+    <input id="suPassword" type="password" autocomplete="new-password" required>
+    <label for="suCode">Invite code</label>
+    <input id="suCode" type="text" autocapitalize="characters" autocomplete="off" required>
+    <button class="btn" type="submit">Join the league</button>
+  </form>
+
+  <div id="authMsg" class="msg"></div>
+</div>
+
+<!-- LOGGED IN -->
+<div id="homeCard" class="card welcome hidden">
+  <h2>Welcome, <span id="whoName"></span><span id="adminBadge" class="badge hidden">ADMIN</span></h2>
+  <p id="whoNick"></p>
+  <div class="coming">League table and next event coming soon ♠</div>
+  <button id="logoutBtn" class="btn secondary" type="button">Log out</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ---- Supabase connection (poker project) ----
+  const SUPABASE_URL = 'https://oxjudidrchhaqjidijrc.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_rWfaZr0wzRTu9rmOJm8C4g_1WuDthnM';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const $ = (id) => document.getElementById(id);
+
+  // ---- Messages ----
+  function showMsg(text, type) {
+    const m = $('authMsg');
+    m.textContent = text;
+    m.className = 'msg ' + (type || 'error');
+  }
+  function clearMsg() { $('authMsg').className = 'msg'; $('authMsg').textContent = ''; }
+
+  function friendlyError(err) {
+    const t = (err && err.message ? err.message : String(err)).toLowerCase();
+    if (t.includes('invalid login')) return 'Email or password is wrong. Try again.';
+    if (t.includes('already registered') || t.includes('already been registered')) return 'That email already has an account. Use Log in instead.';
+    if (t.includes('password') && t.includes('6')) return 'Password must be at least 6 characters.';
+    if (t.includes('invalid invite') || t.includes('database error saving new user')) return "That invite code isn't right. Check with Alex or Phil.";
+    if (t.includes('email') && t.includes('invalid')) return 'That email address doesn’t look right.';
+    if (t.includes('rate limit') || t.includes('too many')) return 'Too many tries. Wait a minute and try again.';
+    if (t.includes('failed to fetch') || t.includes('network')) return 'Can’t connect. Check your internet and try again.';
+    return 'Something went wrong: ' + (err && err.message ? err.message : err);
+  }
+
+  function setBusy(form, busy, label) {
+    const b = form.querySelector('button[type=submit]');
+    if (!b.dataset.label) b.dataset.label = b.textContent;
+    b.disabled = busy;
+    b.textContent = busy ? label : b.dataset.label;
+  }
+
+  // ---- Tabs ----
+  function showTab(which) {
+    const login = which === 'login';
+    $('tabLogin').classList.toggle('active', login);
+    $('tabSignup').classList.toggle('active', !login);
+    $('loginForm').classList.toggle('hidden', !login);
+    $('signupForm').classList.toggle('hidden', login);
+    clearMsg();
+  }
+  $('tabLogin').onclick = () => showTab('login');
+  $('tabSignup').onclick = () => showTab('signup');
+
+  // ---- Screens ----
+  function showScreen(name) {
+    $('loading').classList.add('hidden');
+    $('authCard').classList.toggle('hidden', name !== 'auth');
+    $('homeCard').classList.toggle('hidden', name !== 'home');
+  }
+
+  async function loadHome(user) {
+    const { data: profile, error } = await db
+      .from('profiles')
+      .select('display_name, nickname, is_admin, approved')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error || !profile || !profile.approved) {
+      await db.auth.signOut();
+      showScreen('auth');
+      showMsg(error ? friendlyError(error) : 'Your account isn’t active. Speak to Alex or Phil.');
+      return;
+    }
+    $('whoName').textContent = profile.display_name;
+    $('whoNick').textContent = profile.nickname ? '“' + profile.nickname + '”' : '';
+    $('adminBadge').classList.toggle('hidden', !profile.is_admin);
+    showScreen('home');
+  }
+
+  // ---- Log in ----
+  $('loginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    clearMsg();
+    const email = $('loginEmail').value.trim();
+    const password = $('loginPassword').value;
+    if (!email || !password) return showMsg('Enter your email and password.');
+
+    setBusy(e.target, true, 'Logging in…');
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    setBusy(e.target, false);
+    if (error) return showMsg(friendlyError(error));
+    await loadHome(data.user);
+  };
+
+  // ---- Sign up ----
+  $('signupForm').onsubmit = async (e) => {
+    e.preventDefault();
+    clearMsg();
+    const name = $('suName').value.trim();
+    const nick = $('suNick').value.trim();
+    const email = $('suEmail').value.trim();
+    const password = $('suPassword').value;
+    const code = $('suCode').value.trim();
+
+    if (!name) return showMsg('Enter your name.');
+    if (!email) return showMsg('Enter your email.');
+    if (password.length < 6) return showMsg('Password must be at least 6 characters.');
+    if (!code) return showMsg('Enter the invite code.');
+
+    setBusy(e.target, true, 'Checking code…');
+    const { data: codeOk, error: codeErr } = await db.rpc('check_invite_code', { code_to_check: code });
+    if (codeErr) { setBusy(e.target, false); return showMsg(friendlyError(codeErr)); }
+    if (!codeOk) { setBusy(e.target, false); return showMsg("That invite code isn't right. Check with Alex or Phil."); }
+
+    setBusy(e.target, true, 'Creating account…');
+    const { data, error } = await db.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: name, nickname: nick, invite_code: code } }
+    });
+    setBusy(e.target, false);
+    if (error) return showMsg(friendlyError(error));
+
+    if (data.session) {
+      await loadHome(data.user);
+    } else {
+      // Only happens if "Confirm email" is switched on in Supabase
+      showTab('login');
+      showMsg('Account created. Check your email for a confirmation link, then log in.', 'ok');
+    }
+  };
+
+  // ---- Log out ----
+  $('logoutBtn').onclick = async () => {
+    await db.auth.signOut();
+    $('loginPassword').value = '';
+    showTab('login');
+    showScreen('auth');
+  };
+
+  // ---- Start: already logged in? ----
+  (async () => {
+    const { data } = await db.auth.getSession();
+    if (data.session) await loadHome(data.session.user);
+    else showScreen('auth');
+  })();
+</script>
+</body>
+</html>
