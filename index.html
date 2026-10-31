@@ -188,6 +188,37 @@
   .fin.counts { background: var(--felt); color: #fff; font-weight: 700; }
   .fin small { opacity: 0.8; margin-left: 3px; }
   .legend { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  /* Welcome screen */
+  .splash { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #1a5c3e 0%, var(--felt) 50%, #051a11 100%); overflow: hidden;
+    transition: opacity 0.6s ease, transform 0.6s ease; }
+  .splash.leaving { opacity: 0; transform: scale(1.06); pointer-events: none; }
+  .splash-inner { position: relative; text-align: center; color: #fff; padding: 24px; }
+  .splash-title { font-size: 30px; font-weight: 800; letter-spacing: 0.5px; margin-top: 18px; }
+  .splash-hello { color: #cfe3d7; font-size: 17px; margin-top: 6px; min-height: 22px; }
+  .enter-btn { margin-top: 30px; padding: 16px 38px; font-size: 19px; font-weight: 800; border: 0; border-radius: 999px;
+    background: var(--gold); color: #2a2200; cursor: pointer; box-shadow: 0 0 0 0 rgba(201,162,39,0.6); animation: pulse 1.8s infinite; }
+  .enter-quiet { display: block; margin: 16px auto 0; background: none; border: 0; color: #cfe3d7; font-size: 14px; text-decoration: underline; cursor: pointer; padding: 8px; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(201,162,39,0.6); } 70% { box-shadow: 0 0 0 18px rgba(201,162,39,0); } 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); } }
+  .splash-cards { position: relative; height: 120px; width: 170px; margin: 0 auto; }
+  .splash-cards span { position: absolute; top: 0; width: 80px; height: 112px; border-radius: 10px; background: #fff; color: #1d1d1b;
+    font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+  .splash-cards .c1 { left: 22px; transform: rotate(-10deg); animation: deal1 0.7s ease-out both; }
+  .splash-cards .c2 { left: 68px; transform: rotate(10deg); color: var(--red); animation: deal2 0.7s 0.15s ease-out both; }
+  @keyframes deal1 { from { transform: translate(-160px, -260px) rotate(-200deg); opacity: 0; } to { transform: rotate(-10deg); opacity: 1; } }
+  @keyframes deal2 { from { transform: translate(160px, -260px) rotate(200deg); opacity: 0; } to { transform: rotate(10deg); opacity: 1; } }
+  .splash.leaving .splash-cards .c1 { transform: translate(-40px, -30px) rotate(-30deg); transition: transform 0.6s; }
+  .splash.leaving .splash-cards .c2 { transform: translate(40px, -30px) rotate(30deg); transition: transform 0.6s; }
+  .drift span { position: absolute; bottom: -60px; font-size: 34px; color: rgba(255,255,255,0.08); animation: drift 14s linear infinite; }
+  .drift span:nth-child(1) { left: 6%;  animation-delay: 0s; }    .drift span:nth-child(2) { left: 18%; animation-delay: 5s; font-size: 26px; }
+  .drift span:nth-child(3) { left: 30%; animation-delay: 9s; }    .drift span:nth-child(4) { left: 42%; animation-delay: 2s; font-size: 44px; }
+  .drift span:nth-child(5) { left: 54%; animation-delay: 7s; }    .drift span:nth-child(6) { left: 66%; animation-delay: 11s; font-size: 28px; }
+  .drift span:nth-child(7) { left: 78%; animation-delay: 4s; }    .drift span:nth-child(8) { left: 90%; animation-delay: 8s; font-size: 40px; }
+  .drift span:nth-child(9) { left: 12%; animation-delay: 12s; }   .drift span:nth-child(10) { left: 72%; animation-delay: 1s; font-size: 22px; }
+  @keyframes drift { from { transform: translateY(0) rotate(0deg); } to { transform: translateY(-115vh) rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .drift span, .enter-btn, .splash-cards span { animation: none !important; } }
+  .linkbtn.icon { padding: 5px 10px; }
+
   /* Tabs */
   .tabbar { position: sticky; top: 0; z-index: 20; max-width: 560px; margin: 0 auto 14px; display: flex; gap: 4px;
     background: rgba(10,42,29,0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -330,6 +361,20 @@
 </head>
 <body>
 
+<!-- WELCOME / "TAP TO ENTER" SCREEN (returning players, sound on) -->
+<div id="splash" class="splash hidden" aria-hidden="true">
+  <div class="drift" aria-hidden="true">
+    <span>♠</span><span>♥</span><span>♦</span><span>♣</span><span>♠</span><span>♥</span><span>♦</span><span>♣</span><span>♠</span><span>♥</span>
+  </div>
+  <div class="splash-inner">
+    <div class="splash-cards" aria-hidden="true"><span class="c1">A♠</span><span class="c2">A♥</span></div>
+    <div class="splash-title">Poker Premier League</div>
+    <div id="splashHello" class="splash-hello"></div>
+    <button id="enterBtn" class="enter-btn" type="button">Tap to enter</button>
+    <button id="enterQuiet" class="enter-quiet" type="button">Enter without sound</button>
+  </div>
+</div>
+
 <header>
   <div class="suits">♠ ♥ ♦ ♣</div>
   <h1>Poker Premier League</h1>
@@ -398,6 +443,7 @@
       <span>Hi, <strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
     </span>
     <span>
+      <button id="muteBtn" class="linkbtn icon" type="button" aria-label="Sound on" title="Sound on/off">🔊</button>
       <a id="adminLink" class="linkbtn hidden" href="admin.html">Admin</a>
       <button id="logoutBtn" class="linkbtn" type="button">Log out</button>
     </span>
@@ -1012,11 +1058,13 @@
     const password = $('loginPassword').value;
     if (!email || !password) return showMsg('Enter your email and password.');
 
+    Sound.unlock();   // must happen during the tap so phones allow sound
     setBusy(e.target, true, 'Logging in…');
     const { data, error } = await db.auth.signInWithPassword({ email, password });
     setBusy(e.target, false);
     if (error) return showMsg(friendlyError(error));
     await loadHome(data.user);
+    Sound.welcome();
   };
 
   // ---- Sign up ----
@@ -1034,6 +1082,7 @@
     if (password.length < 6) return showMsg('Password must be at least 6 characters.');
     if (!code) return showMsg('Enter the invite code.');
 
+    Sound.unlock();
     setBusy(e.target, true, 'Checking code…');
     const { data: codeOk, error: codeErr } = await db.rpc('check_invite_code', { code_to_check: code });
     if (codeErr) { setBusy(e.target, false); return showMsg(friendlyError(codeErr)); }
@@ -1050,6 +1099,7 @@
 
     if (data.session) {
       await loadHome(data.user);
+      Sound.welcome();
     } else {
       // Only happens if "Confirm email" is switched on in Supabase
       showTab('login');
@@ -1059,6 +1109,7 @@
 
   // ---- Log out ----
   $('logoutBtn').onclick = async () => {
+    Sound.stopTheme();
     await db.auth.signOut();
     $('loginPassword').value = '';
     showTab('login');
@@ -1322,6 +1373,127 @@
     await loadHome(data.user);
   };
 
+  // =========================================================
+  // SOUND: built-in effects (made in code) + optional theme tune
+  // Put an MP3 at sounds/theme.mp3 in GitHub to add a tune.
+  // =========================================================
+  const Sound = (() => {
+    const THEME_FILE = 'sounds/theme.mp3';
+    const THEME_SECONDS = 120;         // play the whole clip (up to 2 minutes); the mute button stops it
+    let ctx = null, themeSrc = null, themeGain = null, themeBuffer = null, themeTried = false, themeLoading = null;
+    let muted = false;
+    try { muted = localStorage.getItem('ppl_muted') === '1'; } catch (_) {}
+
+    function unlock() {
+      if (muted) return;
+      try {
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); // silent blip unlocks iPhone audio
+        s.buffer = b; s.connect(ctx.destination); s.start(0);
+      } catch (_) {}
+      themeLoading = themeLoading || loadTheme();
+    }
+    async function loadTheme() {
+      if (themeTried || !ctx) return;
+      themeTried = true;
+      try {
+        const r = await fetch(THEME_FILE, { cache: 'force-cache' });
+        if (!r.ok) return;                         // no tune uploaded yet: just effects
+        themeBuffer = await ctx.decodeAudioData(await r.arrayBuffer());
+      } catch (_) { themeBuffer = null; }
+    }
+
+    // Card riffle: lots of tiny filtered noise clicks
+    function shuffle(at) {
+      const n = 26;
+      for (let i = 0; i < n; i++) {
+        const t = at + i * 0.028 + Math.random() * 0.008;
+        const len = 0.018, buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * len), ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / d.length, 3);
+        const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+        src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 2500 + Math.random() * 1500; bp.Q.value = 0.8;
+        g.gain.value = 0.35 + 0.25 * Math.sin(Math.PI * i / n);
+        src.connect(bp).connect(g).connect(ctx.destination); src.start(t);
+      }
+      return at + n * 0.028;
+    }
+    // Chip clink: two bright metallic tones with a fast decay
+    function clink(at, vol = 0.22) {
+      [3150, 4720, 6900].forEach((f, k) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f * (0.98 + Math.random() * 0.04);
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(vol / (k + 1), at + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.18);
+        o.connect(g).connect(ctx.destination); o.start(at); o.stop(at + 0.2);
+      });
+    }
+    function chips(at, count = 4) { for (let i = 0; i < count; i++) clink(at + i * 0.09 + Math.random() * 0.03, 0.2 - i * 0.03); return at + count * 0.09; }
+
+    function playTheme(at) {
+      if (!themeBuffer) return;
+      stopTheme();
+      themeSrc = ctx.createBufferSource(); themeGain = ctx.createGain();
+      themeSrc.buffer = themeBuffer;
+      themeGain.gain.setValueAtTime(0.0001, at);
+      themeGain.gain.exponentialRampToValueAtTime(0.7, at + 0.8);
+      const end = at + Math.min(THEME_SECONDS, themeBuffer.duration);
+      themeGain.gain.setValueAtTime(0.7, end - 2);
+      themeGain.gain.linearRampToValueAtTime(0.0001, end);
+      themeSrc.connect(themeGain).connect(ctx.destination);
+      themeSrc.start(at); themeSrc.stop(end + 0.05);
+    }
+    function stopTheme() {
+      try { if (themeSrc) themeSrc.stop(); } catch (_) {}
+      themeSrc = null;
+    }
+
+    async function welcome() {
+      if (muted || !ctx) return;
+      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (_) {} }
+      themeLoading = themeLoading || loadTheme();
+      // wait for the tune to load, but never more than 2 seconds
+      await Promise.race([themeLoading, new Promise(r => setTimeout(r, 2000))]);
+      const t0 = ctx.currentTime + 0.05;
+      const afterShuffle = shuffle(t0);
+      const afterChips = chips(afterShuffle + 0.1);
+      playTheme(afterChips + 0.15);
+    }
+
+    function setMuted(m) {
+      muted = m;
+      try { localStorage.setItem('ppl_muted', m ? '1' : '0'); } catch (_) {}
+      if (m) stopTheme();
+      paintMute();
+    }
+    function paintMute() {
+      const b = document.getElementById('muteBtn');
+      if (!b) return;
+      b.textContent = muted ? '🔇' : '🔊';
+      b.setAttribute('aria-label', muted ? 'Sound off. Tap to turn on' : 'Sound on. Tap to turn off');
+    }
+    return { unlock, welcome, stopTheme, setMuted, paintMute, chips: () => { if (!muted && ctx) chips(ctx.currentTime + 0.02, 3); },
+             get muted() { return muted; } };
+  })();
+  Sound.paintMute();
+  $('muteBtn').onclick = () => {
+    const nowMuted = !Sound.muted;
+    Sound.setMuted(nowMuted);
+    if (!nowMuted) { Sound.unlock(); setTimeout(() => Sound.chips(), 60); }
+  };
+
+  // ---- Welcome screen ----
+  function showSplash() { $('splash').classList.remove('hidden'); $('splash').setAttribute('aria-hidden', 'false'); $('enterBtn').focus(); }
+  function hideSplash() {
+    const sp = $('splash');
+    sp.classList.add('leaving');
+    setTimeout(() => { sp.classList.add('hidden'); sp.classList.remove('leaving'); sp.setAttribute('aria-hidden', 'true'); }, 650);
+  }
+  $('enterBtn').onclick = () => { Sound.unlock(); Sound.welcome(); hideSplash(); };
+  $('enterQuiet').onclick = () => { Sound.setMuted(true); hideSplash(); };
+
   // ---- Start: already logged in? ----
   (async () => {
     const { data } = await db.auth.getSession();
@@ -1332,7 +1504,11 @@
       return;
     }
     if (inRecovery && data.session) { showScreen('auth'); showTab('newpw'); return; }
-    if (data.session) await loadHome(data.session.user);
+    if (data.session) {
+      if (!Sound.muted) showSplash();
+      await loadHome(data.session.user);
+      $('splashHello').textContent = me ? 'Welcome back, ' + me.display_name : '';
+    }
     else showScreen('auth');
   })();
 </script>
