@@ -178,6 +178,7 @@
       <div id="resTable"></div>
       <label class="check"><input type="checkbox" id="resComplete" checked> Mark this event as completed</label>
       <button id="resSave" class="btn full" type="button">Save results</button>
+      <button id="resClear" class="btn danger full" type="button">Clear all results for this event</button>
       <div id="resMsg" class="msg"></div>
     </div>
   </section>
@@ -456,6 +457,22 @@
       r.tr.querySelector('.ptsc').textContent = scoreFor(n, b, spentFor(ev, r), r.position, r.knockouts).toFixed(2);
     });
   }
+
+  $('resClear').onclick = async () => {
+    clear('resMsg');
+    const eventId = Number($('resEvent').value);
+    if (!eventId) return;
+    if (!confirm('Clear ALL results for this event and set it back to "upcoming"? Players\u2019 In / Maybe / Out replies are kept.')) return;
+    busy($('resClear'), true, 'Clearing…');
+    let { error } = await db.from('results').delete().eq('event_id', eventId);
+    if (!error) ({ error } = await db.from('events').update({ status: 'upcoming' }).eq('id', eventId));
+    busy($('resClear'), false);
+    if (error) return msg('resMsg', 'Couldn\u2019t clear: ' + error.message);
+    await loadEvents();
+    $('resEvent').value = eventId;
+    await renderResults();
+    msg('resMsg', '✓ Results cleared. The event is back to "upcoming".', 'ok');
+  };
 
   $('resSave').onclick = async () => {
     clear('resMsg');
