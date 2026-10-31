@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Admin · Poker Premier League</title>
-<meta name="theme-color" content="#0f3d2a">
+<meta name="theme-color" content="#1d1007">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --felt: #0f3d2a; --felt-dark: #0a2a1d; --card: #fdfbf6; --ink: #1d1d1b;
@@ -95,9 +98,36 @@
   table.pts td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
   table.pts td.p { font-weight: 700; width: 60px; }
   table.pts input { max-width: 120px; padding: 9px; }
+
+  /* ===== WILD WEST THEME (matches the home page) ===== */
+  .theme-west { --felt: #a8401c; --felt-dark: #160c05; --card: #f4e4c1; --ink: #2a1a0d; --muted: #6b5038;
+    --gold: #e0a93e; --red: #9e2a1e; --line: #dcc296; --radius: 16px; }
+  html:has(.theme-west) { background: #120a04; }
+  body.theme-west { font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: radial-gradient(ellipse 70% 38% at 50% 0%, rgba(242,196,107,0.38), rgba(242,196,107,0) 70%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 118px, rgba(0,0,0,0.35) 118px 121px, rgba(255,220,170,0.04) 121px 123px),
+      linear-gradient(180deg, #3b2213 0%, #2a170b 45%, #170c05 100%);
+    background-color: #170c05; }
+  .theme-west h1 { font-family: 'Rye', Georgia, serif; font-weight: 400; color: #f7e3b5; text-shadow: 0 2px 0 #1a0d05, 0 0 22px rgba(242,196,107,0.45); }
+  .theme-west .suits { color: #e0a93e; }
+  .theme-west h2 { font-family: 'Rye', Georgia, serif; font-weight: 400; text-transform: none; letter-spacing: 0.5px; font-size: 17px; }
+  .theme-west .card { background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%), linear-gradient(180deg, #f8ebcc, #efdbb2);
+    border: 1px solid rgba(120,72,30,0.35); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 14px 34px rgba(0,0,0,0.55); }
+  .theme-west .btn { background: linear-gradient(180deg, #c4572a 0%, #9a3517 100%); border-radius: 12px;
+    box-shadow: 0 1px 0 rgba(255,220,180,0.45) inset, 0 6px 16px rgba(154,53,23,0.45); }
+  .theme-west .btn:hover { box-shadow: 0 0 0 3px rgba(242,196,107,0.35), 0 8px 22px rgba(154,53,23,0.55); }
+  .theme-west .btn.secondary { background: linear-gradient(180deg, #fbf1da, #ead3a6); color: var(--ink); box-shadow: 0 0 0 1px rgba(120,72,30,0.3), 0 4px 10px rgba(0,0,0,0.18); }
+  .theme-west .btn.danger { background: linear-gradient(180deg, #f6dccf, #ebc3b2); color: #7d1d13; box-shadow: 0 0 0 1px rgba(125,29,19,0.3); }
+  .theme-west input, .theme-west select, .theme-west textarea { background: #fffaf0; border-color: #cfb084; }
+  .theme-west input:focus, .theme-west select:focus, .theme-west textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242,196,107,0.45); }
+  .theme-west .tabs { background: rgba(26,14,6,0.82); border: 1px solid rgba(242,196,107,0.25); border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+  .theme-west .tabs button { color: #e3c891; border-radius: 999px; font-family: 'Rye', Georgia, serif; font-weight: 400; }
+  .theme-west .tabs button.active { background: linear-gradient(180deg, #f6cf7c, #d39a34); color: #2a1a0d; box-shadow: 0 0 18px rgba(242,196,107,0.55); }
+  .theme-west .topbar a { border-color: rgba(242,196,107,0.55); color: #f7e3b5; background: rgba(0,0,0,0.25); }
+  .theme-west .badge { background: linear-gradient(180deg, #f2c46b, #c88e2a); }
 </style>
 </head>
-<body>
+<body class="theme-west">
 
 <header>
   <div class="suits">♠ ♥ ♦ ♣</div>

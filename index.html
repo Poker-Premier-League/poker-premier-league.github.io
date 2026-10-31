@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Poker Premier League</title>
-<meta name="theme-color" content="#0f3d2a">
+<meta name="theme-color" content="#1d1007">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --felt: #0f3d2a;
@@ -357,12 +360,221 @@
   #cropPreview { width: 64px; height: 64px; }
   #cropPreviewSmall { width: 32px; height: 32px; }
   .muted { color: var(--muted); font-size: 13px; }
+
+  /* =====================================================================
+     WILD WEST THEME  (remove class="theme-west" from <body> to go back
+     to the plain green design; other themes can be added the same way)
+     ===================================================================== */
+  .logo-badge, .theme-west .suits, .doors, .wanted { display: none; }
+  .theme-west .logo-badge, .theme-west .doors { display: block; }
+  .theme-west .wanted { display: flex; }
+
+  .theme-west {
+    --felt: #a8401c;            /* main accent: rust */
+    --felt-dark: #160c05;
+    --card: #f4e4c1;            /* parchment */
+    --ink: #2a1a0d;
+    --muted: #6b5038;
+    --gold: #e0a93e;            /* brass / lamp light */
+    --red: #9e2a1e;
+    --line: #dcc296;
+    --radius: 16px;
+    --amber: #f2c46b;
+    --wood: #2a170b;
+    --olive: #5f6b3a;
+    --glow: 0 0 0 1px rgba(255, 214, 140, 0.35), 0 6px 18px rgba(224, 169, 62, 0.35);
+  }
+  html:has(.theme-west) { background: #120a04; }
+  body.theme-west {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(ellipse 70% 38% at 50% 0%, rgba(242, 196, 107, 0.38), rgba(242, 196, 107, 0) 70%),
+      radial-gradient(ellipse 120% 80% at 50% 120%, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0) 60%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.0) 0 118px, rgba(0,0,0,0.35) 118px 121px, rgba(255,220,170,0.04) 121px 123px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 3px, rgba(0,0,0,0.03) 3px 7px),
+      linear-gradient(180deg, #3b2213 0%, #2a170b 45%, #170c05 100%);
+    background-attachment: scroll;
+    background-color: #170c05;
+  }
+  .theme-west h1, .theme-west .splash-title, .theme-west .section-title, .theme-west .ev-date,
+  .theme-west .review h2, .theme-west .formtitle, .theme-west .wanted .w-title, .theme-west .wanted .w-name {
+    font-family: 'Rye', Georgia, serif; font-weight: 400; letter-spacing: 0.5px;
+  }
+
+  /* Header */
+  .theme-west header { padding-top: 22px; }
+  .theme-west header h1 { font-size: 27px; color: #f7e3b5; text-shadow: 0 2px 0 #1a0d05, 0 0 22px rgba(242, 196, 107, 0.45); }
+  .theme-west .tagline { color: #e3c891; font-style: italic; }
+  .logo-badge { width: 74px; height: 74px; margin: 0 auto 6px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.6)) drop-shadow(0 0 16px rgba(242,196,107,0.35)); }
+
+  /* Cards: parchment with soft depth */
+  .theme-west .card {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%),
+      radial-gradient(ellipse at 50% 120%, rgba(150, 95, 40, 0.18), rgba(150,95,40,0) 60%),
+      linear-gradient(180deg, #f8ebcc, #efdbb2);
+    border: 1px solid rgba(120, 72, 30, 0.35);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 0 40px rgba(140, 85, 30, 0.14) inset,
+                0 14px 34px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35);
+  }
+  .theme-west .section-title { font-size: 17px; color: var(--felt); text-transform: none; letter-spacing: 0.5px; }
+  .theme-west .season { font-family: 'Inter', sans-serif; color: var(--muted); }
+
+  /* Buttons: modern, glowing */
+  .theme-west .btn {
+    background: linear-gradient(180deg, #c4572a 0%, #9a3517 100%);
+    box-shadow: 0 1px 0 rgba(255,220,180,0.45) inset, 0 -2px 0 rgba(0,0,0,0.2) inset, 0 6px 16px rgba(154, 53, 23, 0.45);
+    border-radius: 12px; letter-spacing: 0.3px; transition: transform 0.12s, box-shadow 0.2s, filter 0.2s;
+  }
+  .theme-west .btn:hover { filter: brightness(1.07); box-shadow: 0 1px 0 rgba(255,220,180,0.45) inset, 0 0 0 3px rgba(242,196,107,0.35), 0 8px 22px rgba(154, 53, 23, 0.55); }
+  .theme-west .btn:active { transform: translateY(1px); }
+  .theme-west .btn.secondary { background: linear-gradient(180deg, #fbf1da, #ead3a6); color: var(--ink);
+    box-shadow: 0 1px 0 #fff inset, 0 0 0 1px rgba(120,72,30,0.3), 0 4px 10px rgba(0,0,0,0.18); }
+  .theme-west .btn.danger { background: linear-gradient(180deg, #f6dccf, #ebc3b2); color: #7d1d13; box-shadow: 0 0 0 1px rgba(125,29,19,0.3), 0 4px 10px rgba(0,0,0,0.15); }
+  .theme-west input, .theme-west select, .theme-west textarea {
+    background: #fffaf0; border: 1px solid #cfb084; border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(80,45,15,0.12) inset;
+  }
+  .theme-west input:focus, .theme-west select:focus, .theme-west textarea:focus {
+    outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242,196,107,0.45), 0 1px 2px rgba(80,45,15,0.12) inset;
+  }
+  .theme-west .textlink { color: var(--felt); }
+  .theme-west .textlink.light { color: #e9d3a6; }
+
+  /* Log in / sign up tabs */
+  .theme-west .tabs { background: rgba(120,72,30,0.15); box-shadow: 0 1px 2px rgba(80,45,15,0.2) inset; }
+  .theme-west .tabs button.active { background: linear-gradient(180deg, #fffaf0, #f3e2bd); box-shadow: 0 2px 6px rgba(80,45,15,0.25); }
+
+  /* Top bar + section tabs */
+  .theme-west .userbar { color: #f3e0b8; }
+  .theme-west .linkbtn { border-color: rgba(242,196,107,0.55); color: #f7e3b5; background: rgba(0,0,0,0.25);
+    box-shadow: 0 0 12px rgba(242,196,107,0.15); }
+  .userbar > span:last-child { display: inline-flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+  .userbar .linkbtn { margin-left: 0; padding: 6px 11px; font-size: 13px; }
+  .userbar .linkbtn.icon { padding: 5px 8px; }
+  .userbar .me-wrap { gap: 8px; min-width: 0; }
+  .userbar { gap: 8px; }
+  .wanted .w-photo .av { background: #9c7b4f !important; color: #2a1a0d; }
+  .theme-west .linkbtn:hover { box-shadow: 0 0 0 2px rgba(242,196,107,0.35), 0 0 16px rgba(242,196,107,0.35); }
+  .theme-west .badge { background: linear-gradient(180deg, #f2c46b, #c88e2a); box-shadow: 0 0 10px rgba(242,196,107,0.5); }
+  .theme-west .tabbar { background: rgba(26, 14, 6, 0.82); border-color: rgba(242,196,107,0.25);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(255,220,170,0.08) inset; }
+  .theme-west .tabbar button { color: #e3c891; font-family: 'Rye', Georgia, serif; font-weight: 400; letter-spacing: 0.5px; }
+  .theme-west .tabbar button.active { background: linear-gradient(180deg, #f6cf7c, #d39a34); color: #2a1a0d;
+    box-shadow: 0 0 0 1px rgba(255,230,170,0.6) inset, 0 0 18px rgba(242,196,107,0.55); }
+
+  /* Event card + replies */
+  .theme-west .ev-date { font-size: 24px; color: var(--ink); }
+  .theme-west .ev-notes { background: rgba(120,72,30,0.1); border: 1px dashed rgba(120,72,30,0.35); }
+  .theme-west .replies button { border-radius: 12px; border: 1px solid #cfb084; background: linear-gradient(180deg, #fffaf0, #f1dfba);
+    box-shadow: 0 3px 8px rgba(80,45,15,0.18); font-family: 'Rye', Georgia, serif; font-weight: 400; font-size: 15px; transition: box-shadow 0.2s, transform 0.12s; }
+  .theme-west .replies button:active { transform: translateY(1px); }
+  .theme-west .replies button.sel-in    { background: linear-gradient(180deg, #4f8a4a, #2f6131); border-color: #2f6131; color: #fff; box-shadow: 0 0 0 3px rgba(111, 170, 90, 0.35), 0 0 18px rgba(111,170,90,0.55); }
+  .theme-west .replies button.sel-maybe { background: linear-gradient(180deg, #f2c46b, #c98d22); border-color: #b07a18; color: #2a1a0d; box-shadow: 0 0 0 3px rgba(242,196,107,0.4), 0 0 18px rgba(242,196,107,0.6); }
+  .theme-west .replies button.sel-out   { background: linear-gradient(180deg, #b23a24, #7d1d13); border-color: #7d1d13; color: #fff; box-shadow: 0 0 0 3px rgba(178,58,36,0.3), 0 0 18px rgba(178,58,36,0.5); }
+  .theme-west .comment-row button { background: linear-gradient(180deg, #c4572a, #9a3517); box-shadow: 0 4px 12px rgba(154,53,23,0.4); }
+  .theme-west .dot.in { background: #3f7a3c; } .theme-west .dot.maybe { background: #d39a34; } .theme-west .dot.out { background: #9e2a1e; }
+
+  /* League table */
+  .theme-west table.league td.pos, .theme-west table.final td.seat, .theme-west table.order td.pos { font-family: 'Rye', Georgia, serif; font-weight: 400; color: #8a6440; }
+  .theme-west table.league tr.leader td.pos { color: #b5791c; text-shadow: 0 0 10px rgba(242,196,107,0.8); }
+  .theme-west table.league tr.me td { background: rgba(242,196,107,0.22); }
+  .theme-west table.league tr.player:hover td { background: rgba(120,72,30,0.08); }
+  .theme-west tr.detail td { background: rgba(255,250,240,0.6); }
+  .theme-west .fin { background: rgba(120,72,30,0.12); color: var(--muted); }
+  .theme-west .fin.counts { background: linear-gradient(180deg, #b24c22, #8b2f12); box-shadow: 0 0 10px rgba(178,76,34,0.35); }
+  .theme-west .nqtag, .theme-west .qtag.nq { background: rgba(120,72,30,0.14); }
+  .theme-west .av { box-shadow: 0 0 0 2px #fff6e3, 0 2px 6px rgba(0,0,0,0.3); }
+  .theme-west .av-btn .av { box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(242,196,107,0.6); }
+
+  /* WANTED poster (league leader) */
+  .wanted { max-width: 560px; margin: 0 auto 16px; gap: 16px; align-items: center; padding: 18px;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.5), rgba(255,255,255,0) 55%),
+      radial-gradient(circle at 92% 88%, rgba(110, 60, 20, 0.28), rgba(110,60,20,0) 30%),
+      radial-gradient(circle at 6% 94%, rgba(110, 60, 20, 0.22), rgba(110,60,20,0) 25%),
+      linear-gradient(180deg, #f1dcae, #e2c28a);
+    border-radius: 6px; color: #2a1a0d; position: relative;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.6), 0 0 60px rgba(140, 85, 30, 0.25) inset; transform: rotate(-0.6deg); }
+  .wanted::before, .wanted::after { content: ''; position: absolute; top: 9px; width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #d9d0c0, #6d655a); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+  .wanted::before { left: 10px; } .wanted::after { right: 10px; }
+  .wanted .w-photo { width: 104px; height: 124px; flex: none; border: 3px solid #2a1a0d; background: #c9a978; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; filter: sepia(0.55) contrast(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.35); }
+  .wanted .w-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .wanted .w-photo .av { width: 100% !important; height: 100% !important; border-radius: 0; box-shadow: none; font-size: 40px !important; }
+  .wanted .w-text { min-width: 0; }
+  .wanted .w-title { font-size: 38px; line-height: 1; color: #8b2f12; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+  .wanted .w-sub { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #6b5038; margin: 4px 0 6px; font-weight: 700; }
+  .wanted .w-name { font-size: 21px; line-height: 1.15; }
+  .wanted .w-bounty { margin-top: 8px; display: inline-block; font-weight: 800; color: #fff; padding: 5px 10px; border-radius: 8px;
+    background: linear-gradient(180deg, #b24c22, #8b2f12); box-shadow: 0 0 14px rgba(178,76,34,0.45); }
+
+  /* Season review, final, results */
+  .theme-west .review { border: 1px solid rgba(224,169,62,0.8); box-shadow: 0 0 0 3px rgba(242,196,107,0.25), 0 0 40px rgba(242,196,107,0.35), 0 14px 34px rgba(0,0,0,0.55); }
+  .theme-west .award, .theme-west .stat { background: rgba(255,250,240,0.75); border-color: rgba(120,72,30,0.25); box-shadow: 0 3px 10px rgba(80,45,15,0.12); }
+  .theme-west .podium .p1 .block { background: linear-gradient(180deg, #f6cf7c, #c88e2a); box-shadow: 0 0 20px rgba(242,196,107,0.6); }
+  .theme-west .reslist li.counts .place { background: linear-gradient(180deg, #b24c22, #8b2f12); }
+  .theme-west .reslist li.won .place { background: linear-gradient(180deg, #f6cf7c, #c88e2a); box-shadow: 0 0 14px rgba(242,196,107,0.6); }
+  .theme-west .hfilter label { font-family: 'Rye', Georgia, serif; font-weight: 400; text-transform: none; letter-spacing: 0.5px; font-size: 16px; }
+  .theme-west .crown, .theme-west table.order tr.win td.pos { color: #a8401c; }
+  .theme-west .modal-card { background: linear-gradient(180deg, #f8ebcc, #efdbb2); }
+
+  /* Welcome screen: the saloon, then the doors swing open */
+  .theme-west .splash {
+    background:
+      linear-gradient(180deg, rgba(20,10,4,0.55), rgba(20,10,4,0.82)),
+      radial-gradient(ellipse 80% 40% at 50% 8%, rgba(242,196,107,0.35), rgba(0,0,0,0) 70%),
+      url('images/saloon.jpg') center / cover no-repeat, #1d1007;
+    perspective: 1400px;
+  }
+  .theme-west .splash .drift { display: none; }
+  .theme-west .splash-title { font-size: 32px; color: #f7e3b5; text-shadow: 0 3px 0 #1a0d05, 0 0 26px rgba(242,196,107,0.6); }
+  .theme-west .splash-hello { color: #f0d9a8; }
+  .theme-west .enter-btn { font-family: 'Rye', Georgia, serif; font-weight: 400; background: linear-gradient(180deg, #f6cf7c, #c88e2a); color: #2a1a0d; }
+  .theme-west .splash-inner { z-index: 3; transition: opacity 0.3s; }
+  .theme-west .splash.leaving { opacity: 1; transform: none; transition: opacity 0.5s 0.75s; }
+  .theme-west .splash.leaving { opacity: 0; }
+  .theme-west .splash.leaving .splash-inner { opacity: 0; }
+  .doors { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .door { position: absolute; top: 18%; bottom: 18%; width: 50%;
+    background:
+      repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 26px, rgba(0,0,0,0.45) 26px 29px),
+      linear-gradient(90deg, #5a341a, #7a4a26 30%, #5a341a 60%, #4a2a14);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6) inset, 0 0 0 4px #3a1f0d inset;
+    transition: transform 0.9s cubic-bezier(.3,.7,.3,1.15); opacity: 0.55; }
+  .door.left { left: 0; transform-origin: left center; border-radius: 0 40px 40px 0 / 0 120px 120px 0; }
+  .door.right { right: 0; transform-origin: right center; border-radius: 40px 0 0 40px / 120px 0 0 120px; }
+  .splash.leaving .door.left { transform: rotateY(105deg); opacity: 0.9; }
+  .splash.leaving .door.right { transform: rotateY(-105deg); opacity: 0.9; }
+
+  /* Tumbleweed rolling across now and then */
+  .tumbleweed { position: fixed; left: -90px; bottom: 18px; width: 64px; height: 64px; z-index: 1; pointer-events: none; opacity: 0;
+    display: none; }
+  .theme-west .tumbleweed { display: block; animation: tumble 26s linear 6s infinite; }
+  .theme-west .tumbleweed svg { width: 100%; height: 100%; animation: spin 1.6s linear infinite; }
+  @keyframes tumble {
+    0% { transform: translate(0, 0); opacity: 0; } 2% { opacity: 0.85; }
+    8% { transform: translate(28vw, -14px); } 12% { transform: translate(42vw, 0); }
+    18% { transform: translate(64vw, -10px); } 24% { transform: translate(calc(100vw + 120px), 0); opacity: 0.85; }
+    25%, 100% { transform: translate(calc(100vw + 120px), 0); opacity: 0; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #homeCard, #authCard, header { position: relative; z-index: 2; }
+  @media (prefers-reduced-motion: reduce) { .theme-west .tumbleweed { display: none; } .door { transition: none; } }
 </style>
 </head>
-<body>
+<body class="theme-west">
+
+<div class="tumbleweed" aria-hidden="true">
+  <svg viewBox="0 0 64 64"><g fill="none" stroke="#8a6a3a" stroke-width="1.6" stroke-linecap="round" opacity="0.9">
+    <circle cx="32" cy="32" r="26"/><path d="M8 26c10 6 34-10 48 4M10 42c14-8 30 10 44-6M20 10c-2 18 22 30 14 46M44 9c4 16-20 28-8 46M14 18c18 2 22 26 38 30M50 16c-16 6-18 28-36 32"/>
+    <path d="M22 30c6-4 14 2 20-2M26 40c4 2 10-4 14 0" stroke="#a88552"/></g></svg>
+</div>
 
 <!-- WELCOME / "TAP TO ENTER" SCREEN (returning players, sound on) -->
 <div id="splash" class="splash hidden" aria-hidden="true">
+  <div class="doors" aria-hidden="true"><div class="door left"></div><div class="door right"></div></div>
   <div class="drift" aria-hidden="true">
     <span>♠</span><span>♥</span><span>♦</span><span>♣</span><span>♠</span><span>♥</span><span>♦</span><span>♣</span><span>♠</span><span>♥</span>
   </div>
@@ -376,6 +588,20 @@
 </div>
 
 <header>
+  <svg class="logo-badge" viewBox="0 0 100 100" role="img" aria-label="Poker Premier League sheriff badge">
+    <defs>
+      <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a0"/><stop offset="0.5" stop-color="#e0a93e"/><stop offset="1" stop-color="#9c6a1c"/></linearGradient>
+      <linearGradient id="brassDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c88e2a"/><stop offset="1" stop-color="#6f4a12"/></linearGradient>
+    </defs>
+    <g stroke="#5a3a0e" stroke-width="1.5">
+      <path d="M50 6 L59.5 33.5 L88 33.5 L65 50 L74 78 L50 61 L26 78 L35 50 L12 33.5 L40.5 33.5 Z" fill="url(#brass)" transform="rotate(0 50 50)"/>
+      <circle cx="50" cy="6" r="5" fill="url(#brass)"/><circle cx="88" cy="33.5" r="5" fill="url(#brass)"/><circle cx="74" cy="78" r="5" fill="url(#brass)"/>
+      <circle cx="26" cy="78" r="5" fill="url(#brass)"/><circle cx="12" cy="33.5" r="5" fill="url(#brass)"/>
+      <circle cx="50" cy="49" r="17" fill="url(#brassDark)"/>
+    </g>
+    <circle cx="50" cy="49" r="13.5" fill="none" stroke="#ffe3a0" stroke-width="1" opacity="0.7"/>
+    <text x="50" y="54" text-anchor="middle" font-family="Rye, Georgia, serif" font-size="13" fill="#fff4d6">PPL</text>
+  </svg>
   <div class="suits">♠ ♥ ♦ ♣</div>
   <h1>Poker Premier League</h1>
   <p class="tagline">Best four finishes count</p>
@@ -461,7 +687,7 @@
     <section id="panel-lobby" class="panel" role="tabpanel">
       <div id="reviewCard" class="card section review hidden"></div>
       <div class="card section">
-        <div class="section-title">Next event</div>
+        <div class="section-title" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
       <button id="reviewPreviewBtn" class="textlink light hidden" type="button">Preview season review (only admins see this)</button>
@@ -469,13 +695,14 @@
 
     <!-- ===== LEAGUE ===== -->
     <section id="panel-league" class="panel hidden" role="tabpanel">
+      <div id="wantedCard" class="wanted hidden" aria-label="League leader"></div>
       <div class="card section">
-        <div class="section-title">League table <span id="seasonName" class="season"></span></div>
+        <div class="section-title" data-t="league">League table <span id="seasonName" class="season"></span></div>
         <p class="hint">Best <span id="bestN">4</span> finishes count · play <span id="minEv">2</span>+ events to qualify. Tap a player to see their results.</p>
         <div id="tableBody"><p class="empty">Loading…</p></div>
       </div>
       <div class="card section">
-        <div class="section-title">Final night · starting stacks</div>
+        <div class="section-title" data-t="final">Final night · starting stacks</div>
         <p class="hint" id="finalHint">The top 9 qualified players make the final. Starting chips = league points × 10,000.</p>
         <div id="finalBody"><p class="empty">Loading…</p></div>
       </div>
@@ -780,6 +1007,24 @@
     $('histBack').onclick = () => { $('histWho').value = ''; $('histWho').onchange(); };
   }
 
+  // ---- Theme wording (Wild West). Plain words used if the theme class is removed. ----
+  const WEST = document.body.classList.contains('theme-west');
+  const T = WEST ? {
+    tagline: 'Only your best four finishes ride', in: 'Ride in', maybe: 'Maybe', out: 'Stay home',
+    inHead: 'Riding in', maybeHead: 'Maybe', outHead: 'Staying home',
+    savedIn: 'you\u2019re riding in', savedMaybe: 'you\u2019re a maybe', savedOut: 'you\u2019re staying home',
+    nextEvent: 'Next showdown', league: 'The Posse', final: 'Final showdown \u00B7 starting stacks',
+    noEvent: 'No showdown on the calendar yet. Keep your boots on.', noReplies: 'Nobody\u2019s saddled up yet. Be the first!'
+  } : {
+    tagline: 'Best four finishes count', in: 'In', maybe: 'Maybe', out: 'Out',
+    inHead: 'In', maybeHead: 'Maybe', outHead: 'Out',
+    savedIn: 'you\u2019re IN', savedMaybe: 'you\u2019re a MAYBE', savedOut: 'you\u2019re OUT',
+    nextEvent: 'Next event', league: 'League table', final: 'Final night \u00B7 starting stacks',
+    noEvent: 'No event scheduled yet. Watch this space \u2660', noReplies: 'No replies yet. Be the first!'
+  };
+  document.querySelector('.tagline').textContent = T.tagline;
+  document.querySelectorAll('[data-t]').forEach(el => el.firstChild.textContent = T[el.dataset.t] + ' ');
+
   // ---- Helpers ----
   let me = null;
   let people = {};      // id -> { display_name, nickname, avatar_path }
@@ -850,7 +1095,7 @@
     if (error) { box.innerHTML = '<p class="empty">Couldn’t load the event: ' + esc(error.message) + '</p>'; return; }
     if (!events || !events.length) {
       currentEvent = null;
-      box.innerHTML = '<p class="empty">No event scheduled yet. Watch this space ♠</p>';
+      box.innerHTML = '<p class="empty">' + T.noEvent + '</p>';
       return;
     }
     currentEvent = events[0];
@@ -884,23 +1129,23 @@
         arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span>' + esc(r.profiles?.display_name || 'Player') +
           (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span></li>').join('') + '</ul>';
     };
-    const whoHtml = list('in', 'In') + list('maybe', 'Maybe') + list('out', 'Out');
+    const whoHtml = list('in', T.inHead) + list('maybe', T.maybeHead) + list('out', T.outHead);
 
     $('eventBody').innerHTML =
       '<p class="ev-date">' + niceDate(ev.event_date, true) + '</p>' +
       (meta.length ? '<p class="ev-meta">' + meta.join('<br>') + '</p>' : '') +
       (ev.notes ? '<div class="ev-notes">' + esc(ev.notes) + '</div>' : '') +
       '<div class="replies">' +
-        '<button type="button" data-r="in">In</button>' +
-        '<button type="button" data-r="maybe">Maybe</button>' +
-        '<button type="button" data-r="out">Out</button>' +
+        '<button type="button" data-r="in">' + T.in + '</button>' +
+        '<button type="button" data-r="maybe">' + T.maybe + '</button>' +
+        '<button type="button" data-r="out">' + T.out + '</button>' +
       '</div>' +
       '<div class="comment-row">' +
         '<input id="myComment" type="text" maxlength="120" placeholder="Add a note, e.g. running 20 mins late">' +
         '<button id="saveComment" type="button">Save</button>' +
       '</div>' +
       '<div id="replySaved" class="saved"></div>' +
-      '<div class="who">' + (whoHtml || '<p class="empty">No replies yet. Be the first!</p>') + '</div>';
+      '<div class="who">' + (whoHtml || '<p class="empty">' + T.noReplies + '</p>') + '</div>';
 
     $('myComment').value = mine?.comment || '';
     paintReplyButtons();
@@ -937,7 +1182,8 @@
       return;
     }
     await renderEvent();
-    flash('✓ Saved: you’re ' + (reply === 'in' ? 'IN' : reply === 'out' ? 'OUT' : 'a MAYBE'));
+    flash('✓ Saved: ' + (reply === 'in' ? T.savedIn : reply === 'out' ? T.savedOut : T.savedMaybe));
+    if (reply === 'in') Sound.chips();
   }
 
   // ---- League table ----
@@ -1009,6 +1255,7 @@
     if (!qualified.length) html = '<p class="empty">Nobody has qualified yet. Players need ' + st.min_events + ' events.</p>' + html;
     box.innerHTML = html;
     renderFinal(qualified, st);
+    renderWanted(qualified, st);
     lastLeague = { rows, qualified, st };
     renderReview();
 
@@ -1171,6 +1418,24 @@
         '<div class="award"><div class="t">🎯 Bounty Hunter</div><div class="d">Most knockouts</div>' +
           rankedList(rows, p => p.knockouts, v => v + ' KO' + (v === 1 ? '' : 's')) + '</div>' +
       '</div>';
+    card.classList.remove('hidden');
+  }
+
+  // ---- WANTED poster for the league leader (Wild West theme) ----
+  function renderWanted(qualified, st) {
+    const card = $('wantedCard');
+    const lead = qualified[0];
+    if (!WEST || !lead || Number(lead.league_points) <= 0) { card.classList.add('hidden'); return; }
+    const joint = qualified.filter(p => p.rank === 1);
+    const photo = avatarUrls[lead.player_id]
+      ? '<img src="' + esc(avatarUrls[lead.player_id]) + '" alt="">'
+      : avatarHtml(lead.player_id, 104);
+    card.innerHTML =
+      '<div class="w-photo">' + photo + '</div>' +
+      '<div class="w-text"><div class="w-title">WANTED</div>' +
+        '<div class="w-sub">' + (joint.length > 1 ? 'Joint leader \u00B7 ' : 'League leader \u00B7 ') + esc(st.season_name) + '</div>' +
+        '<div class="w-name">' + esc(lead.display_name) + (lead.nickname ? '<br>\u201C' + esc(lead.nickname) + '\u201D' : '') + '</div>' +
+        '<div class="w-bounty">Bounty: ' + Number(lead.league_points).toFixed(2) + ' pts</div></div>';
     card.classList.remove('hidden');
   }
 
@@ -1507,7 +1772,7 @@
   function hideSplash() {
     const sp = $('splash');
     sp.classList.add('leaving');
-    setTimeout(() => { sp.classList.add('hidden'); sp.classList.remove('leaving'); sp.setAttribute('aria-hidden', 'true'); }, 650);
+    setTimeout(() => { sp.classList.add('hidden'); sp.classList.remove('leaving'); sp.setAttribute('aria-hidden', 'true'); }, WEST ? 1350 : 650);
   }
   $('enterBtn').onclick = () => { Sound.unlock(); Sound.welcome(); hideSplash(); };
   $('enterQuiet').onclick = () => { Sound.setMuted(true); hideSplash(); };
