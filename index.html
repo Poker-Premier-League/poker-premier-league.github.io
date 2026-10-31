@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Poker Premier League</title>
 <meta name="theme-color" content="#1d1007">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Poker League">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rye&family=Caveat:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -223,7 +230,7 @@
   .linkbtn.icon { padding: 5px 10px; }
 
   /* Tabs */
-  .tabbar { position: sticky; top: 0; z-index: 20; max-width: 560px; margin: 0 auto 14px; display: flex; gap: 4px;
+  .tabbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: 560px; margin: 0 auto 14px; display: flex; gap: 4px;
     background: rgba(10,42,29,0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     padding: 6px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.15); }
   .tabbar button { flex: 1; border: 0; background: transparent; color: #cfe3d7; font-size: 15px; font-weight: 700;
@@ -667,6 +674,22 @@
   .wanted.mini .w-name { font-size: 17px; }
   .theme-west .photo-current .av-plain { display: none; }
 
+  /* Get the app */
+  .install { max-width: 400px; }
+  .install-icon { display: block; width: 76px; height: 76px; border-radius: 18px; margin: 4px auto 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.45), 0 0 18px rgba(242,196,107,0.4); }
+  .install h3 { font-family: 'Rye', Georgia, serif; font-weight: 400; }
+  .install-tabs { margin-bottom: 10px; }
+  .install-steps { margin: 0; padding-left: 22px; line-height: 1.5; font-size: 15px; }
+  .install-steps li { margin: 8px 0; }
+  .install-steps .ico { display: inline-flex; vertical-align: -3px; color: #1d6fe0; }
+  .app-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px !important; position: relative; }
+  .app-card-icon { width: 46px; height: 46px; border-radius: 12px; flex: none; box-shadow: 0 3px 10px rgba(0,0,0,0.35); }
+  .app-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; color: var(--muted); }
+  .app-card-text b { color: var(--ink); font-size: 16px; }
+  .small-btn { margin: 0 !important; width: auto !important; padding: 9px 14px !important; font-size: 14px !important; }
+  .app-card-x { position: absolute; top: 2px; right: 6px; background: none; border: 0; font-size: 20px; color: var(--muted); cursor: pointer; padding: 4px 6px; }
+  .app-card .small-btn { margin-right: 14px !important; }
+
   /* Saloon wall */
   .wall-grid { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; padding: 8px 4px 20px; }
   .polaroid { position: relative; background: #fbf6ea; padding: 8px 8px 10px; border-radius: 3px; border: 0; cursor: pointer; text-align: center;
@@ -817,6 +840,7 @@
 
   <div class="volume-note">🔊 <b>When you log in:</b> take your phone <b>off silent</b> and <b>turn the volume up!</b></div>
 
+  <button class="textlink light open-install" type="button">📲 How to add it to your home screen</button>
   <button id="soonAdminLogin" class="textlink light" type="button">Admin log in</button>
   <button id="soonLogout" class="textlink light hidden" type="button">Log out</button>
 </div>
@@ -835,6 +859,7 @@
     <button class="btn" type="submit">Log in</button>
     <button id="forgotLink" class="textlink" type="button">Forgot password?</button>
     <div class="volume-note small">🔊 Phone <b>off silent</b> and <b>volume up</b> before you log in!</div>
+    <button class="textlink open-install" type="button">📲 Add it to your home screen</button>
   </form>
 
   <form id="forgotForm" class="hidden" novalidate>
@@ -904,6 +929,12 @@
         <div class="section-title" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
+      <div id="appCard" class="card section app-card hidden">
+        <img src="icons/icon-192.png" alt="" class="app-card-icon">
+        <div class="app-card-text"><b>Get the app</b><span>Add the league to your home screen.</span></div>
+        <button id="appCardOpen" class="btn small-btn" type="button">How?</button>
+        <button id="appCardClose" class="app-card-x" type="button" aria-label="Hide this">×</button>
+      </div>
       <div id="archiveCard" class="card section hidden"></div>
       <button id="reviewPreviewBtn" class="textlink light hidden" type="button">Preview season review (only admins see this)</button>
     </section>
@@ -941,6 +972,34 @@
       </div>
       <div id="wallGrid" class="wall-grid"><p class="empty light">Loading…</p></div>
     </section>
+  </div>
+</div>
+
+<!-- GET THE APP: add to home screen guide -->
+<div id="installModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Add to your home screen">
+  <div class="modal-card install">
+    <img src="icons/icon-192.png" alt="" class="install-icon">
+    <h3>Put the league on your home screen</h3>
+    <p class="muted" style="text-align:center;margin:-4px 0 10px">It opens full-screen, just like an app.</p>
+    <div class="tabs install-tabs">
+      <button type="button" data-os="ios" class="active">iPhone</button>
+      <button type="button" data-os="android">Android</button>
+    </div>
+    <ol id="steps-ios" class="install-steps">
+      <li>Open the site in <b>Safari</b>.</li>
+      <li>Tap the <b>Share</b> button <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><rect x="5" y="10" width="14" height="11" rx="2"/></svg></span> (bottom of the screen, or top-right on iPad).</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+      <li>Tap <b>Add</b>. Look for the sheriff’s badge on your home screen 🤠</li>
+    </ol>
+    <ol id="steps-android" class="install-steps hidden">
+      <li>Open the site in <b>Chrome</b>.</li>
+      <li>Tap the <b>⋮</b> menu (top-right).</li>
+      <li>Tap <b>Add to home screen</b> or <b>Install app</b>.</li>
+      <li>Tap <b>Install</b> / <b>Add</b>. The sheriff’s badge appears on your home screen 🤠</li>
+    </ol>
+    <button id="installNow" class="btn hidden" type="button">Install now</button>
+    <p class="volume-note small" style="margin-top:12px">🔊 Opening it from the home screen? Phone <b>off silent</b> and <b>volume up</b>!</p>
+    <div class="btnrow"><button id="installClose" class="btn secondary" type="button">Got it</button></div>
   </div>
 </div>
 
@@ -2204,6 +2263,38 @@
   }
   $('enterBtn').onclick = () => { Sound.unlock(); Sound.welcome(); hideSplash(); };
   $('enterQuiet').onclick = () => { Sound.setMuted(true); hideSplash(); };
+
+  // ---- Get the app (add to home screen) ----
+  const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  const isAndroid = /android/i.test(navigator.userAgent);
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; $('installNow').classList.remove('hidden'); });
+  function pickOS(os) {
+    document.querySelectorAll('.install-tabs button').forEach(b => b.classList.toggle('active', b.dataset.os === os));
+    $('steps-ios').classList.toggle('hidden', os !== 'ios');
+    $('steps-android').classList.toggle('hidden', os !== 'android');
+  }
+  document.querySelectorAll('.install-tabs button').forEach(b => b.onclick = () => pickOS(b.dataset.os));
+  function openInstall() { pickOS(isAndroid ? 'android' : 'ios'); $('installModal').classList.remove('hidden'); }
+  document.querySelectorAll('.open-install').forEach(b => b.onclick = openInstall);
+  $('installClose').onclick = () => $('installModal').classList.add('hidden');
+  $('installModal').onclick = (e) => { if (e.target === $('installModal')) $('installModal').classList.add('hidden'); };
+  $('installNow').onclick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (_) {}
+    installPrompt = null; $('installNow').classList.add('hidden'); $('installModal').classList.add('hidden');
+  };
+  // Lobby reminder card: hidden inside the app itself, or once someone taps ×
+  (function () {
+    let hidden = false;
+    try { hidden = localStorage.getItem('ppl_app_card') === 'hide'; } catch (_) {}
+    if (isStandalone() || hidden) return;
+    $('appCard').classList.remove('hidden');
+  })();
+  $('appCardOpen').onclick = openInstall;
+  $('appCardClose').onclick = () => { $('appCard').classList.add('hidden'); try { localStorage.setItem('ppl_app_card', 'hide'); } catch (_) {} };
+  if (isStandalone()) document.querySelectorAll('.open-install').forEach(b => b.classList.add('hidden'));
 
   // ---- Start: already logged in? ----
   (async () => {
