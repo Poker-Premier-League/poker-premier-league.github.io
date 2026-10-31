@@ -188,6 +188,17 @@
   .fin.counts { background: var(--felt); color: #fff; font-weight: 700; }
   .fin small { opacity: 0.8; margin-left: 3px; }
   .legend { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  table.league tr.nq td { color: var(--muted); }
+  table.league tr.nq td.pts { font-weight: 600; }
+  .nqtag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--muted); background: #ece8dc; border-radius: 999px; padding: 1px 7px; margin-top: 2px; }
+  .divider td { padding: 10px 4px 4px !important; font-size: 12px; font-weight: 700; color: var(--muted); border-bottom: 0 !important; letter-spacing: 0.5px; text-transform: uppercase; cursor: default; }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .stats b { color: var(--ink); }
+  table.final { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.final td { padding: 9px 4px; border-bottom: 1px solid var(--line); }
+  table.final td.seat { width: 30px; font-weight: 800; color: var(--muted); }
+  table.final td.chips { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+  table.final tr.cut td { border-top: 2px dashed var(--gold); }
 
   /* ---- Avatars ---- */
   .av { display: inline-flex; align-items: center; justify-content: center; flex: none;
@@ -314,8 +325,15 @@
   <!-- LEAGUE TABLE -->
   <div class="card section">
     <div class="section-title">League table <span id="seasonName" class="season"></span></div>
-    <p class="hint">Best <span id="bestN">4</span> finishes count. Tap a player to see their results.</p>
+    <p class="hint">Best <span id="bestN">4</span> finishes count · play <span id="minEv">2</span>+ events to qualify. Tap a player to see their results.</p>
     <div id="tableBody"><p class="empty">Loading…</p></div>
+  </div>
+
+  <!-- FINAL NIGHT -->
+  <div class="card section">
+    <div class="section-title">Final night · starting stacks</div>
+    <p class="hint" id="finalHint">The top 9 qualified players make the final. Starting chips = league points × 10,000.</p>
+    <div id="finalBody"><p class="empty">Loading…</p></div>
   </div>
 </div>
 
@@ -610,60 +628,89 @@
   async function loadLeague() {
     const box = $('tableBody');
     const [settingsRes, tableRes, resultsRes] = await Promise.all([
-      db.from('league_settings').select('season_name, best_n').maybeSingle(),
+      db.from('league_settings').select('season_name, best_n, min_events, final_players, final_chips_per_point').maybeSingle(),
       db.from('league_table').select('*'),
-      db.from('player_results').select('player_id, event_id, event_date, position, points, counts')
+      db.from('player_results').select('player_id, event_id, event_date, position, field_size, knockouts, spent, points, counts')
     ]);
     const err = settingsRes.error || tableRes.error || resultsRes.error;
-    if (err) { box.innerHTML = '<p class="empty">Couldn’t load the table: ' + esc(err.message) + '</p>'; return; }
+    if (err) { box.innerHTML = '<p class="empty">Couldn\u2019t load the table: ' + esc(err.message) + '</p>'; return; }
 
-    if (settingsRes.data) {
-      $('seasonName').textContent = '· ' + settingsRes.data.season_name;
-      $('bestN').textContent = settingsRes.data.best_n;
-    }
+    const st = settingsRes.data || { best_n: 4, min_events: 2, final_players: 9, final_chips_per_point: 10000, season_name: '' };
+    $('seasonName').textContent = '\u00B7 ' + st.season_name;
+    $('bestN').textContent = st.best_n;
+    $('minEv').textContent = st.min_events;
 
-    // Sort: points, then most wins, then best finish, then name (until Phil sets tie-breaks)
+    const pts = (v) => Number(v || 0);
+    // Ranking: qualified first, then points, most wins, fewest last places, best single finish
+    const tieKey = (p) => [pts(p.league_points).toFixed(2), p.wins, p.last_places, p.best_finish ?? 999].join('|');
     const rows = (tableRes.data || []).sort((a, b) =>
-      b.league_points - a.league_points ||
+      (b.qualified - a.qualified) ||
+      pts(b.league_points) - pts(a.league_points) ||
       b.wins - a.wins ||
+      a.last_places - b.last_places ||
       (a.best_finish ?? 999) - (b.best_finish ?? 999) ||
       a.display_name.localeCompare(b.display_name));
 
-    if (!rows.length) { box.innerHTML = '<p class="empty">No players yet.</p>'; return; }
+    if (!rows.length) { box.innerHTML = '<p class="empty">No players yet.</p>'; renderFinal([], st); return; }
 
     const resultsByPlayer = {};
     (resultsRes.data || []).forEach(r => (resultsByPlayer[r.player_id] ||= []).push(r));
 
-    // Shared positions when level on points
-    let html = '<table class="league"><thead><tr><th></th><th>Player</th><th class="num">Played</th><th class="num">Pts</th></tr></thead><tbody>';
-    let lastPts = null, lastPos = 0;
-    rows.forEach((p, i) => {
-      const pos = (p.league_points === lastPts) ? lastPos : i + 1;
-      const shared = rows.some((q, j) => j !== i && q.league_points === p.league_points);
-      lastPts = p.league_points; lastPos = pos;
+    const qualified = rows.filter(p => p.qualified);
+    const notYet = rows.filter(p => !p.qualified);
+
+    // Positions (shared only when level on every tie-break)
+    qualified.forEach((p, i) => {
+      const prev = qualified[i - 1];
+      p.rank = (prev && tieKey(prev) === tieKey(p)) ? prev.rank : i + 1;
+    });
+    qualified.forEach(p => p.shared = qualified.some(q => q !== p && q.rank === p.rank));
+
+    const rowHtml = (p) => {
       const cls = ['player'];
       if (p.player_id === me.id) cls.push('me');
-      if (pos === 1 && p.league_points > 0) cls.push('leader');
-      html += '<tr class="' + cls.join(' ') + '" data-id="' + p.player_id + '">' +
-        '<td class="pos">' + (shared && p.league_points > 0 ? '=' : '') + pos + '</td>' +
-        '<td><div class="pl">' + avatarHtml(p.player_id, 34) + '<div>' + esc(p.display_name) + (p.nickname ? '<span class="nick">“' + esc(p.nickname) + '”</span>' : '') + '</div></div></td>' +
+      if (!p.qualified) cls.push('nq');
+      if (p.rank === 1 && pts(p.league_points) > 0) cls.push('leader');
+      return '<tr class="' + cls.join(' ') + '" data-id="' + p.player_id + '">' +
+        '<td class="pos">' + (p.qualified ? (p.shared ? '=' : '') + p.rank : '\u2013') + '</td>' +
+        '<td><div class="pl">' + avatarHtml(p.player_id, 34) + '<div>' + esc(p.display_name) +
+          (p.nickname ? '<span class="nick">\u201C' + esc(p.nickname) + '\u201D</span>' : '') +
+          (p.qualified ? '' : '<span class="nqtag">Not qualified yet</span>') + '</div></div></td>' +
         '<td class="num">' + p.events_played + '</td>' +
-        '<td class="num pts">' + p.league_points + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    box.innerHTML = html;
+        '<td class="num pts">' + pts(p.league_points).toFixed(2) + '</td></tr>';
+    };
 
+    let html = '<table class="league"><thead><tr><th></th><th>Player</th><th class="num">Played</th><th class="num">Pts</th></tr></thead><tbody>';
+    html += qualified.map(rowHtml).join('');
+    if (notYet.length) {
+      html += '<tr class="divider"><td colspan="4">Need ' + st.min_events + '+ events to qualify</td></tr>';
+      html += notYet.map(rowHtml).join('');
+    }
+    html += '</tbody></table>';
+    if (!qualified.length) html = '<p class="empty">Nobody has qualified yet. Players need ' + st.min_events + ' events.</p>' + html;
+    box.innerHTML = html;
+    renderFinal(qualified, st);
+
+    const byId = {}; rows.forEach(p => byId[p.player_id] = p);
     box.querySelectorAll('tr.player').forEach(tr => {
       tr.onclick = () => {
         const next = tr.nextElementSibling;
         if (next && next.classList.contains('detail')) { next.remove(); return; }
+        const p = byId[tr.dataset.id];
         const res = (resultsByPlayer[tr.dataset.id] || []).sort((a, b) => a.event_date.localeCompare(b.event_date));
         const d = document.createElement('tr');
         d.className = 'detail';
-        d.innerHTML = '<td colspan="4">' + (res.length
+        d.innerHTML = '<td colspan="4">' +
+          (res.length ? '<div class="stats">' +
+            '<span>Wins <b>' + p.wins + '</b></span>' +
+            '<span>Avg finish <b>' + (p.avg_finish ?? '\u2013') + '</b></span>' +
+            '<span>Best <b>' + (p.best_finish ? ordinal(p.best_finish) : '\u2013') + '</b></span>' +
+            '<span>Last places <b>' + p.last_places + '</b></span>' +
+            '<span>Knockouts <b>' + p.knockouts + '</b></span></div>' : '') +
+          (res.length
           ? '<div class="finishes">' + res.map(r =>
-              '<span class="fin' + (r.counts ? ' counts' : '') + '">' + niceDate(r.event_date) + ': ' + ordinal(r.position) +
-              '<small>' + r.points + 'pts</small></span>').join('') + '</div>' +
+              '<span class="fin' + (r.counts ? ' counts' : '') + '">' + niceDate(r.event_date) + ': ' + ordinal(r.position) + ' of ' + r.field_size +
+              '<small>' + Number(r.points).toFixed(2) + 'pts</small></span>').join('') + '</div>' +
             '<div class="legend">Dark green = counts towards league points</div>'
           : '<span class="empty">No results yet.</span>') +
           ((tr.dataset.id === me.id || me.is_admin)
@@ -737,6 +784,25 @@
     showTab('login');
     showScreen('auth');
   };
+
+  // ---- Final night: top N qualified, chips = points x chips-per-point ----
+  function renderFinal(qualified, st) {
+    const n = st.final_players, per = st.final_chips_per_point;
+    $('finalHint').textContent = 'The top ' + n + ' qualified players make the final. Starting chips = league points × ' + per.toLocaleString('en-GB') + '.';
+    if (!qualified.length) { $('finalBody').innerHTML = '<p class="empty">Nobody has qualified yet.</p>'; return; }
+    const chips = (p) => Math.round(Number(p.league_points || 0) * per).toLocaleString('en-GB');
+    let html = '<table class="final"><tbody>';
+    qualified.forEach((p, i) => {
+      const inFinal = i < n;
+      if (i === n) html += '<tr class="cut"><td colspan="3" class="empty" style="font-size:12px">Below the cut (outside the top ' + n + ')</td></tr>';
+      html += '<tr' + (inFinal ? '' : ' style="opacity:0.55"') + '>' +
+        '<td class="seat">' + (p.shared ? '=' : '') + p.rank + '</td>' +
+        '<td><div class="pl">' + avatarHtml(p.player_id, 28) + '<span>' + esc(p.display_name) + '</span></div></td>' +
+        '<td class="chips">' + (inFinal ? chips(p) : '–') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    $('finalBody').innerHTML = html;
+  }
 
   // ---- Photo: menu, cropper, upload ----
   const crop = { img: null, scale: 1, minScale: 1, x: 0, y: 0, forId: null };
