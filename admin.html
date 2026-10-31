@@ -229,6 +229,8 @@
         <div><label for="setFinalPlayers">Players in the final</label><input id="setFinalPlayers" type="number" inputmode="numeric" min="2"></div>
         <div><label for="setChips">Final chips per point</label><input id="setChips" type="number" inputmode="numeric" min="1"></div>
       </div>
+      <label class="check"><input type="checkbox" id="setOpen"> Site open to everyone</label>
+      <p class="muted" style="margin:4px 0 0">Untick for <strong>Coming soon</strong> mode: only you and Phil can see the site, and sign-up is hidden. Tick it on reveal night.</p>
       <label class="check"><input type="checkbox" id="setReview"> Season review on the home page</label>
       <p class="muted" style="margin:4px 0 0">Turn this on after the last event before the final. Everyone then sees the year’s rankings and awards (Big Money Spender, Wooden Spoon, Rebuy King…) on the home page.</p>
       <button id="setSave" class="btn full" type="button">Save settings</button>
@@ -564,7 +566,7 @@
   // ================= POINTS & SETTINGS =================
   async function loadSettings() {
     const { data } = await db.from('league_settings')
-      .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point, season_review').maybeSingle();
+      .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point, season_review, site_open').maybeSingle();
     if (!data) return;
     settings = data;
     $('setSeason').value = data.season_name;
@@ -574,6 +576,7 @@
     $('setFinalPlayers').value = data.final_players;
     $('setChips').value = data.final_chips_per_point;
     $('setReview').checked = !!data.season_review;
+    $('setOpen').checked = !!data.site_open;
   }
   $('setSave').onclick = async () => {
     clear('setMsg');
@@ -584,7 +587,8 @@
       ko_points: Number($('setKo').value),
       final_players: Number($('setFinalPlayers').value),
       final_chips_per_point: Number($('setChips').value),
-      season_review: $('setReview').checked
+      season_review: $('setReview').checked,
+      site_open: $('setOpen').checked
     };
     if (!row.season_name) return msg('setMsg', 'Enter a season name.');
     if (!Number.isInteger(row.best_n) || row.best_n < 1) return msg('setMsg', '"Best finishes that count" must be 1 or more.');
