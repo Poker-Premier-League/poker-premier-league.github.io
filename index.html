@@ -1379,10 +1379,22 @@
   // =========================================================
   const Sound = (() => {
     const THEME_FILE = 'sounds/theme.mp3';
-    const THEME_SECONDS = 120;         // play the whole clip (up to 2 minutes); the mute button stops it
+    const FULL_PLAYS = 3;              // first 3 visits on a phone/laptop: the whole clip
+    const SHORT_SECONDS = 57;          // after that: the first 57 seconds
     let ctx = null, themeSrc = null, themeGain = null, themeBuffer = null, themeTried = false, themeLoading = null;
-    let muted = false;
+    let muted = false, playToken = 0;
     try { muted = localStorage.getItem('ppl_muted') === '1'; } catch (_) {}
+
+    // Start downloading the tune as soon as the page opens (no sound yet),
+    // so it's ready by the time someone taps.
+    let themeBytes = null;
+    function fetchTheme() {
+      themeBytes = themeBytes || fetch(THEME_FILE)
+        .then(r => r.ok ? r.arrayBuffer() : null)
+        .catch(() => null);
+      return themeBytes;
+    }
+    if (!muted) fetchTheme();
 
     function unlock() {
       if (muted) return;
@@ -1398,9 +1410,9 @@
       if (themeTried || !ctx) return;
       themeTried = true;
       try {
-        const r = await fetch(THEME_FILE, { cache: 'force-cache' });
-        if (!r.ok) return;                         // no tune uploaded yet: just effects
-        themeBuffer = await ctx.decodeAudioData(await r.arrayBuffer());
+        const bytes = await fetchTheme();
+        if (!bytes) return;                        // no tune uploaded yet: just effects
+        themeBuffer = await ctx.decodeAudioData(bytes.slice(0));
       } catch (_) { themeBuffer = null; }
     }
 
@@ -1439,13 +1451,17 @@
       themeSrc.buffer = themeBuffer;
       themeGain.gain.setValueAtTime(0.0001, at);
       themeGain.gain.exponentialRampToValueAtTime(0.7, at + 0.8);
-      const end = at + Math.min(THEME_SECONDS, themeBuffer.duration);
+      let plays = 0;
+      try { plays = Number(localStorage.getItem('ppl_theme_plays') || 0); localStorage.setItem('ppl_theme_plays', String(plays + 1)); } catch (_) {}
+      const length = plays < FULL_PLAYS ? themeBuffer.duration : Math.min(SHORT_SECONDS, themeBuffer.duration);
+      const end = at + length;
       themeGain.gain.setValueAtTime(0.7, end - 2);
       themeGain.gain.linearRampToValueAtTime(0.0001, end);
       themeSrc.connect(themeGain).connect(ctx.destination);
       themeSrc.start(at); themeSrc.stop(end + 0.05);
     }
     function stopTheme() {
+      playToken++;
       try { if (themeSrc) themeSrc.stop(); } catch (_) {}
       themeSrc = null;
     }
@@ -1453,13 +1469,15 @@
     async function welcome() {
       if (muted || !ctx) return;
       if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (_) {} }
+      const token = ++playToken;
       themeLoading = themeLoading || loadTheme();
-      // wait for the tune to load, but never more than 2 seconds
-      await Promise.race([themeLoading, new Promise(r => setTimeout(r, 2000))]);
+      // Effects straight away
       const t0 = ctx.currentTime + 0.05;
-      const afterShuffle = shuffle(t0);
-      const afterChips = chips(afterShuffle + 0.1);
-      playTheme(afterChips + 0.15);
+      const afterChips = chips(shuffle(t0) + 0.1);
+      // Then the tune, as soon as it has downloaded (give up after 30 seconds)
+      await Promise.race([themeLoading, new Promise(r => setTimeout(r, 30000))]);
+      if (token !== playToken || muted || !themeBuffer) return;
+      playTheme(Math.max(afterChips + 0.15, ctx.currentTime + 0.05));
     }
 
     function setMuted(m) {
