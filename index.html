@@ -1654,10 +1654,10 @@
     const ev = currentEvent;
     let { data: replies, error } = await db
       .from('attendance')
-      .select('player_id, reply, comment, paid, profiles(display_name, nickname)')
+      .select('player_id, reply, comment, paid')
       .eq('event_id', ev.id);
     if (error && /paid/.test(error.message || '')) {          // payments not set up yet
-      ({ data: replies, error } = await db.from('attendance').select('player_id, reply, comment, profiles(display_name, nickname)').eq('event_id', ev.id));
+      ({ data: replies, error } = await db.from('attendance').select('player_id, reply, comment').eq('event_id', ev.id));
     }
     const { data: pay } = await db.from('league_settings').select('default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
     if (error) { $('eventBody').innerHTML = '<p class="empty">Couldn’t load replies: ' + esc(error.message) + '</p>'; return; }
@@ -1673,12 +1673,13 @@
 
     const groups = { in: [], maybe: [], out: [] };
     (replies || []).forEach(r => groups[r.reply] && groups[r.reply].push(r));
-    const byName = (a, b) => (a.profiles?.display_name || '').localeCompare(b.profiles?.display_name || '');
+    const nameOfP = (id) => people[id]?.display_name || 'Player';
+    const byName = (a, b) => nameOfP(a.player_id).localeCompare(nameOfP(b.player_id));
     const list = (key, title) => {
       const arr = groups[key].sort(byName);
       if (!arr.length) return '';
       return '<h4><span class="dot ' + key + '"></span>' + title + ' <span class="n">(' + arr.length + ')</span></h4><ul>' +
-        arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span class="who-name">' + esc(r.profiles?.display_name || 'Player') +
+        arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span class="who-name">' + esc(nameOfP(r.player_id)) +
           (r.paid ? ' <span class="paid-tag">✓ Paid</span>' : '') +
           (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span>' +
           (me.is_admin && key !== 'out' && 'paid' in r
