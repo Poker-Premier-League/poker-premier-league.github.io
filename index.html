@@ -690,6 +690,47 @@
   .app-card-x { position: absolute; top: 2px; right: 6px; background: none; border: 0; font-size: 20px; color: var(--muted); cursor: pointer; padding: 4px 6px; }
   .app-card .small-btn { margin-right: 14px !important; }
 
+  /* Messages + notifications */
+  .userbar .linkbtn { white-space: nowrap; }
+  @media (max-width: 420px) { .hi-word { display: none; } .userbar .badge { margin-left: 4px; } }
+  .msg-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: #e0452a;
+    box-shadow: 0 0 0 2px #1d1007, 0 0 8px rgba(224,69,42,0.8); }
+  .msgs { max-width: 460px; }
+  .msgs h3 { font-family: 'Rye', Georgia, serif; font-weight: 400; }
+  .notif-box { background: rgba(120,72,30,0.08); border: 1px solid rgba(120,72,30,0.2); border-radius: 12px; padding: 10px 12px 12px; margin-bottom: 12px; }
+  .notif-status { font-size: 14px; line-height: 1.45; }
+  .notif-box .btnrow { margin-top: 8px; }
+  .msg-list { max-height: 52vh; overflow: auto; }
+  .msg-item { padding: 12px 2px; border-bottom: 1px solid var(--line); }
+  .msg-item:last-child { border-bottom: 0; }
+  .msg-item .mt { font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+  .msg-item .mb { font-size: 15px; line-height: 1.45; margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg-item .mm { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .msg-item.unread .mt::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #e0452a; flex: none; }
+  .bell { width: 46px; height: 46px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 24px;
+    background: linear-gradient(180deg, #f6cf7c, #c88e2a); box-shadow: 0 3px 10px rgba(0,0,0,0.35), 0 0 12px rgba(242,196,107,0.5); }
+  .userbar .linkbtn.icon { position: relative; }
+
+  /* Payments */
+  .paybox { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(120,72,30,0.08); border: 1px solid rgba(120,72,30,0.25); }
+  .paybox.is-paid { background: rgba(63,122,60,0.12); border-color: rgba(63,122,60,0.4); }
+  .pay-head { font-weight: 800; font-size: 16px; }
+  .pay-status { font-size: 13px; color: var(--muted); margin: 3px 0 4px; }
+  .paybox.is-paid .pay-status { color: #2f6131; font-size: 14px; }
+  .pay-monzo { display: block; text-align: center; text-decoration: none; margin-top: 8px; }
+  .theme-west .pay-monzo { background: linear-gradient(180deg, #ff6b57, #d9442f); box-shadow: 0 6px 16px rgba(217,68,47,0.4); }
+  .paybox .textlink { margin: 8px auto 0; font-size: 14px; }
+  .bank { margin-top: 8px; background: #fffaf0; border: 1px solid #cfb084; border-radius: 10px; padding: 4px 10px; }
+  .bank-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .bank-row:last-child { border-bottom: 0; }
+  .bank-row .bl { width: 82px; color: var(--muted); font-size: 13px; flex: none; }
+  .bank-row .bv { flex: 1; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .copy { border: 1px solid #cfb084; background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; min-width: 64px; }
+  .paid-tag { display: inline-block; font-size: 11px; font-weight: 800; color: #fff; background: #3f7a3c; border-radius: 999px; padding: 1px 7px; margin-left: 4px; vertical-align: 1px; }
+  .who-name { flex: 1; min-width: 0; }
+  .paytog { margin-left: auto; flex: none; border: 1px dashed #b5946a; background: transparent; color: var(--muted); border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 800; cursor: pointer; }
+  .paytog.on { border-style: solid; border-color: #3f7a3c; background: #3f7a3c; color: #fff; }
+
   /* Saloon wall */
   .wall-grid { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; padding: 8px 4px 20px; }
   .polaroid { position: relative; background: #fbf6ea; padding: 8px 8px 10px; border-radius: 3px; border: 0; cursor: pointer; text-align: center;
@@ -904,10 +945,11 @@
   <div class="userbar">
     <span class="me-wrap">
       <button id="myAvatarBtn" class="av-btn" type="button" title="Change your photo"><span id="myAvatar"></span><span class="av-edit">✎</span></button>
-      <span>Hi, <strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
+      <span><span class="hi-word">Hi, </span><strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
     </span>
     <span>
       <button id="muteBtn" class="linkbtn icon" type="button" aria-label="Sound on" title="Sound on/off">🔊</button>
+      <button id="msgBtn" class="linkbtn icon" type="button" aria-label="Messages" title="Messages">📬<span id="msgDot" class="msg-dot hidden"></span></button>
       <a id="adminLink" class="linkbtn hidden" href="admin.html">Admin</a>
       <button id="logoutBtn" class="linkbtn" type="button">Log out</button>
     </span>
@@ -925,6 +967,12 @@
     <!-- ===== LOBBY ===== -->
     <section id="panel-lobby" class="panel" role="tabpanel">
       <div id="reviewCard" class="card section review hidden"></div>
+      <div id="notifCard" class="card section app-card hidden">
+        <div class="bell" aria-hidden="true">🔔</div>
+        <div class="app-card-text"><b>Turn on notifications</b><span id="notifCardText">New showdowns, reminders, results and messages.</span></div>
+        <button id="notifCardOn" class="btn small-btn" type="button">Turn on</button>
+        <button id="notifCardClose" class="app-card-x" type="button" aria-label="Hide this">×</button>
+      </div>
       <div class="card section">
         <div class="section-title" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
@@ -972,6 +1020,23 @@
       </div>
       <div id="wallGrid" class="wall-grid"><p class="empty light">Loading…</p></div>
     </section>
+  </div>
+</div>
+
+<!-- MESSAGES inbox + notification settings -->
+<div id="msgModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Messages">
+  <div class="modal-card msgs">
+    <h3>📬 Messages</h3>
+    <div class="notif-box">
+      <div id="notifStatus" class="notif-status">Checking notifications…</div>
+      <div class="btnrow">
+        <button id="notifToggle" class="btn hidden" type="button">Turn on notifications</button>
+        <button id="notifTest" class="btn secondary hidden" type="button">Send me a test</button>
+      </div>
+      <div id="notifMsg" class="msg"></div>
+    </div>
+    <div id="msgList" class="msg-list"><p class="empty">Loading…</p></div>
+    <div class="btnrow"><button id="msgClose" class="btn secondary" type="button">Close</button></div>
   </div>
 </div>
 
@@ -1181,7 +1246,11 @@
     showScreen('home');
     await Promise.all([loadEvent(), loadLeague(), loadWall()]);
     const start = (location.hash.match(/^#(lobby|league|results|wall)/) || [])[1] || 'lobby';
+    const openMsgs = /^#messages/.test(location.hash);
     showPanel(start, { noScroll: true });
+    loadMessages();
+    refreshNotifUI();
+    if (openMsgs) openMessages();
   }
 
   // ---- Tabs (tap or swipe) ----
@@ -1583,10 +1652,14 @@
 
   async function renderEvent() {
     const ev = currentEvent;
-    const { data: replies, error } = await db
+    let { data: replies, error } = await db
       .from('attendance')
-      .select('player_id, reply, comment, profiles(display_name, nickname)')
+      .select('player_id, reply, comment, paid, profiles(display_name, nickname)')
       .eq('event_id', ev.id);
+    if (error && /paid/.test(error.message || '')) {          // payments not set up yet
+      ({ data: replies, error } = await db.from('attendance').select('player_id, reply, comment, profiles(display_name, nickname)').eq('event_id', ev.id));
+    }
+    const { data: pay } = await db.from('league_settings').select('default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
     if (error) { $('eventBody').innerHTML = '<p class="empty">Couldn’t load replies: ' + esc(error.message) + '</p>'; return; }
 
     const mine = (replies || []).find(r => r.player_id === me.id);
@@ -1605,8 +1678,13 @@
       const arr = groups[key].sort(byName);
       if (!arr.length) return '';
       return '<h4><span class="dot ' + key + '"></span>' + title + ' <span class="n">(' + arr.length + ')</span></h4><ul>' +
-        arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span>' + esc(r.profiles?.display_name || 'Player') +
-          (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span></li>').join('') + '</ul>';
+        arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span class="who-name">' + esc(r.profiles?.display_name || 'Player') +
+          (r.paid ? ' <span class="paid-tag">✓ Paid</span>' : '') +
+          (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span>' +
+          (me.is_admin && key !== 'out' && 'paid' in r
+            ? '<button type="button" class="paytog' + (r.paid ? ' on' : '') + '" data-pid="' + r.player_id + '" data-paid="' + (r.paid ? 1 : 0) + '" aria-label="' +
+              (r.paid ? 'Unmark paid' : 'Mark as paid') + '">' + (r.paid ? '✓ £' : '£?') + '</button>'
+            : '') + '</li>').join('') + '</ul>';
     };
     const whoHtml = list('in', T.inHead) + list('maybe', T.maybeHead) + list('out', T.outHead);
 
@@ -1624,15 +1702,56 @@
         '<button id="saveComment" type="button">Save</button>' +
       '</div>' +
       '<div id="replySaved" class="saved"></div>' +
+      payBox(ev, pay, mine) +
       '<div class="who">' + (whoHtml || '<p class="empty">' + T.noReplies + '</p>') + '</div>';
 
     $('myComment').value = mine?.comment || '';
     paintReplyButtons();
+    bindPayBox();
+    document.querySelectorAll('.paytog').forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      const { error } = await db.rpc('set_paid', { p_event: ev.id, p_player: b.dataset.pid, p_paid: b.dataset.paid !== '1' });
+      if (error) { alert('Couldn\u2019t update: ' + error.message); b.disabled = false; return; }
+      if (b.dataset.paid !== '1') Sound.chips();
+      renderEvent();
+    });
     document.querySelectorAll('.replies button').forEach(b => b.onclick = () => saveReply(b.dataset.r));
     $('saveComment').onclick = () => {
       if (!myReply) { flash('Tap In, Maybe or Out first.', true); return; }
       saveReply(myReply);
     };
+  }
+
+  // ---- Paying the buy-in ----
+  function payBox(ev, pay, mine) {
+    const link = ev.pay_link || pay?.default_pay_link || '';
+    const hasBank = !!(pay && (pay.bank_account || pay.bank_sort_code));
+    if (!link && !hasBank) return '';
+    if (mine && mine.reply === 'out') return '';
+    const amount = ev.buy_in != null ? money(ev.buy_in) : '';
+    const ref = ('PPL ' + new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + (me.display_name || '')).slice(0, 18);
+    const row = (label, val) => val ? '<div class="bank-row"><span class="bl">' + label + '</span><span class="bv">' + esc(val) + '</span>' +
+      '<button type="button" class="copy" data-copy="' + esc(val) + '">Copy</button></div>' : '';
+    const paid = mine && mine.paid;
+    return '<div class="paybox' + (paid ? ' is-paid' : '') + '">' +
+      '<div class="pay-head">💷 ' + (amount ? 'Buy-in ' + amount : 'Pay your buy-in') + '</div>' +
+      '<div class="pay-status">' + (paid ? '✓ <b>Paid</b>, thanks partner!' : 'Not marked as paid yet. Alex or Phil will tick you off once it lands.') + '</div>' +
+      (paid ? '' :
+        (link ? '<a class="btn pay-monzo" href="' + esc(link) + '" target="_blank" rel="noopener">Pay with Monzo</a>' : '') +
+        (hasBank ? '<button id="bankToggle" class="textlink" type="button">' + (link ? 'Can\u2019t use Monzo? Pay by bank transfer' : 'Show bank details') + '</button>' +
+          '<div id="bankBox" class="bank' + (link ? ' hidden' : '') + '">' +
+            row('Name', pay.bank_name) + row('Sort code', pay.bank_sort_code) + row('Account', pay.bank_account) + row('Reference', ref) +
+          '</div>' : '')) +
+    '</div>';
+  }
+  function bindPayBox() {
+    const t = $('bankToggle');
+    if (t) t.onclick = () => $('bankBox').classList.toggle('hidden');
+    document.querySelectorAll('.copy').forEach(b => b.onclick = async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied ✓'; }
+      catch (_) { b.textContent = 'Hold to copy'; }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
   }
 
   function paintReplyButtons() {
@@ -2288,6 +2407,145 @@
   }
   $('enterBtn').onclick = () => { Sound.unlock(); Sound.welcome(); hideSplash(); };
   $('enterQuiet').onclick = () => { Sound.setMuted(true); hideSplash(); };
+
+  // =========================================================
+  // PUSH NOTIFICATIONS + MESSAGES
+  // =========================================================
+  const VAPID_PUBLIC_KEY = 'BGjeefrYmnfixwkktR98mTryqxHN3UfhGSfJI1bNJpRM-Vy_IXmEZg4bPLTgL1AaYY-on4GdlbOFKZguijEY8VE';
+  const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let swReg = null;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(r => { swReg = r; }).catch(() => {});
+  }
+  function b64ToBytes(b64) {
+    const pad = '='.repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+  async function getReg() { return swReg || (swReg = await navigator.serviceWorker.ready); }
+  async function currentSub() {
+    if (!pushSupported) return null;
+    try { return await (await getReg()).pushManager.getSubscription(); } catch (_) { return null; }
+  }
+  async function saveSub(sub) {
+    const j = sub.toJSON();
+    return db.rpc('save_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_agent: navigator.userAgent.slice(0, 200) });
+  }
+  // What this phone can do right now
+  function notifState() {
+    if (isIOS && !isStandalone()) return 'needs-app';      // iPhone: only works from the home-screen app
+    if (!pushSupported) return 'unsupported';
+    if (Notification.permission === 'denied') return 'blocked';
+    return 'ok';
+  }
+  async function turnOnNotifications() {
+    const st = notifState();
+    if (st === 'needs-app') { openInstall(); return false; }
+    if (st !== 'ok') return false;
+    const perm = await Notification.requestPermission();      // must come straight from the tap
+    if (perm !== 'granted') { await refreshNotifUI(); return false; }
+    try {
+      const reg = await getReg();
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC_KEY) });
+      const { error } = await saveSub(sub);
+      if (error) throw error;
+      Sound.chips();
+    } catch (e) {
+      nmsg('Couldn\u2019t turn on notifications: ' + (e.message || e));
+      return false;
+    }
+    await refreshNotifUI();
+    return true;
+  }
+  async function turnOffNotifications() {
+    const sub = await currentSub();
+    if (sub) {
+      await db.rpc('remove_push_subscription', { p_endpoint: sub.endpoint });
+      try { await sub.unsubscribe(); } catch (_) {}
+    }
+    await refreshNotifUI();
+  }
+  function nmsg(t, ok) { const m = $('notifMsg'); m.textContent = t || ''; m.className = t ? 'msg ' + (ok ? 'ok' : 'error') : 'msg'; }
+
+  async function refreshNotifUI() {
+    const st = notifState();
+    const sub = st === 'ok' ? await currentSub() : null;
+    const on = !!sub && Notification.permission === 'granted';
+    let text;
+    if (on) text = '✅ <b>Notifications are on</b> for this phone.';
+    else if (st === 'needs-app') text = '📲 On iPhone, notifications only work from the <b>home-screen app</b>. Add it to your home screen, open it from there, then come back here.';
+    else if (st === 'blocked') text = '🚫 Notifications are blocked for this site. Turn them on in your phone\u2019s <b>Settings</b> for this app or browser.';
+    else if (st === 'unsupported') text = 'This browser can\u2019t do notifications. Try Chrome on Android, or the home-screen app on iPhone.';
+    else text = '🔔 Get a buzz for new showdowns, reminders, results, photos and messages.';
+    $('notifStatus').innerHTML = text;
+    $('notifToggle').classList.toggle('hidden', st === 'unsupported' || st === 'blocked');
+    $('notifToggle').textContent = on ? 'Turn off' : (st === 'needs-app' ? 'How to add the app' : 'Turn on notifications');
+    $('notifToggle').className = on ? 'btn secondary' : 'btn';
+    $('notifTest').classList.toggle('hidden', !on);
+
+    // Lobby prompt card
+    let hiddenByUser = false;
+    try { hiddenByUser = localStorage.getItem('ppl_notif_card') === 'hide'; } catch (_) {}
+    const showCard = !on && !hiddenByUser && st !== 'unsupported' && st !== 'blocked';
+    $('notifCard').classList.toggle('hidden', !showCard);
+    $('notifCardText').textContent = st === 'needs-app'
+      ? 'Add the app to your home screen first, then turn them on.'
+      : 'New showdowns, reminders, results and messages.';
+    $('notifCardOn').textContent = st === 'needs-app' ? 'How?' : 'Turn on';
+    // Keep this phone linked to whoever is logged in
+    if (on && me) saveSub(sub);
+  }
+  $('notifToggle').onclick = async () => {
+    nmsg('');
+    const sub = await currentSub();
+    if (sub && Notification.permission === 'granted') return turnOffNotifications();
+    if (await turnOnNotifications()) nmsg('🔔 Done! You\u2019ll now get notifications on this phone.', true);
+  };
+  $('notifCardOn').onclick = () => turnOnNotifications();
+  $('notifCardClose').onclick = () => { $('notifCard').classList.add('hidden'); try { localStorage.setItem('ppl_notif_card', 'hide'); } catch (_) {} };
+  $('notifTest').onclick = async () => {
+    nmsg('Sending…', true);
+    try {
+      const { data: s } = await db.auth.getSession();
+      const r = await fetch(SUPABASE_URL + '/functions/v1/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (s.session?.access_token || '') },
+        body: JSON.stringify({ type: 'test' })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || ('error ' + r.status));
+      nmsg(j.sent ? '✅ Sent! It should pop up in a few seconds.' : 'Sent, but no phone was found. Try turning notifications off and on again.', !!j.sent);
+    } catch (e) { nmsg('Test failed: ' + (e.message || e)); }
+  };
+
+  // ---- Messages inbox ----
+  let messagesList = [];
+  const lastRead = () => { try { return localStorage.getItem('ppl_msgs_read') || ''; } catch (_) { return ''; } };
+  async function loadMessages() {
+    const { data, error } = await db.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+    if (error) { $('msgList').innerHTML = '<p class="empty">Messages aren\u2019t set up yet.</p>'; $('msgDot').classList.add('hidden'); return; }
+    messagesList = data || [];
+    const lr = lastRead();
+    $('msgDot').classList.toggle('hidden', !messagesList.some(m => m.created_at > lr));
+    $('msgList').innerHTML = messagesList.length ? messagesList.map(m =>
+      '<div class="msg-item' + (m.created_at > lr ? ' unread' : '') + '"><div class="mt">' + esc(m.title) + '</div>' +
+      '<div class="mb">' + esc(m.body) + '</div><div class="mm">' +
+      new Date(m.created_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) +
+      (m.sent_by && people[m.sent_by] ? ' \u00B7 from ' + esc(people[m.sent_by].display_name) : '') + '</div></div>').join('')
+      : '<p class="empty">No messages yet. Announcements from Alex and Phil will appear here.</p>';
+  }
+  async function openMessages() {
+    nmsg('');
+    $('msgModal').classList.remove('hidden');
+    await Promise.all([loadMessages(), refreshNotifUI()]);
+    if (messagesList[0]) { try { localStorage.setItem('ppl_msgs_read', messagesList[0].created_at); } catch (_) {} }
+    $('msgDot').classList.add('hidden');
+  }
+  $('msgBtn').onclick = openMessages;
+  $('msgClose').onclick = () => { $('msgModal').classList.add('hidden'); loadMessages(); };
+  $('msgModal').onclick = (e) => { if (e.target === $('msgModal')) $('msgClose').onclick(); };
 
   // ---- Get the app (add to home screen) ----
   const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;

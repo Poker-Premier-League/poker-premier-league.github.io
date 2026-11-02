@@ -157,6 +157,7 @@
   <div class="tabs">
     <button type="button" data-tab="events" class="active">Events</button>
     <button type="button" data-tab="results">Results</button>
+    <button type="button" data-tab="messages">Messages</button>
     <button type="button" data-tab="points">Settings</button>
   </div>
 
@@ -180,6 +181,8 @@
           <div><label for="evRebuy">Rebuy £ <span class="opt">(blank = buy-in)</span></label><input id="evRebuy" type="number" inputmode="decimal" min="0" step="0.01"></div>
           <div><label for="evAddon">Add-on £ <span class="opt">(blank = buy-in)</span></label><input id="evAddon" type="number" inputmode="decimal" min="0" step="0.01"></div>
         </div>
+        <label for="evPay">Monzo link for this night <span class="opt">(optional: blank = the default in Settings)</span></label>
+        <input id="evPay" type="url" inputmode="url" placeholder="https://monzo.me/…">
         <label for="evNotes">Notes <span class="opt">(optional)</span></label>
         <textarea id="evNotes" placeholder="e.g. Bring cash. Doors open 7pm."></textarea>
         <div id="evStatusWrap" class="hidden">
@@ -220,6 +223,29 @@
     </div>
   </section>
 
+  <!-- ================= MESSAGES ================= -->
+  <section id="tab-messages" class="hidden">
+    <div class="card">
+      <h2>Send a message</h2>
+      <p class="muted">Goes to everyone’s phone as a notification (if they’ve turned notifications on) and appears in the 📬 Messages inbox in the app.</p>
+      <label for="mTitle">Title</label>
+      <input id="mTitle" type="text" maxlength="80" placeholder="e.g. Final date confirmed">
+      <label for="mBody">Message</label>
+      <textarea id="mBody" maxlength="1000" placeholder="e.g. The final is on Saturday 12 December at Phil’s. Dress code: cowboy 🤠"></textarea>
+      <div class="muted" id="mCount" style="text-align:right;font-size:12px">0 / 1000</div>
+      <button id="mSend" class="btn full" type="button">📣 Send to everyone</button>
+      <div id="mMsg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>Who has notifications on</h2>
+      <div id="subList" class="muted">Loading…</div>
+    </div>
+    <div class="card">
+      <h2>Sent messages</h2>
+      <ul id="mList" class="evlist"><li class="muted">Loading…</li></ul>
+    </div>
+  </section>
+
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
     <div class="card">
@@ -236,6 +262,17 @@
         <div><label for="setFinalPlayers">Players in the final</label><input id="setFinalPlayers" type="number" inputmode="numeric" min="2"></div>
         <div><label for="setChips">Final chips per point</label><input id="setChips" type="number" inputmode="numeric" min="1"></div>
       </div>
+      <h2 style="margin-top:20px">Payments</h2>
+      <label for="setPay">Default Monzo link</label>
+      <input id="setPay" type="url" inputmode="url" placeholder="https://monzo.me/…">
+      <p class="muted" style="margin:4px 0 0">Used when an event doesn’t have its own link. Paste it exactly as Monzo gives it (with the amount, if it has one).</p>
+      <label for="setBankName">Bank transfer: account name <span class="opt">(for people who can’t use Monzo)</span></label>
+      <input id="setBankName" type="text" autocomplete="off">
+      <div class="row2">
+        <div><label for="setSort">Sort code</label><input id="setSort" type="text" inputmode="numeric" placeholder="00-00-00" autocomplete="off"></div>
+        <div><label for="setAcc">Account number</label><input id="setAcc" type="text" inputmode="numeric" placeholder="12345678" autocomplete="off"></div>
+      </div>
+      <p class="muted" style="margin:4px 0 12px">Only logged-in members of the league can see these.</p>
       <label class="check"><input type="checkbox" id="setOpen"> Site open to everyone</label>
       <p class="muted" style="margin:4px 0 0">Untick for <strong>Coming soon</strong> mode: only you and Phil can see the site, and sign-up is hidden. Tick it on reveal night.</p>
       <label class="check"><input type="checkbox" id="setReview"> Season review on the home page</label>
@@ -281,7 +318,8 @@
   // ---------- Tabs ----------
   document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
     document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['events', 'results', 'points'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['events', 'results', 'messages', 'points'].forEach(t => $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    if (b.dataset.tab === 'messages') loadMessagesAdmin();
     if (b.dataset.tab === 'results') renderResults();
   });
 
@@ -342,6 +380,7 @@
     $('evRebuy').value = ev.rebuy_price ?? '';
     $('evAddon').value = ev.addon_price ?? '';
     $('evNotes').value = ev.notes || '';
+    $('evPay').value = ev.pay_link || '';
     $('evStatus').value = ev.status;
     $('evFormTitle').textContent = 'Edit event';
     $('evSave').textContent = 'Save changes'; $('evSave').dataset.label = '';
@@ -369,8 +408,10 @@
       buy_in: $('evBuyin').value === '' ? null : Number($('evBuyin').value),
       rebuy_price: $('evRebuy').value === '' ? null : Number($('evRebuy').value),
       addon_price: $('evAddon').value === '' ? null : Number($('evAddon').value),
-      notes: $('evNotes').value.trim() || null
+      notes: $('evNotes').value.trim() || null,
+      pay_link: $('evPay').value.trim() || null
     };
+    if (row.pay_link && !/^https:\/\//i.test(row.pay_link)) return msg('evMsg', 'The Monzo link should start with https://');
     const id = $('evId').value;
     if (id) row.status = $('evStatus').value;
 
@@ -395,6 +436,51 @@
     msg('evMsg', '✓ Event deleted', 'ok');
     await loadEvents();
   }
+
+  // ================= MESSAGES =================
+  $('mBody').oninput = () => { $('mCount').textContent = $('mBody').value.length + ' / 1000'; };
+  async function loadMessagesAdmin() {
+    const [mR, sR] = await Promise.all([
+      db.from('messages').select('*').order('created_at', { ascending: false }).limit(50),
+      db.from('push_subscriptions').select('player_id')
+    ]);
+    if (mR.error) {
+      $('mList').innerHTML = '<li class="muted">Messages aren\u2019t set up yet (run setup part 7).</li>';
+      $('subList').textContent = '';
+      return;
+    }
+    const names = (id) => players.find(p => p.id === id)?.display_name || 'Player';
+    const subIds = [...new Set((sR.data || []).map(r => r.player_id))];
+    $('subList').innerHTML = subIds.length
+      ? '<strong>' + subIds.length + ' of ' + players.length + '</strong> players: ' + subIds.map(id => esc(names(id))).sort().join(', ')
+      : 'Nobody yet. Players turn them on from 📬 in the app.';
+    $('mList').innerHTML = (mR.data || []).length ? mR.data.map(m =>
+      '<li><div class="info"><div class="d">' + esc(m.title) + '</div><div class="v">' + esc(m.body) + '</div>' +
+      '<div class="v">' + new Date(m.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) +
+      (m.sent_by ? ' \u00B7 ' + esc(names(m.sent_by)) : '') + '</div></div>' +
+      '<button class="btn small danger" data-delmsg="' + m.id + '">Delete</button></li>').join('')
+      : '<li class="muted">No messages sent yet.</li>';
+    document.querySelectorAll('[data-delmsg]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this message from everyone\u2019s inbox? (Notifications already sent can\u2019t be pulled back.)')) return;
+      const { error } = await db.from('messages').delete().eq('id', Number(b.dataset.delmsg));
+      if (error) return alert('Couldn\u2019t delete: ' + error.message);
+      loadMessagesAdmin();
+    });
+  }
+  $('mSend').onclick = async () => {
+    clear('mMsg');
+    const title = $('mTitle').value.trim(), body = $('mBody').value.trim();
+    if (!title) return msg('mMsg', 'Add a title.');
+    if (!body) return msg('mMsg', 'Write a message.');
+    if (!confirm('Send "' + title + '" to everyone now?')) return;
+    busy($('mSend'), true, 'Sending…');
+    const { error } = await db.from('messages').insert({ title, body });
+    busy($('mSend'), false);
+    if (error) return msg('mMsg', 'Couldn\u2019t send: ' + error.message);
+    $('mTitle').value = ''; $('mBody').value = ''; $('mCount').textContent = '0 / 1000';
+    msg('mMsg', '✓ Sent! It\u2019s in everyone\u2019s inbox, and phones with notifications on will buzz.', 'ok');
+    loadMessagesAdmin();
+  };
 
   // ================= RESULTS =================
   function fillResultsDropdown() {
@@ -573,7 +659,7 @@
   // ================= POINTS & SETTINGS =================
   async function loadSettings() {
     const { data } = await db.from('league_settings')
-      .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point, season_review, site_open').maybeSingle();
+      .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point, season_review, site_open, default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
     if (!data) return;
     settings = data;
     $('setSeason').value = data.season_name;
@@ -584,6 +670,10 @@
     $('setChips').value = data.final_chips_per_point;
     $('setReview').checked = !!data.season_review;
     $('setOpen').checked = !!data.site_open;
+    $('setPay').value = data.default_pay_link || '';
+    $('setBankName').value = data.bank_name || '';
+    $('setSort').value = data.bank_sort_code || '';
+    $('setAcc').value = data.bank_account || '';
   }
   $('setSave').onclick = async () => {
     clear('setMsg');
@@ -595,8 +685,13 @@
       final_players: Number($('setFinalPlayers').value),
       final_chips_per_point: Number($('setChips').value),
       season_review: $('setReview').checked,
-      site_open: $('setOpen').checked
+      site_open: $('setOpen').checked,
+      default_pay_link: $('setPay').value.trim() || null,
+      bank_name: $('setBankName').value.trim() || null,
+      bank_sort_code: $('setSort').value.trim() || null,
+      bank_account: $('setAcc').value.trim() || null
     };
+    if (row.default_pay_link && !/^https:\/\//i.test(row.default_pay_link)) return msg('setMsg', 'The Monzo link should start with https://');
     if (!row.season_name) return msg('setMsg', 'Enter a season name.');
     if (!Number.isInteger(row.best_n) || row.best_n < 1) return msg('setMsg', '"Best finishes that count" must be 1 or more.');
     if (!Number.isInteger(row.min_events) || row.min_events < 1) return msg('setMsg', '"Events needed to qualify" must be 1 or more.');
