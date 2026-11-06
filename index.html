@@ -2338,7 +2338,7 @@
     myReply = mine ? mine.reply : null;
 
     const meta = [];
-    if (ev.arrival_time) meta.push('🚪 Arrive from ' + niceTime(ev.arrival_time));
+    if (ev.arrival_time) meta.push('🚪 Arrive by ' + niceTime(ev.arrival_time));
     if (ev.start_time) meta.push('🃏 ' + (ev.arrival_time ? 'Cards in the air ' : '') + niceTime(ev.start_time));
     if (ev.venue) meta.push('📍 ' + esc(ev.venue));
     if (ev.address) meta.push('🗺️ <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) +
