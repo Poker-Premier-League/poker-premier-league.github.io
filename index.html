@@ -1167,6 +1167,15 @@
   .safer { position: relative; z-index: 2; max-width: 520px; margin: 30px auto 0; padding: 0 20px calc(16px + env(safe-area-inset-bottom));
     text-align: center; font-size: 10.5px; line-height: 1.5; color: rgba(243,223,196,0.45); }
   .safer a { color: inherit; text-decoration: underline; text-decoration-color: rgba(243,223,196,0.3); }
+
+  /* ===== Winnings in Results ===== */
+  .night-pot { margin: 4px 0 8px; padding: 8px 12px; border-radius: 10px; background: linear-gradient(180deg, #3A2013, #2A160C); color: #F3DFC4; font-size: 13px; }
+  .night-pot b { color: #FBC891; font-family: 'Oswald', sans-serif; font-size: 15px; }
+  .won-amt { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; background: linear-gradient(180deg, #FBC891, #E5702F);
+    color: #2A160C; font-weight: 800; font-size: 12px; }
+  .won-amt.big { margin: 0 8px 0 0; font-size: 13px; padding: 3px 9px; align-self: center; }
+  table.order td.won-cell { font-weight: 800; color: #C9561F; white-space: nowrap; }
+  table.order td.won-cell small { display: block; font-weight: 600; font-size: 10.5px; color: var(--muted); }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1907,7 +1916,13 @@
     ]);
     const err = evR.error || resR.error || lgR.error;
     if (err) { $('histContent').innerHTML = '<div class="card section"><p class="empty">Couldn\u2019t load results: ' + esc(err.message) + '</p></div>'; return; }
-    hist = { events: evR.data || [], results: resR.data || [], league: lgR.data || [], best_n: setR.data?.best_n ?? 4 };
+    hist = { events: evR.data || [], results: resR.data || [], league: lgR.data || [], best_n: setR.data?.best_n ?? 4, pots: {}, won: {} };
+    // Prize money for each night (part 12). Quietly skipped if not set up.
+    const pots = await Promise.all(hist.events.map(ev => db.rpc('event_pot', { p_event: ev.id }).then(r => r.error ? null : r.data, () => null)));
+    hist.events.forEach((ev, i) => {
+      hist.pots[ev.id] = pots[i];
+      hist.won[ev.id] = winningsFor(ev, hist.results.filter(r => r.event_id === ev.id), pots[i]);
+    });
 
     const keep = $('histWho').value || (location.hash.match(/player=([\w-]+)/) || [])[1] || '';
     const played = [...new Set(hist.results.map(r => r.player_id))].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
@@ -1926,6 +1941,26 @@
     showPanel('results');
   }
   const nameOf = (id) => people[id]?.display_name || 'Player';
+  // Who won what: paid places go to the finishing order (Heads Up semi-finalists share 3rd and 4th, and so on).
+  // Knockout: each knockout wins one bounty; any bounties left over (the winner's own) go to the winner.
+  function winningsFor(ev, rs, pot) {
+    const won = {};
+    if (!pot || !rs.length) return won;
+    const order = [...rs].sort((a, b) => a.position - b.position);
+    (pot.places || []).forEach((p, i) => {
+      const r = order[i];
+      if (r && Number(p.amount) > 0) (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0, label: p.label }).prize += Number(p.amount);
+    });
+    const bv = Number(pot.bounty_value || 0);
+    if (ev.format === 'knockout' && bv > 0) {
+      let paidOut = 0;
+      rs.forEach(r => { if (r.knockouts) { (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).bounty += r.knockouts * bv; paidOut += r.knockouts * bv; } });
+      const left = Number(pot.bounty_pool || 0) - paidOut, winner = order[0];
+      if (left > 0.001 && winner) { (won[winner.player_id] = won[winner.player_id] || { prize: 0, bounty: 0 }).bounty += left; won[winner.player_id].own = left; }
+    }
+    return won;
+  }
+  const wonTotal = (w) => w ? (w.prize || 0) + (w.bounty || 0) : 0;
   const moneyH = (v) => '£' + Number(v || 0).toLocaleString('en-GB', { maximumFractionDigits: 2 });
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
@@ -1952,7 +1987,8 @@
         '<button class="ev-head" type="button" aria-expanded="' + (i === 0) + '">' +
           '<div class="info"><div class="d">' + niceDate(ev.event_date, true) + '</div>' +
             '<div class="m">' + esc(meta || 'No details') + '</div>' +
-            (winner ? '<div class="w">' + avatarHtml(winner.player_id, 26) + '<span><span class="crown">Winner:</span> <b>' + esc(nameOf(winner.player_id)) + '</b></span></div>'
+            (winner ? '<div class="w">' + avatarHtml(winner.player_id, 26) + '<span><span class="crown">Winner:</span> <b>' + esc(nameOf(winner.player_id)) + '</b>' +
+              (wonTotal(hist.won[ev.id]?.[winner.player_id]) ? ' <span class="won-amt">' + moneyH(wonTotal(hist.won[ev.id][winner.player_id])) + '</span>' : '') + '</span></div>'
                     : '<div class="w"><span class="empty">No results entered</span></div>') +
           '</div><span class="chev" aria-hidden="true">\u203A</span></button>' +
         '<div class="ev-body' + (i === 0 ? '' : ' hidden') + '">' + orderTable(ev, rs) + '</div></div>';
@@ -1968,7 +2004,13 @@
   function orderTable(ev, rs) {
     if (!rs.length) return '<p class="empty">No results were entered for this event.</p>';
     const total = rs.reduce((t, r) => t + Number(r.spent || 0), 0);
-    return '<table class="order"><thead><tr><th></th><th>Player</th><th class="num">Pts</th></tr></thead><tbody>' +
+    const pot = hist.pots[ev.id], won = hist.won[ev.id] || {};
+    const anyWon = Object.keys(won).length > 0;
+    const potLine = pot && Number(pot.pot) > 0
+      ? '<div class="night-pot">🏆 Prize pool <b>' + moneyH(pot.pot) + '</b>' +
+        (Number(pot.bounty_pool) > 0 ? ' · 🎯 Bounties <b>' + moneyH(pot.bounty_pool) + '</b> (' + moneyH(pot.bounty_value) + ' each)' : '') + '</div>'
+      : '';
+    return potLine + '<table class="order"><thead><tr><th></th><th>Player</th>' + (anyWon ? '<th class="num">Won</th>' : '') + '<th class="num">Pts</th></tr></thead><tbody>' +
       rs.map(r => {
         const x = [];
         if (r.rebuys) x.push(plural(r.rebuys, 'rebuy'));
@@ -1977,6 +2019,8 @@
         return '<tr class="' + (r.position === 1 ? 'win' : '') + '"><td class="pos">' + ordinal(r.position) + '</td>' +
           '<td><div class="pl">' + avatarHtml(r.player_id, 28) + '<span><button class="plink" type="button" data-player="' + r.player_id + '">' +
             esc(nameOf(r.player_id)) + '</button>' + (x.length ? '<span class="extra">' + x.join(' \u00B7 ') + '</span>' : '') + '</span></div></td>' +
+          (anyWon ? '<td class="num won-cell">' + (won[r.player_id] ? moneyH(wonTotal(won[r.player_id])) +
+            (won[r.player_id].bounty ? '<small>' + (won[r.player_id].prize ? moneyH(won[r.player_id].prize) + ' + ' : '') + moneyH(won[r.player_id].bounty) + ' bounty</small>' : '') : '') + '</td>' : '') +
           '<td class="num pts">' + Number(r.points).toFixed(2) + '</td></tr>';
       }).join('') + '</tbody></table>' +
       '<div class="ev-foot">Total spent on the night: ' + moneyH(total) + (ev.host ? ' \u00B7 Host: ' + esc(ev.host) : '') + '</div>';
@@ -2010,6 +2054,7 @@
           stat(lg.knockouts ?? 0, 'Knockouts') +
           stat(lg.rebuys ?? 0, 'Rebuys') +
           stat(moneyH(lg.total_spent), 'Spent') +
+          stat(moneyH(rs.reduce((t, r) => t + wonTotal(hist.won[r.event_id]?.[id]), 0)), 'Winnings') +
         '</div>' +
         '<div class="h-title">Every result</div>' +
         (rs.length ? '<ul class="reslist">' + rs.map(r => {
@@ -2018,6 +2063,7 @@
           return '<li class="' + (r.counts ? 'counts' : '') + (r.position === 1 ? ' won' : '') + '">' +
             '<div class="place">' + ordinal(r.position) + '<small>of ' + r.field_size + '</small></div>' +
             '<div class="info"><div class="d">' + niceDate(r.event_date, true) + '</div>' + (x.length ? '<div class="m">' + esc(x.join(' \u00B7 ')) + '</div>' : '') + '</div>' +
+            (wonTotal(hist.won[r.event_id]?.[id]) ? '<div class="won-amt big">' + moneyH(wonTotal(hist.won[r.event_id][id])) + '</div>' : '') +
             '<div class="p">' + Number(r.points).toFixed(2) + '<small>' + (r.counts ? 'counts' : 'dropped') + '</small></div></li>';
         }).join('') + '</ul><div class="legend">Green = one of the best ' + hist.best_n + ' that count \u00B7 Gold = a win</div>'
         : '<p class="empty">No results yet.</p>') +
