@@ -1040,6 +1040,41 @@
     .lk-q, .lk-dots i, .lk-punk, .theme-gpl .soon-hero, .theme-gpl .soon-hero > * { animation: none !important; opacity: 1 !important; }
     .lk-punk { transform: rotate(-4deg); }
   }
+
+  /* ===== Coming soon: everything fits on one screen, no scrolling ===== */
+  .theme-gpl .soon-hero { min-height: 100vh; min-height: 100svh; max-height: 100svh; justify-content: center; gap: 0;
+    padding: max(10px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom)); box-sizing: border-box; }
+  .theme-gpl .badge-stage { width: clamp(110px, 24svh, 230px); height: clamp(110px, 24svh, 230px); margin-bottom: 0.6svh; flex: none; }
+  .theme-gpl .big-badge { width: 92%; height: 92%; }
+  .theme-gpl .halo { width: 100%; height: 100%; }
+  .theme-gpl .soon-league { font-size: clamp(12px, 1.9svh, 16px); margin-top: 0; }
+  .theme-gpl .soon-big { white-space: nowrap; font-size: clamp(34px, min(12vw, 7.4svh), 70px); margin: 0.4svh 0 0.6svh; }
+  .theme-gpl .soon-hero > .fan { height: clamp(52px, 9svh, 96px); width: 200px; margin: 0.4svh auto 0.6svh; flex: none; }
+  .theme-gpl .fan .fc { --cw: clamp(38px, 6.6svh, 64px); width: var(--cw); height: calc(var(--cw) * 1.44); margin-left: calc(var(--cw) / -2);
+    font-size: calc(var(--cw) * 0.3); border-radius: 6px; }
+  .theme-gpl .fan .fc b { font-size: calc(var(--cw) * 0.4); margin-top: 2px; }
+  .theme-gpl .soon-hero > .soon-text { font-size: clamp(14px, 2.2svh, 18px); margin: 0.6svh 0 0; }
+  .theme-gpl .soon-lucky { margin: 0.6svh 0 0.8svh; }
+  .lk-q, .lk-dots { font-size: clamp(24px, min(8.5vw, 4.6svh), 40px) !important; }
+  .lk-punk { font-size: clamp(30px, min(11vw, 6svh), 52px) !important; }
+  .theme-gpl .soon-hero > .soon-teaser { font-size: clamp(10px, 1.5svh, 12px); margin: 0.4svh 0 1.2svh; letter-spacing: 1.2px; }
+  .theme-gpl .soon-hero > .volume-note { font-size: clamp(12px, 1.8svh, 14px); padding: 8px 12px; line-height: 1.35; }
+  .soon-links { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: 0 18px; margin-top: 1svh;
+    animation: riseIn 0.9s ease-out 7s both; }
+  .soon-links .textlink { margin: 6px 0 0; font-size: 13px; }
+  body.theme-gpl.soon-mode { padding-bottom: 0; }
+  /* very short screens (small iPhones in Safari): drop the card fan */
+  @media (max-height: 640px) { .theme-gpl .soon-hero > .fan { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .soon-links { animation: none; } }
+
+  /* Card corners: rank + suit top-left (and upside down bottom-right) so you can read the fan */
+  .fc .ix { position: absolute; top: 5%; left: 7%; display: flex; flex-direction: column; align-items: center; font-style: normal;
+    font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 1em; line-height: 0.95; }
+  .fc .ix i { font-style: normal; font-size: 0.85em; margin-top: 1px; }
+  .fc .ix.br { top: auto; left: auto; bottom: 5%; right: 7%; transform: rotate(180deg); }
+  .fc > b { margin-top: 0; font-size: 1.9em !important; }
+  .theme-gpl .fan .fc { font-size: calc(var(--cw) * 0.24); }
+  .theme-gpl .fan .fc > b { font-size: calc(var(--cw) * 0.46) !important; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1125,7 +1160,7 @@
   <h2 class="soon-big">Coming Soon</h2>
 
   <div class="fan" aria-hidden="true">
-    <span class="fc f1">A<b>♠</b></span><span class="fc f2 red">K<b>♥</b></span><span class="fc f3 red">Q<b>♦</b></span><span class="fc f4">J<b>♣</b></span>
+    <span class="fc f1"><em class="ix">A<i>♠</i></em><b>♠</b><em class="ix br">A<i>♠</i></em></span><span class="fc f2 red"><em class="ix">K<i>♥</i></em><b>♥</b><em class="ix br">K<i>♥</i></em></span><span class="fc f3 red"><em class="ix">Q<i>♦</i></em><b>♦</b><em class="ix br">Q<i>♦</i></em></span><span class="fc f4"><em class="ix">J<i>♣</i></em><b>♣</b><em class="ix br">J<i>♣</i></em></span>
   </div>
 
   <p class="soon-text">The Saloon Doors Are About To Swing Open.</p>
@@ -1138,9 +1173,11 @@
 
   <div class="volume-note">🔊 <b>When You Log In:</b> Take Your Phone <b>Off Silent</b> And <b>Turn The Volume Up!</b></div>
 
-  <button class="textlink light open-install" type="button">📲 How To Add It To Your Home Screen</button>
-  <button id="soonAdminLogin" class="textlink light" type="button">Admin Log In</button>
-  <button id="soonLogout" class="textlink light hidden" type="button">Log Out</button>
+  <div class="soon-links">
+    <button class="textlink light open-install" type="button">📲 Add It To Your Home Screen</button>
+    <button id="soonAdminLogin" class="textlink light" type="button">Admin Log In</button>
+    <button id="soonLogout" class="textlink light hidden" type="button">Log Out</button>
+  </div>
 </div>
 
 <div id="authCard" class="card hidden">
