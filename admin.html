@@ -100,6 +100,11 @@
   .evlist li { flex-wrap: wrap; row-gap: 8px; }
   .evlist .info { flex: 1 1 100%; }
   .evlist li .status { margin-right: auto; }
+  .evlist .nudges { flex: 1 1 100%; display: flex; gap: 8px; }
+  .evlist .nudges .btn { flex: 1; font-size: 13px; }
+  .nudge-msg { flex: 1 1 100%; font-size: 13px; color: var(--muted); }
+  .nudge-msg:empty { display: none; }
+  .nudge-msg.ok { color: #1b5e3a; } .nudge-msg.err { color: var(--red); }
 
   /* Results entry */
   table.res { width: 100%; border-collapse: collapse; margin-top: 8px; }
@@ -451,10 +456,14 @@
         '<div class="places">' + n + (ev.max_players ? ' of ' + ev.max_players : '') + ' riding in</div></div>' +
         (ev.status === 'upcoming' && ev.registration_closed ? '<span class="status closed">Closed</span>' : '<span class="status ' + ev.status + '">' + ev.status + '</span>') +
         (ev.status === 'upcoming' ? '<button class="btn small secondary" data-close="' + ev.id + '">' + (ev.registration_closed ? 'Reopen' : 'Close reg') + '</button>' : '') +
-        '<button class="btn small secondary" data-edit="' + ev.id + '">Edit</button></li>';
+        '<button class="btn small secondary" data-edit="' + ev.id + '">Edit</button>' +
+        (ev.status === 'upcoming' ? '<div class="nudges"><button class="btn small secondary" data-nudge="nudge_pay" data-ev="' + ev.id + '">💷 Chase payment</button>' +
+          '<button class="btn small secondary" data-nudge="nudge_reply" data-ev="' + ev.id + '">📣 Chase replies</button></div>' +
+          '<div class="nudge-msg" id="nudgeMsg' + ev.id + '"></div>' : '') + '</li>';
     }).join('')
       : '<li class="muted">No events yet. Create the first one above.</li>';
     $('evList').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => startEdit(Number(b.dataset.edit)));
+    $('evList').querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => sendNudge(b, b.dataset.nudge, Number(b.dataset.ev)));
     $('evList').querySelectorAll('[data-close]').forEach(b => b.onclick = async () => {
       const ev = events.find(e => e.id === Number(b.dataset.close));
       b.disabled = true;
@@ -505,6 +514,28 @@
     paintKoNote();
   }
   paintFormat();
+
+  // Chase payment: everyone riding in who hasn't paid. Chase replies: everyone who hasn't replied or said Maybe.
+  async function sendNudge(btn, type, eventId) {
+    const what = type === 'nudge_pay' ? 'a payment reminder to everyone riding in who hasn\u2019t paid' : 'a reminder to everyone who hasn\u2019t replied or said Maybe';
+    if (!confirm('Send ' + what + '?')) return;
+    const out = $('nudgeMsg' + eventId);
+    btn.disabled = true; out.textContent = 'Sending…'; out.className = 'nudge-msg';
+    try {
+      const { data: s } = await db.auth.getSession();
+      const r = await fetch(SUPABASE_URL + '/functions/v1/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (s.session?.access_token || '') },
+        body: JSON.stringify({ type, record: { event_id: eventId } })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || ('error ' + r.status));
+      out.textContent = j.people ? '✓ Sent to ' + j.people + ' player' + (j.people === 1 ? '' : 's') + (j.sent < j.people ? ' (some haven\u2019t turned notifications on)' : '') + '.'
+        : (type === 'nudge_pay' ? 'Nobody to chase: everyone riding in has paid.' : 'Nobody to chase: everyone has replied.');
+      out.className = 'nudge-msg ok';
+    } catch (e) { out.textContent = 'Couldn\u2019t send: ' + (e.message || e); out.className = 'nudge-msg err'; }
+    btn.disabled = false;
+  }
 
   function resetEventForm() {
     $('evForm').reset();
