@@ -1198,6 +1198,35 @@
   .hf-grid .hf-chip { width: auto; min-width: 0; }
   .hf-grid .hf-chip span:last-child { max-width: 100%; }
   .hf-select { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #D9C2A3; background: #FFFBF3; color: var(--ink); font-family: inherit; font-weight: 600; }
+
+  .ent-admin .ent-del { color: #8A2414; border-color: #E8B9A6; }
+  .pz-clear { display: block; margin: 8px auto 0; color: #F3DFC4 !important; font-size: 12.5px; opacity: 0.85; }
+
+  /* ===== Coming soon: build progress strip ===== */
+  .build-strip { display: none; }
+  .theme-gpl .build-strip { display: block; position: relative; z-index: 2; width: min(100%, 360px); margin: 1.2svh auto 0; padding: 8px 12px;
+    border-radius: 12px; border: 1px solid rgba(244,154,92,0.45); background: rgba(30,15,7,0.6); color: #F6EAD5; font: inherit; text-align: left; cursor: pointer;
+    animation: riseIn 0.9s ease-out 6.8s both; }
+  .bs-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; }
+  .bs-top span { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .bs-top b { color: #FBC891; font-size: 12px; }
+  .bs-bar { position: relative; display: block; height: 7px; margin: 6px 0 5px; border-radius: 999px; background: rgba(246,234,213,0.15); overflow: hidden; }
+  .bs-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, #F49A5C, #E5702F); }
+  .bs-bar > i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(251,200,145,0.55) 0 4px, rgba(251,200,145,0.15) 4px 8px); }
+  .bs-tap { display: block; font-size: 11.5px; color: #F3DFC4; opacity: 0.8; }
+  .build-card h3 { margin-top: 0; }
+  .bl-head { margin: 12px 0 4px; font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 14px; }
+  .bl-head.done { color: #2E7D50; } .bl-head.now { color: #C9561F; } .bl-head.next { color: var(--muted); }
+  .bl { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.45; }
+  .build-card .btn { margin-top: 14px; width: 100%; }
+  @media (prefers-reduced-motion: reduce) { .theme-gpl .build-strip { animation: none; } }
+
+  /* make room for the build strip so the page still fits one screen */
+  .theme-gpl .soon-hero > .soon-teaser { display: none; }
+  .theme-gpl .badge-stage { width: clamp(96px, 20svh, 210px); height: clamp(96px, 20svh, 210px); }
+  .theme-gpl .soon-hero > .fan { height: clamp(46px, 8svh, 90px); }
+  .theme-gpl .soon-hero > .volume-note { padding: 6px 12px; margin-top: 0.6svh; }
+  .theme-gpl .soon-big { margin: 0.2svh 0 0.4svh; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1295,6 +1324,12 @@
   <p class="soon-teaser">League Table · Wanted Posters · Showdowns · The Saloon Wall</p>
 
   <div class="volume-note">🔊 <b>When You Log In:</b> Take Your Phone <b>Off Silent</b> And <b>Turn The Volume Up!</b></div>
+
+  <button id="buildBtn" class="build-strip" type="button" aria-haspopup="dialog">
+    <span class="bs-top"><span>🔨 Build progress</span><b>3 of 8 phases done</b></span>
+    <span class="bs-bar"><span style="width:37.5%"></span><i style="left:37.5%;width:12.5%"></i></span>
+    <span class="bs-tap">See what’s ready and what’s next ›</span>
+  </button>
 
   <div class="soon-links">
     <button class="textlink light open-install" type="button">📲 Add It To Your Home Screen</button>
@@ -1575,6 +1610,33 @@
   18+ · When the fun stops, stop. Need help? National Gambling Helpline <a href="tel:08088020133">0808 8020 133</a> · <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener">gamcare.org.uk</a>
 </footer>
 
+<div id="buildModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="buildTitle">
+  <div class="modal-card build-card">
+    <h3 id="buildTitle">🔨 How the build is going</h3>
+    <p class="muted">Alex and Phil are building the best poker app this side of the Mississippi. Here’s where we’re at.</p>
+    <div class="bl-head done">✅ Ready to ride</div>
+    <ul class="bl">
+      <li>Invite-only sign-up, profiles and WANTED posters</li>
+      <li>League table with Phil’s scoring and tie-breaks</li>
+      <li>Showdowns: Freezeout, Re-buy, Knockout and Heads Up, with seat limits</li>
+      <li>Monzo and bank payments, confirmed by Alex and Phil</li>
+      <li>Prize pools, payouts, bounties, re-buys and add-ons</li>
+      <li>Phone notifications, messages and the Saloon Wall</li>
+      <li>Results and every player’s stats and winnings</li>
+    </ul>
+    <div class="bl-head now">🛠️ Working on now</div>
+    <ul class="bl"><li>Game night: random seating and a live tournament table</li></ul>
+    <div class="bl-head next">🔜 Coming next</div>
+    <ul class="bl">
+      <li>The Last Draw: the season’s final table</li>
+      <li>Polls for dates, venues and formats</li>
+      <li>Player ratings and player types</li>
+      <li>Season calendar</li>
+    </ul>
+    <button id="buildClose" class="btn" type="button">Back</button>
+  </div>
+</div>
+
 <div id="photoModal" class="modal hidden" role="dialog" aria-modal="true">
   <div class="modal-card">
     <h3 id="photoTitle">Your photo</h3>
@@ -1772,6 +1834,11 @@
     const i = TABS.indexOf(currentTab) + (dx < 0 ? 1 : -1);
     if (i >= 0 && i < TABS.length) showPanel(TABS[i]);
   }, { passive: true });
+
+  // ---- Coming soon: build progress ----
+  $('buildBtn').onclick = () => $('buildModal').classList.remove('hidden');
+  $('buildClose').onclick = () => $('buildModal').classList.add('hidden');
+  $('buildModal').onclick = (e) => { if (e.target === $('buildModal')) $('buildModal').classList.add('hidden'); };
 
   // ---- Keep it fresh: refresh when you come back to the app, every minute while it's open, or pull down ----
   let lastRefresh = Date.now(), refreshing = false;
@@ -2415,8 +2482,10 @@
       if (hasRebuys && !ev.rebuys_closed) why.push('re-buys still open');
       html += '<p class="pz-wait">Payouts appear once all the money is in' + (why.length ? ': ' + why.join(', ') : '') + '.</p>';
     }
-    if (me.is_admin && hasRebuys)
+    if (me.is_admin && hasRebuys) {
       html += '<button id="toggleRebuys" type="button" class="btn secondary small">' + (ev.rebuys_closed ? '🔓 Reopen re-buys' : '🔒 Close re-buys and add-ons') + '</button>';
+      if (pot.rebuys || pot.addons || pot.pending) html += '<button id="clearEntries" type="button" class="textlink pz-clear">Clear all re-buys and add-ons</button>';
+    }
     return html + '</div>';
   }
   function entryTags(entries, pid) {
@@ -2428,11 +2497,14 @@
   }
   function entryAdminBtns(entries, pid, ev) {
     const pend = entries.filter(e => e.player_id === pid && !e.confirmed);
+    const lastOf = (kind) => entries.filter(e => e.player_id === pid && e.confirmed && e.kind === kind).pop();
     return '<span class="ent-admin">' +
       pend.map(e => '<button type="button" class="ent-ok" data-ok="' + e.id + '" title="Money landed: approve">✓ Approve ' + (e.kind === 'addon' ? 'add-on' : 're-buy') + '</button>' +
         '<button type="button" class="ent-no" data-no="' + e.id + '" aria-label="Turn down this request">✕</button>').join('') +
       '<button type="button" class="ent-add" data-add="rebuy" data-pid="' + pid + '" title="Add a re-buy (already paid)">+🔁</button>' +
       (ev.addon_allowed !== false ? '<button type="button" class="ent-add" data-add="addon" data-pid="' + pid + '" title="Add an add-on (already paid)">+➕</button>' : '') +
+      (lastOf('rebuy') ? '<button type="button" class="ent-del" data-del="' + lastOf('rebuy').id + '" data-what="re-buy" data-pid="' + pid + '" title="Remove a re-buy">−🔁</button>' : '') +
+      (lastOf('addon') ? '<button type="button" class="ent-del" data-del="' + lastOf('addon').id + '" data-what="add-on" data-pid="' + pid + '" title="Remove the add-on">−➕</button>' : '') +
       '</span>';
   }
   function monzoFor(link, amount) {          // Monzo links can carry an amount: monzo.me/name/20.00
@@ -2503,6 +2575,20 @@
       await db.from('event_entries').delete().eq('id', Number(b.dataset.no));
       renderEvent();
     });
+    document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+      const name = people[b.dataset.pid]?.display_name || 'this player';
+      if (!confirm('Remove ' + (b.dataset.what === 'add-on' ? 'the add-on' : 'a re-buy') + ' from ' + name + '? The prize pool goes down to match.')) return;
+      b.disabled = true;
+      const { error } = await db.from('event_entries').delete().eq('id', Number(b.dataset.del));
+      if (error) { alert('Couldn\u2019t remove: ' + error.message); b.disabled = false; return; }
+      renderEvent();
+    });
+    if ($('clearEntries')) $('clearEntries').onclick = async () => {
+      if (!confirm('Clear ALL re-buys and add-ons for this event, including any waiting requests? This can\u2019t be undone.')) return;
+      const { error } = await db.from('event_entries').delete().eq('event_id', ev.id);
+      if (error) { alert('Couldn\u2019t clear: ' + error.message); return; }
+      renderEvent();
+    };
     document.querySelectorAll('[data-add]').forEach(b => b.onclick = async () => {
       const name = people[b.dataset.pid]?.display_name || 'this player';
       if (!confirm('Add a ' + (b.dataset.add === 'addon' ? 'add-on' : 're-buy') + ' for ' + name + '? Only if they\u2019ve already paid.')) return;
