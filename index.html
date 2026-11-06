@@ -1176,6 +1176,22 @@
   .won-amt.big { margin: 0 8px 0 0; font-size: 13px; padding: 3px 9px; align-self: center; }
   table.order td.won-cell { font-weight: 800; color: #C9561F; white-space: nowrap; }
   table.order td.won-cell small { display: block; font-weight: 600; font-size: 10.5px; color: var(--muted); }
+
+  /* ===== Results picker ===== */
+  .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .hf-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; font-size: 16px; color: var(--felt); }
+  .hf-help { margin: 4px 0 10px; font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+  .hf-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; margin: 0 -4px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+  .hf-chip { flex: none; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 68px; padding: 8px 4px 7px;
+    border-radius: 12px; border: 1px solid #D9C2A3; background: #FFFBF3; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--ink); cursor: pointer; }
+  .hf-chip span:last-child { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hf-chip .hf-ico { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; font-size: 20px; }
+  .hf-chip.on { background: linear-gradient(180deg, #EF8443, #D2591D); border-color: #C9561F; color: #fff; box-shadow: 0 4px 12px rgba(210,89,29,0.35); }
+
+  .sec-head { margin: 18px 4px 10px; font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    font-size: 16px; color: #FBC891; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+  #histProfile:empty { display: none; }
+  #histProfile { scroll-margin-top: 84px; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1372,6 +1388,11 @@
         <div class="section-title" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
+      <div class="card section hfilter">
+        <div class="hf-title">🤠 Player profiles</div>
+        <p class="hf-help">Tap a player to see their <b>WANTED poster</b>, stats and every result.</p>
+        <div class="hf-chips" id="lobbyChips" aria-label="Player profiles"></div>
+      </div>
       <div id="appCard" class="card section app-card hidden">
         <img src="icons/icon-192.png" alt="" class="app-card-icon">
         <div class="app-card-text"><b>Get the app</b><span>Add the league to your home screen.</span></div>
@@ -1400,9 +1421,13 @@
     <!-- ===== RESULTS ===== -->
     <section id="panel-results" class="panel hidden" role="tabpanel">
       <div class="card section hfilter">
-        <label for="histWho">Show</label>
-        <select id="histWho"><option value="">All events</option></select>
+        <div class="hf-title">🤠 Player profiles</div>
+        <p class="hf-help">Tap a player to see their <b>WANTED poster</b>, stats and every result.</p>
+        <div class="hf-chips" id="histChips" aria-label="Player profiles"></div>
+        <select id="histWho" class="sr-only" aria-label="Player profile"><option value="">No player</option></select>
       </div>
+      <div id="histProfile"></div>
+      <h2 class="sec-head">🏆 Results: every night</h2>
       <div id="histContent"><div class="card section"><p class="empty">Loading…</p></div></div>
     </section>
 
@@ -1693,6 +1718,7 @@
     $('adminBadge').classList.toggle('hidden', !profile.is_admin);
     await loadProfiles();
     $('myAvatar').innerHTML = avatarHtml(me.id, 36);
+    paintLobbyChips();
     $('adminLink').classList.toggle('hidden', !profile.is_admin);
     showScreen('home');
     await Promise.all([loadEvent(), loadLeague(), loadWall()]);
@@ -1756,6 +1782,7 @@
     try {
       await loadProfiles();
       $('myAvatar').innerHTML = avatarHtml(me.id, 36);
+      paintLobbyChips();
       await Promise.all([loadEvent(), loadLeague(), loadMessages(),
         currentTab === 'results' ? loadHistory() : null, currentTab === 'wall' ? loadWall() : null]);
     } catch (_) { /* try again next time */ }
@@ -1925,10 +1952,10 @@
     });
 
     const keep = $('histWho').value || (location.hash.match(/player=([\w-]+)/) || [])[1] || '';
-    const played = [...new Set(hist.results.map(r => r.player_id))].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-    $('histWho').innerHTML = '<option value="">All events</option>' +
-      played.map(id => '<option value="' + id + '">' + esc(nameOf(id)) + '</option>').join('');
-    $('histWho').value = played.includes(keep) ? keep : '';
+    const everyone = profileIds();
+    $('histWho').innerHTML = '<option value="">No player</option>' +
+      everyone.map(id => '<option value="' + id + '">' + esc(nameOf(id)) + '</option>').join('');
+    $('histWho').value = everyone.includes(keep) ? keep : '';
     renderHistory();
   }
   $('histWho').onchange = () => {
@@ -1964,15 +1991,40 @@
   const moneyH = (v) => '£' + Number(v || 0).toLocaleString('en-GB', { maximumFractionDigits: 2 });
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
+  // ---- Player profiles: a chip for every player (Results tab and Lobby) ----
+  const profileIds = () => Object.keys(people).filter(id => people[id].approved !== false).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+  function chipsHtml(cur) {
+    return profileIds().map(id => '<button type="button" class="hf-chip' + (id === cur ? ' on' : '') + '" data-who="' + id + '" aria-pressed="' + (id === cur) + '">' +
+      avatarHtml(id, 30) + '<span>' + esc(nameOf(id)) + '</span></button>').join('') || '<p class="empty">No players yet.</p>';
+  }
+  function paintHistChips() {
+    const cur = $('histWho').value;
+    $('histChips').innerHTML = chipsHtml(cur);
+    $('histChips').querySelectorAll('[data-who]').forEach(b => b.onclick = () => {
+      $('histWho').value = b.dataset.who === cur ? '' : b.dataset.who;      // tap again to close
+      $('histWho').onchange();
+      if ($('histWho').value) $('histProfile').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    const on = $('histChips').querySelector('.on');
+    if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  function paintLobbyChips() {
+    $('lobbyChips').innerHTML = chipsHtml('');
+    $('lobbyChips').querySelectorAll('[data-who]').forEach(b => b.onclick = () => {
+      openPlayerHistory(b.dataset.who);
+      setTimeout(() => $('histProfile').scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    });
+  }
   function renderHistory() {
     if (!hist) return;
+    paintHistChips();
     const id = $('histWho').value;
-    if (id && !hist.results.some(r => r.player_id === id)) { $('histWho').value = ''; }
-    if ($('histWho').value) renderPlayerHistory($('histWho').value); else renderAllEvents();
-    document.querySelectorAll('#histContent [data-player]').forEach(b => b.onclick = (e) => {
+    renderAllEvents();                                                   // every night, always shown
+    if ($('histWho').value) renderPlayerHistory($('histWho').value); else $('histProfile').innerHTML = '';
+    document.querySelectorAll('#panel-results [data-player]').forEach(b => b.onclick = (e) => {
       e.stopPropagation();
       $('histWho').value = b.dataset.player; $('histWho').onchange();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      $('histProfile').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
@@ -2032,8 +2084,8 @@
     const evById = {}; hist.events.forEach(e => evById[e.id] = e);
     const rs = hist.results.filter(r => r.player_id === id).sort((a, b) => b.event_date.localeCompare(a.event_date));
     const stat = (v, l) => '<div class="stat"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>';
-    $('histContent').innerHTML =
-      '<button id="histBack" class="textlink light backlink" type="button">\u2190 All events</button>' +
+    $('histProfile').innerHTML =
+      '<button id="histBack" class="textlink light backlink" type="button">✕ Close profile</button>' +
       (WEST ? (() => {
         const spot = leagueSpot(id);
         const sub = spot && spot.qualified ? (spot.shared ? 'Joint ' : '') + ordinal(spot.rank) + ' in the league' : 'Not qualified yet';
@@ -2123,7 +2175,7 @@
   let avatarUrls = {};  // id -> signed image URL
 
   async function loadProfiles() {
-    const { data } = await db.from('profiles').select('id, display_name, nickname, avatar_path');
+    const { data } = await db.from('profiles').select('id, display_name, nickname, avatar_path, approved');
     people = {}; avatarUrls = {};
     (data || []).forEach(p => people[p.id] = p);
     const withPhoto = (data || []).filter(p => p.avatar_path);
