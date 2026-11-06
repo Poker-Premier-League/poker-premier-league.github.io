@@ -98,6 +98,12 @@
   .evlist .places { font-size: 12px; color: var(--muted); }
   .status.closed { background: #fde3d3; color: #9a3a12; }
   .evlist li { flex-wrap: wrap; row-gap: 8px; }
+  .paytbl { font-size: 13px; }
+  .paytbl td { padding: 3px 2px; }
+  .paytbl input { padding: 7px 2px; font-size: 13px; }
+  .paytbl td.name { width: 44px; }
+  .paytbl .tot { width: 48px; font-size: 12px; }
+  #payRows { overflow-x: auto; }
   .evlist .info { flex: 1 1 100%; }
   .evlist li .status { margin-right: auto; }
   .evlist .nudges { flex: 1 1 100%; display: flex; gap: 8px; }
@@ -348,6 +354,19 @@
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
     <div class="card">
+      <h2>Payout tables</h2>
+      <p class="muted">Only admins can see these. Each row is the percentage of the prize pool for 1st, 2nd, 3rd… and must add up to 100. Players only see the amounts.</p>
+      <div class="seg small" id="payKind" style="margin-top:10px">
+        <button type="button" data-v="standard" class="on">Freezeout · Re-buy · Knockout</button>
+        <button type="button" data-v="headsup">Heads Up</button>
+      </div>
+      <p class="muted small-note" id="payKindNote"></p>
+      <div id="payRows"><p class="muted">Loading…</p></div>
+      <button id="paySave" class="btn full" type="button" style="margin-top:12px">Save payout tables</button>
+      <div id="payMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
       <h2>Season</h2>
       <div class="row2">
         <div><label for="setSeason">Season name</label><input id="setSeason" type="text"></div>
@@ -432,7 +451,7 @@
     if (!profile || !profile.is_admin || !profile.approved) { $('denied').classList.remove('hidden'); return; }
     $('whoName').textContent = profile.display_name;
     $('app').classList.remove('hidden');
-    await Promise.all([loadPlayers(), loadSettings(), loadEvents()]);
+    await Promise.all([loadPlayers(), loadSettings(), loadEvents(), loadPayouts()]);
   })();
 
   async function loadPlayers() {
@@ -775,10 +794,13 @@
     if (!eventId) { $('resTable').innerHTML = '<p class="muted">Create an event first.</p>'; return; }
     $('resTable').innerHTML = '<p class="muted">Loading…</p>';
 
-    const [resR, attR] = await Promise.all([
+    const [resR, attR, entR] = await Promise.all([
       db.from('results').select('player_id, position, rebuys, addons, knockouts').eq('event_id', eventId),
-      db.from('attendance').select('player_id, reply').eq('event_id', eventId)
+      db.from('attendance').select('player_id, reply').eq('event_id', eventId),
+      db.from('event_entries').select('player_id, kind').eq('event_id', eventId).eq('confirmed', true)
     ]);
+    // Re-buys / add-ons confirmed on the night fill in the boxes (until results are saved)
+    const night = {}; (entR.data || []).forEach(e => { night[e.player_id] = night[e.player_id] || { rebuys: 0, addons: 0 }; night[e.player_id][e.kind + 's']++; });
     if (resR.error || attR.error) { $('resTable').innerHTML = '<p class="muted">Couldn’t load: ' + esc((resR.error || attR.error).message) + '</p>'; return; }
 
     const existing = {}; (resR.data || []).forEach(r => existing[r.player_id] = r);
@@ -803,7 +825,7 @@
     $('resTable').innerHTML =
       '<table class="res"><thead><tr><th>Player</th><th>Pos</th><th>Rebuys</th><th>Add-ons</th><th>KOs</th><th style="text-align:right">Pts</th></tr></thead><tbody>' +
       list.map(p => {
-        const r = existing[p.id];
+        const r = existing[p.id] || (night[p.id] ? { position: '', ...night[p.id] } : null);
         return '<tr data-id="' + p.id + '">' +
           '<td class="name">' + esc(p.display_name) + (saidIn.has(p.id) ? ' <span class="tag-in">IN</span>' : '') +
             (p.nickname ? '<small>“' + esc(p.nickname) + '”</small>' : '') + '</td>' +
@@ -914,6 +936,57 @@
   };
 
   // ================= POINTS & SETTINGS =================
+  // ================= PAYOUT TABLES =================
+  let payTables = [], payKind = 'standard';
+  async function loadPayouts() {
+    const { data, error } = await db.from('payout_tables').select('*').order('players');
+    if (error) { $('payRows').innerHTML = '<p class="muted">Payout tables aren\u2019t set up yet (run setup part 12).</p>'; $('paySave').classList.add('hidden'); return; }
+    payTables = data || [];
+    paintPayouts();
+  }
+  function paintPayouts() {
+    $('payKindNote').textContent = payKind === 'headsup'
+      ? 'Heads Up rows list every paid place: e.g. 16 players = Sheriff, Deputy, then each losing semi-finalist.'
+      : 'Knockout uses this for the main pot only; bounties are paid separately.';
+    const rows = payTables.filter(r => r.kind === payKind);
+    const max = Math.max(...rows.map(r => r.places.length), 3);
+    $('payRows').innerHTML = '<table class="res paytbl"><thead><tr><th>Players</th>' +
+      Array.from({ length: max }, (_, i) => '<th>' + (i + 1) + (['st','nd','rd'][i] || 'th') + '</th>').join('') + '<th>Total</th></tr></thead><tbody>' +
+      rows.map(r => '<tr data-players="' + r.players + '"><td class="name">' + r.players + '</td>' +
+        Array.from({ length: max }, (_, i) => '<td><input type="number" inputmode="decimal" min="0" max="100" step="0.5" value="' + (r.places[i] != null ? Number(r.places[i]) : '') + '"></td>').join('') +
+        '<td class="ptsc tot"></td></tr>').join('') + '</tbody></table>';
+    $('payRows').querySelectorAll('tr[data-players]').forEach(tr => {
+      const paintTot = () => {
+        const t = [...tr.querySelectorAll('input')].reduce((a, i) => a + (Number(i.value) || 0), 0);
+        const c = tr.querySelector('.tot'); c.textContent = (Math.round(t * 100) / 100) + '%'; c.style.color = Math.abs(t - 100) < 0.001 ? '' : 'var(--red)';
+      };
+      tr.querySelectorAll('input').forEach(i => i.oninput = paintTot); paintTot();
+    });
+  }
+  $('payKind').querySelectorAll('button').forEach(b => b.onclick = () => {
+    $('payKind').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); payKind = b.dataset.v; clear('payMsg'); paintPayouts();
+  });
+  $('paySave').onclick = async () => {
+    clear('payMsg');
+    const changed = [];
+    for (const tr of $('payRows').querySelectorAll('tr[data-players]')) {
+      const vals = [...tr.querySelectorAll('input')].map(i => i.value === '' ? null : Number(i.value));
+      while (vals.length && vals[vals.length - 1] == null) vals.pop();
+      if (vals.some(v => v == null || v < 0)) return msg('payMsg', 'Row ' + tr.dataset.players + ': fill the places in order with no gaps.');
+      const total = vals.reduce((a, v) => a + v, 0);
+      if (Math.abs(total - 100) > 0.001) return msg('payMsg', 'Row ' + tr.dataset.players + ' adds up to ' + total + '%. Each row must make 100%.');
+      const old = payTables.find(r => r.kind === payKind && r.players === Number(tr.dataset.players));
+      if (!old || old.places.map(Number).join(',') !== vals.join(',')) changed.push({ kind: payKind, players: Number(tr.dataset.players), places: vals });
+    }
+    if (!changed.length) return msg('payMsg', 'Nothing changed.', 'ok');
+    busy($('paySave'), true, 'Saving…');
+    const { error } = await db.from('payout_tables').upsert(changed, { onConflict: 'kind,players' });
+    busy($('paySave'), false);
+    if (error) return msg('payMsg', 'Couldn\u2019t save: ' + error.message);
+    msg('payMsg', '\u2713 Saved ' + changed.length + ' row' + (changed.length === 1 ? '' : 's') + '.', 'ok');
+    await loadPayouts();
+  };
+
   async function loadSettings() {
     const { data } = await db.from('league_settings')
       .select('season_name, best_n, min_events, ko_points, final_players, final_chips_per_point, season_review, site_open, default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();

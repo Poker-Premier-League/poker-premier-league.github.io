@@ -1119,6 +1119,36 @@
   .chip-dot { position: absolute; left: 9px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; border-radius: 50%;
     border: 2px dashed rgba(58,32,19,0.35); box-sizing: border-box; }
   #pfLater { margin-top: 10px; }
+
+  /* ===== Prize pool, re-buys, add-ons ===== */
+  .prize-box { margin: 12px 0 4px; padding: 12px 14px; border-radius: 12px; background: linear-gradient(180deg, #3A2013, #2A160C); color: #F6EAD5;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25); }
+  .pz-head { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; font-size: 15px; }
+  .pz-head b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 26px; color: #FBC891; margin-left: 6px; letter-spacing: 0.5px; }
+  .pz-sub { font-size: 13px; color: #F3DFC4; opacity: 0.9; margin-top: 2px; }
+  .pz-places { list-style: none; margin: 10px 0 0; padding: 0; }
+  .pz-places li { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px dashed rgba(246,234,213,0.25); font-weight: 600; }
+  .pz-places li:first-child b { color: #FBC891; }
+  .pz-places b { font-family: 'Oswald', sans-serif; font-size: 17px; }
+  .pz-wait { margin: 8px 0 0; font-size: 13px; color: #F3DFC4; opacity: 0.85; }
+  .rebuy-box .pz-wait { color: var(--muted); opacity: 1; }
+  .prize-box .btn.small { margin-top: 10px; width: 100%; padding: 9px; font-size: 13px; }
+  .rebuy-box { margin: 10px 0 4px; padding: 12px 14px; border-radius: 12px; background: rgba(229,112,47,0.08); border: 1px solid rgba(229,112,47,0.4); }
+  .rb-head { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; font-size: 14px; color: #C9561F; }
+  .rb-mine { font-size: 13px; margin-top: 4px; }
+  .rb-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .rb-btns .btn { flex: 1; padding: 10px 6px; font-size: 14px; }
+  .rb-btns .btn:disabled { opacity: 0.45; }
+  .rb-step { margin-top: 10px; font-size: 14px; }
+  .rb-step p { margin: 0 0 8px; line-height: 1.5; }
+  .rb-pending { margin-top: 8px; font-size: 14px; }
+  .ent-tag { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: rgba(58,32,19,0.1); color: var(--ink); }
+  .ent-tag.wait { background: #FBE3C7; color: #8A3A12; }
+  #eventBody .who li { flex-wrap: wrap; }
+  .ent-admin { order: 10; flex: 1 1 100%; display: flex; gap: 6px; flex-wrap: wrap; padding-left: 58px; margin: 2px 0 6px; }
+  .ent-admin button { border: 1px solid #D9C2A3; background: #FFFBF3; border-radius: 8px; padding: 3px 7px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--ink); }
+  .ent-admin .ent-ok { background: #2E7D50; border-color: #2E7D50; color: #fff; }
+  .ent-admin .ent-no { color: #8A2414; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -2048,6 +2078,14 @@
       ({ data: replies, error } = await db.from('attendance').select('player_id, reply, comment').eq('event_id', ev.id));
     }
     const { data: pay } = await db.from('league_settings').select('default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
+    // Money (part 12): prize pool + re-buys/add-ons. Quietly skipped if not set up yet.
+    const hasRebuys = ev.format === 'rebuy' || ev.format === 'knockout';
+    const [potRes, entRes] = await Promise.all([
+      db.rpc('event_pot', { p_event: ev.id }),
+      hasRebuys ? db.from('event_entries').select('id, player_id, kind, confirmed').eq('event_id', ev.id).order('created_at') : Promise.resolve({ data: [] })
+    ]);
+    const pot = potRes.error ? null : potRes.data;
+    const entries = entRes.error ? [] : (entRes.data || []);
     if (error) { $('eventBody').innerHTML = '<p class="empty">Couldn’t load replies: ' + esc(error.message) + '</p>'; return; }
 
     const mine = (replies || []).find(r => r.player_id === me.id);
@@ -2072,7 +2110,9 @@
       return '<h4><span class="dot ' + key + '"></span>' + title + ' <span class="n">(' + arr.length + (key === 'in' && ev.max_players ? ' of ' + ev.max_players : '') + ')</span></h4><ul>' +
         arr.map((r, i) => '<li>' + (key === 'in' ? '<span class="seat-no">' + (i + 1) + '</span>' : '') + avatarHtml(r.player_id, 26) + '<span class="who-name">' + esc(nameOfP(r.player_id)) +
           (r.paid ? ' <span class="paid-tag">✓ Paid</span>' : (key === 'in' && 'paid' in r ? ' <span class="unpaid-tag">Awaiting payment</span>' : '')) +
+          (key === 'in' && hasRebuys ? entryTags(entries, r.player_id) : '') +
           (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span>' +
+          (me.is_admin && key === 'in' && hasRebuys && r.paid ? entryAdminBtns(entries, r.player_id, ev) : '') +
           (me.is_admin && key !== 'out' && 'paid' in r
             ? '<button type="button" class="paytog' + (r.paid ? ' on' : '') + '" data-pid="' + r.player_id + '" data-paid="' + (r.paid ? 1 : 0) + '" aria-label="' +
               (r.paid ? 'Unmark paid' : 'Mark as paid') + '">' + (r.paid ? '✓ £' : '£?') + '</button>'
@@ -2114,6 +2154,8 @@
         '<button type="button" data-r="out">' + T.out + '</button>' +
       '</div>' +
       mySeat +
+      prizeBox(ev, pot) +
+      (hasRebuys && myReply === 'in' && myPaid ? rebuyBox(ev, pay, entries) : '') +
       '<div class="comment-row">' +
         '<input id="myComment" type="text" maxlength="120" placeholder="Add a note, e.g. running 20 mins late">' +
         '<button id="saveComment" type="button">Save</button>' +
@@ -2133,6 +2175,7 @@
       renderEvent();
     });
     document.querySelectorAll('.replies button').forEach(b => b.onclick = () => saveReply(b.dataset.r));
+    bindMoney(ev);
     $('saveComment').onclick = () => {
       if (!myReply) { flash('Tap In, Maybe or Out first.', true); return; }
       saveReply(myReply);
@@ -2169,6 +2212,133 @@
     return '<div class="ev-format"><div class="fmt-title">🎲 ' + title + '</div>' +
       (bits.length ? '<ul>' + bits.map(b => '<li>' + esc(b) + '</li>').join('') + '</ul>' : '') +
       '<details><summary>How it works</summary><p>' + how + '</p></details></div>';
+  }
+
+  // ---- Prize pool, re-buys and add-ons (phase 3) ----
+  const placeName = (p) => p.label ? p.label + ' (' + ordinal(p.place) + ')' : ordinal(p.place);
+  function prizeBox(ev, pot) {
+    if (!pot || (!pot.buyins && !me.is_admin)) return '';
+    const hasRebuys = ev.format === 'rebuy' || ev.format === 'knockout';
+    const bits = [pot.buyins + ' buy-in' + (pot.buyins === 1 ? '' : 's')];
+    if (pot.rebuys) bits.push(pot.rebuys + ' re-buy' + (pot.rebuys === 1 ? '' : 's'));
+    if (pot.addons) bits.push(pot.addons + ' add-on' + (pot.addons === 1 ? '' : 's'));
+    let html = '<div class="prize-box"><div class="pz-head">🏆 Prize pool <b>' + money(pot.pot) + '</b></div>' +
+      '<div class="pz-sub">' + bits.join(' · ') + '</div>';
+    if (ev.format === 'knockout' && pot.bounty_value > 0)
+      html += '<div class="pz-sub">🎯 ' + money(pot.bounty_value) + ' bounty on every entry · ' + money(pot.bounty_pool) + ' in bounties</div>';
+    if (pot.ready && pot.places && pot.places.length) {
+      html += '<ol class="pz-places">' + pot.places.map(p => '<li><span>' + placeName(p) + '</span><b>' + money(p.amount) + '</b></li>').join('') + '</ol>';
+    } else {
+      const why = [];
+      if (pot.unpaid) why.push(pot.unpaid + ' buy-in' + (pot.unpaid === 1 ? '' : 's') + ' still to confirm');
+      if (pot.pending) why.push(pot.pending + ' re-buy/add-on' + (pot.pending === 1 ? '' : 's') + ' waiting for an admin');
+      if (hasRebuys && !ev.rebuys_closed) why.push('re-buys still open');
+      html += '<p class="pz-wait">Payouts appear once all the money is in' + (why.length ? ': ' + why.join(', ') : '') + '.</p>';
+    }
+    if (me.is_admin && hasRebuys)
+      html += '<button id="toggleRebuys" type="button" class="btn secondary small">' + (ev.rebuys_closed ? '🔓 Reopen re-buys' : '🔒 Close re-buys and add-ons') + '</button>';
+    return html + '</div>';
+  }
+  function entryTags(entries, pid) {
+    const mine = entries.filter(e => e.player_id === pid);
+    const rb = mine.filter(e => e.kind === 'rebuy' && e.confirmed).length, ad = mine.filter(e => e.kind === 'addon' && e.confirmed).length;
+    const wait = mine.filter(e => !e.confirmed).length;
+    return (rb ? ' <span class="ent-tag">🔁' + rb + '</span>' : '') + (ad ? ' <span class="ent-tag">➕' + ad + '</span>' : '') +
+      (wait ? ' <span class="ent-tag wait">⏳ waiting</span>' : '');
+  }
+  function entryAdminBtns(entries, pid, ev) {
+    const pend = entries.filter(e => e.player_id === pid && !e.confirmed);
+    return '<span class="ent-admin">' +
+      pend.map(e => '<button type="button" class="ent-ok" data-ok="' + e.id + '" title="Money landed: confirm">✓ ' + (e.kind === 'addon' ? 'Add-on' : 'Re-buy') + '</button>' +
+        '<button type="button" class="ent-no" data-no="' + e.id + '" aria-label="Turn down this request">✕</button>').join('') +
+      '<button type="button" class="ent-add" data-add="rebuy" data-pid="' + pid + '" title="Add a re-buy (already paid)">+🔁</button>' +
+      (ev.addon_allowed !== false ? '<button type="button" class="ent-add" data-add="addon" data-pid="' + pid + '" title="Add an add-on (already paid)">+➕</button>' : '') +
+      '</span>';
+  }
+  function monzoFor(link, amount) {          // Monzo links can carry an amount: monzo.me/name/20.00
+    const m = (link || '').match(/^(https:\/\/monzo\.me\/[^\/?#]+)/i);
+    return m && amount ? m[1] + '/' + Number(amount).toFixed(2) : link;
+  }
+  function rebuyBox(ev, pay, entries) {
+    const mine = entries.filter(e => e.player_id === me.id);
+    const rb = mine.filter(e => e.kind === 'rebuy');
+    const ad = mine.filter(e => e.kind === 'addon');
+    const pending = mine.find(e => !e.confirmed);
+    const rbPrice = ev.rebuy_price ?? ev.buy_in, adPrice = ev.addon_price ?? ev.buy_in;
+    const status = [];
+    if (rb.filter(e => e.confirmed).length) status.push(rb.filter(e => e.confirmed).length + ' re-buy' + (rb.filter(e => e.confirmed).length === 1 ? '' : 's'));
+    if (ad.some(e => e.confirmed)) status.push('add-on');
+    let html = '<div class="rebuy-box"><div class="rb-head">🔁 Re-buys and add-ons</div>';
+    if (status.length) html += '<div class="rb-mine">You\u2019ve had: ' + status.join(' + ') + '</div>';
+    if (ev.rebuys_closed) return html + '<p class="pz-wait">Re-buys and add-ons are closed.</p></div>';
+    if (pending) {
+      return html + '<div class="rb-pending">⏳ Your ' + (pending.kind === 'addon' ? 'add-on' : 're-buy') + ' is waiting for Alex or Phil to confirm the money has landed.' +
+        ' <button type="button" class="textlink" id="rbCancel" data-id="' + pending.id + '">Cancel it</button></div></div>';
+    }
+    const atLimit = ev.rebuy_limit != null && rb.length >= ev.rebuy_limit;
+    const canAddon = ev.addon_allowed !== false && !ad.length;
+    html += '<div class="rb-btns">' +
+      '<button type="button" class="btn secondary small" data-ask="rebuy"' + (atLimit ? ' disabled' : '') + '>🔁 Re-buy' + (rbPrice != null ? ' ' + money(rbPrice) : '') + '</button>' +
+      (ev.addon_allowed !== false ? '<button type="button" class="btn secondary small" data-ask="addon"' + (canAddon ? '' : ' disabled') + '>➕ Add-on' + (adPrice != null ? ' ' + money(adPrice) : '') + '</button>' : '') +
+      '</div>' + (atLimit ? '<p class="pz-wait">You\u2019ve used all ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit === 1 ? '' : 's') + '.</p>' : '');
+    const link = ev.pay_link || pay?.default_pay_link || '';
+    html += '<div id="rbStep" class="rb-step hidden"><p id="rbStepText"></p>' +
+      (link ? '<a id="rbPay" class="btn pay-monzo" target="_blank" rel="noopener" href="#">Pay with Monzo</a>' : '') +
+      '<div class="btnrow"><button type="button" class="btn secondary" id="rbBack">Back</button><button type="button" class="btn" id="rbPaid">I\u2019ve paid</button></div></div>';
+    html += '<div id="rbMsg" class="saved"></div></div>';
+    rebuyBox._link = link;
+    return html;
+  }
+  function bindMoney(ev) {
+    let asking = null;
+    const tog = $('toggleRebuys');
+    if (tog) tog.onclick = async () => {
+      if (!ev.rebuys_closed && !confirm('Close re-buys and add-ons? Players won\u2019t be able to ask for any more, and the payouts will show once all the money is confirmed.')) return;
+      tog.disabled = true;
+      const { error } = await db.from('events').update({ rebuys_closed: !ev.rebuys_closed }).eq('id', ev.id);
+      if (error) { alert('Couldn\u2019t update: ' + error.message); tog.disabled = false; return; }
+      ev.rebuys_closed = !ev.rebuys_closed; renderEvent();
+    };
+    document.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => {
+      asking = b.dataset.ask;
+      const price = asking === 'addon' ? (ev.addon_price ?? ev.buy_in) : (ev.rebuy_price ?? ev.buy_in);
+      $('rbStepText').innerHTML = '<b>1.</b> Pay ' + (price != null ? money(price) : 'the ' + (asking === 'addon' ? 'add-on' : 're-buy')) +
+        '.<br><b>2.</b> Tap <b>I\u2019ve paid</b>. Alex or Phil confirm it once the money lands, then it counts.';
+      if ($('rbPay')) $('rbPay').href = monzoFor(rebuyBox._link, price);
+      $('rbStep').classList.remove('hidden');
+    });
+    if ($('rbBack')) $('rbBack').onclick = () => { asking = null; $('rbStep').classList.add('hidden'); };
+    if ($('rbPaid')) $('rbPaid').onclick = async () => {
+      if (!asking) return;
+      $('rbPaid').disabled = true;
+      const { error } = await db.from('event_entries').insert({ event_id: ev.id, player_id: me.id, kind: asking });
+      if (error) { $('rbMsg').textContent = 'Couldn\u2019t send: ' + error.message; $('rbMsg').className = 'saved err'; $('rbPaid').disabled = false; return; }
+      Sound.chips(); renderEvent();
+    };
+    if ($('rbCancel')) $('rbCancel').onclick = async () => {
+      if (!confirm('Cancel this request?')) return;
+      await db.from('event_entries').delete().eq('id', Number($('rbCancel').dataset.id));
+      renderEvent();
+    };
+    document.querySelectorAll('[data-ok]').forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      const { error } = await db.from('event_entries').update({ confirmed: true }).eq('id', Number(b.dataset.ok));
+      if (error) { alert('Couldn\u2019t confirm: ' + error.message); b.disabled = false; return; }
+      Sound.chips(); renderEvent();
+    });
+    document.querySelectorAll('[data-no]').forEach(b => b.onclick = async () => {
+      if (!confirm('Turn down this request? Only do this if the money hasn\u2019t been paid.')) return;
+      await db.from('event_entries').delete().eq('id', Number(b.dataset.no));
+      renderEvent();
+    });
+    document.querySelectorAll('[data-add]').forEach(b => b.onclick = async () => {
+      const name = people[b.dataset.pid]?.display_name || 'this player';
+      if (!confirm('Add a ' + (b.dataset.add === 'addon' ? 'add-on' : 're-buy') + ' for ' + name + '? Only if they\u2019ve already paid.')) return;
+      b.disabled = true;
+      const { error } = await db.from('event_entries').insert({ event_id: ev.id, player_id: b.dataset.pid, kind: b.dataset.add, confirmed: true });
+      if (error) { alert('Couldn\u2019t add: ' + error.message); b.disabled = false; return; }
+      Sound.chips(); renderEvent();
+    });
   }
 
   // ---- Paying the buy-in ----
