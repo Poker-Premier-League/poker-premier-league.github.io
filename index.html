@@ -1160,6 +1160,8 @@
   .ptr.ready .ptr-chip { transform: rotate(180deg); }
   .ptr.spin .ptr-chip { animation: ptrSpin 0.8s linear infinite; }
   @keyframes ptrSpin { to { transform: rotate(360deg); } }
+
+  .add-chip { margin-top: 4px; width: 100%; padding: 9px; font-size: 13px; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1511,6 +1513,7 @@
       <label>Your chip set <span class="opt">(up to 7 colours; leave the value blank if the chip has no number)</span></label>
       <div class="chip-head"><span>Colour</span><span>Quantity</span><span>Value</span></div>
       <div id="pfChipRows"></div>
+      <button id="pfAddChip" class="btn secondary small add-chip" type="button">➕ Add more chips</button>
     </div>
 
     <div class="btnrow">
@@ -2760,24 +2763,34 @@
     dot.style.background = c || 'transparent';
     dot.style.borderStyle = c ? 'solid' : 'dashed';
   }
-  function paintChipRows(rows) {
+  const MAX_CHIPS = 7;
+  function chipRowHtml(i, r) {
     const opts = '<option value="">–</option>' + CHIP_VALUES.map(v => '<option value="' + v + '">' + chipLabel(v) + '</option>').join('');
-    $('pfChipRows').innerHTML = Array.from({ length: 7 }, (_, i) => {
-      const r = rows[i] || {};
-      return '<div class="chip-row">' +
-        '<div class="chip-colour"><span class="chip-dot"></span>' +
-          '<input type="text" maxlength="20" placeholder="e.g. Red" aria-label="Chip ' + (i + 1) + ' colour" value="' + esc(r.colour || '') + '"></div>' +
-        '<input type="number" inputmode="numeric" min="1" max="10000" step="1" placeholder="Qty" aria-label="Chip ' + (i + 1) + ' quantity" value="' + (r.qty ?? '') + '">' +
-        '<select aria-label="Chip ' + (i + 1) + ' value">' + opts + '</select></div>';
-    }).join('');
-    $('pfChipRows').querySelectorAll('.chip-row').forEach((row, i) => {
-      const r = rows[i] || {};
-      if (r.value != null) row.querySelector('select').value = String(Number(r.value));
-      const inp = row.querySelector('.chip-colour input'), dot = row.querySelector('.chip-dot');
-      paintDot(dot, inp.value);
-      inp.oninput = () => paintDot(dot, inp.value);
-    });
+    return '<div class="chip-row">' +
+      '<div class="chip-colour"><span class="chip-dot"></span>' +
+        '<input type="text" maxlength="20" placeholder="e.g. Red" aria-label="Chip ' + (i + 1) + ' colour" value="' + esc(r.colour || '') + '"></div>' +
+      '<input type="number" inputmode="numeric" min="1" max="10000" step="1" placeholder="Qty" aria-label="Chip ' + (i + 1) + ' quantity" value="' + (r.qty ?? '') + '">' +
+      '<select aria-label="Chip ' + (i + 1) + ' value">' + opts + '</select></div>';
   }
+  function addChipRow(r) {
+    const box = $('pfChipRows'), i = box.children.length;
+    if (i >= MAX_CHIPS) return null;
+    box.insertAdjacentHTML('beforeend', chipRowHtml(i, r || {}));
+    const row = box.lastElementChild;
+    if (r && r.value != null) row.querySelector('select').value = String(Number(r.value));
+    const inp = row.querySelector('.chip-colour input'), dot = row.querySelector('.chip-dot');
+    paintDot(dot, inp.value);
+    inp.oninput = () => paintDot(dot, inp.value);
+    $('pfAddChip').classList.toggle('hidden', box.children.length >= MAX_CHIPS);
+    return row;
+  }
+  function paintChipRows(rows) {                    // the chips you've added, plus one empty row to fill in
+    $('pfChipRows').innerHTML = '';
+    rows.slice(0, MAX_CHIPS).forEach(r => addChipRow(r));
+    if (rows.length < MAX_CHIPS) addChipRow();
+    $('pfAddChip').classList.toggle('hidden', $('pfChipRows').children.length >= MAX_CHIPS);
+  }
+  $('pfAddChip').onclick = () => { const row = addChipRow(); if (row) row.querySelector('.chip-colour input').focus(); };
   function openProfile(welcome) {
     $('pfTitle').textContent = welcome ? '🤠 Saddle up, partner' : 'Your profile';
     $('pfIntro').classList.toggle('hidden', !welcome);
