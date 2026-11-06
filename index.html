@@ -1192,6 +1192,12 @@
     font-size: 16px; color: #FBC891; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
   #histProfile:empty { display: none; }
   #histProfile { scroll-margin-top: 84px; }
+
+  .hf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (min-width: 560px) { .hf-grid { grid-template-columns: repeat(6, 1fr); } }
+  .hf-grid .hf-chip { width: auto; min-width: 0; }
+  .hf-grid .hf-chip span:last-child { max-width: 100%; }
+  .hf-select { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #D9C2A3; background: #FFFBF3; color: var(--ink); font-family: inherit; font-weight: 600; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1391,7 +1397,7 @@
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
         <p class="hf-help">Tap a player to see their <b>WANTED poster</b>, stats and every result.</p>
-        <div class="hf-chips" id="lobbyChips" aria-label="Player profiles"></div>
+        <div class="hf-grid" id="lobbyChips" aria-label="Player profiles"></div>
       </div>
       <div id="appCard" class="card section app-card hidden">
         <img src="icons/icon-192.png" alt="" class="app-card-icon">
@@ -1422,9 +1428,8 @@
     <section id="panel-results" class="panel hidden" role="tabpanel">
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
-        <p class="hf-help">Tap a player to see their <b>WANTED poster</b>, stats and every result.</p>
-        <div class="hf-chips" id="histChips" aria-label="Player profiles"></div>
-        <select id="histWho" class="sr-only" aria-label="Player profile"><option value="">No player</option></select>
+        <p class="hf-help">Choose a player to see their <b>WANTED poster</b>, stats and every result.</p>
+        <select id="histWho" class="hf-select" aria-label="Choose a player"><option value="">Choose a player…</option></select>
       </div>
       <div id="histProfile"></div>
       <h2 class="sec-head">🏆 Results: every night</h2>
@@ -1755,7 +1760,7 @@
   // Swipe left/right on the page to move between tabs (phones)
   let touchStart = null;
   $('panels').addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1 || e.target.closest('input, select, textarea, .crop-stage')) { touchStart = null; return; }
+    if (e.touches.length !== 1 || e.target.closest('input, select, textarea, .crop-stage, .hf-chips, .hf-grid')) { touchStart = null; return; }
     touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
   }, { passive: true });
   $('panels').addEventListener('touchend', (e) => {
@@ -1953,7 +1958,7 @@
 
     const keep = $('histWho').value || (location.hash.match(/player=([\w-]+)/) || [])[1] || '';
     const everyone = profileIds();
-    $('histWho').innerHTML = '<option value="">No player</option>' +
+    $('histWho').innerHTML = '<option value="">Choose a player…</option>' +
       everyone.map(id => '<option value="' + id + '">' + esc(nameOf(id)) + '</option>').join('');
     $('histWho').value = everyone.includes(keep) ? keep : '';
     renderHistory();
@@ -1961,6 +1966,7 @@
   $('histWho').onchange = () => {
     history.replaceState(null, '', '#results' + ($('histWho').value ? '/player=' + $('histWho').value : ''));
     renderHistory();
+    if ($('histWho').value) setTimeout(() => $('histProfile').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
   function openPlayerHistory(id) {
     $('histWho').value = id;
@@ -1992,22 +1998,13 @@
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 
   // ---- Player profiles: a chip for every player (Results tab and Lobby) ----
-  const profileIds = () => Object.keys(people).filter(id => people[id].approved !== false).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+  const sortName = (id) => nameOf(id).replace(/[^\p{L}\p{N}\s'-]/gu, '').trim();
+  const profileIds = () => Object.keys(people).filter(id => people[id].approved !== false).sort((a, b) => sortName(a).localeCompare(sortName(b)));
   function chipsHtml(cur) {
     return profileIds().map(id => '<button type="button" class="hf-chip' + (id === cur ? ' on' : '') + '" data-who="' + id + '" aria-pressed="' + (id === cur) + '">' +
       avatarHtml(id, 30) + '<span>' + esc(nameOf(id)) + '</span></button>').join('') || '<p class="empty">No players yet.</p>';
   }
-  function paintHistChips() {
-    const cur = $('histWho').value;
-    $('histChips').innerHTML = chipsHtml(cur);
-    $('histChips').querySelectorAll('[data-who]').forEach(b => b.onclick = () => {
-      $('histWho').value = b.dataset.who === cur ? '' : b.dataset.who;      // tap again to close
-      $('histWho').onchange();
-      if ($('histWho').value) $('histProfile').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    const on = $('histChips').querySelector('.on');
-    if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }
+  function paintHistChips() { /* the Results tab uses the drop-down now */ }
   function paintLobbyChips() {
     $('lobbyChips').innerHTML = chipsHtml('');
     $('lobbyChips').querySelectorAll('[data-who]').forEach(b => b.onclick = () => {
@@ -2191,8 +2188,8 @@
     const p = people[id] || {};
     const st = 'width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.42) + 'px;';
     if (avatarUrls[id]) return '<span class="av" style="' + st + '"><img src="' + esc(avatarUrls[id]) + '" alt=""></span>';
-    const name = (p.display_name || '?').trim();
-    const initials = name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const name = (p.display_name || '?').replace(/[^\p{L}\p{N}\s'-]/gu, '').trim() || '?';     // ignore emoji like the test 🧪
+    const initials = name.split(/\s+/).map(w => [...w][0] || '').slice(0, 2).join('').toUpperCase();
     let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
     return '<span class="av" style="' + st + 'background:' + AV_COLOURS[h % AV_COLOURS.length] + '">' + esc(initials) + '</span>';
   }
