@@ -1075,6 +1075,29 @@
   .fc > b { margin-top: 0; font-size: 1.9em !important; }
   .theme-gpl .fan .fc { font-size: calc(var(--cw) * 0.24); }
   .theme-gpl .fan .fc > b { font-size: calc(var(--cw) * 0.46) !important; }
+
+  /* ===== Event card: name, format, seats ===== */
+  .ev-name { margin: 0 0 2px; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #C9561F; }
+  .maplink { color: inherit; text-decoration: underline; text-decoration-color: rgba(201,86,31,0.5); }
+  .ev-format { margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: rgba(58,32,19,0.06); border: 1px solid rgba(58,32,19,0.14); }
+  .ev-format .fmt-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; font-size: 15px; color: var(--ink); }
+  .ev-format ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: var(--ink); }
+  .ev-format li { margin: 2px 0; }
+  .ev-format details { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .ev-format summary { cursor: pointer; font-weight: 700; color: #C9561F; }
+  .ev-format details p { margin: 6px 0 0; line-height: 1.45; }
+  .places-bar { position: relative; margin: 12px 0 4px; height: 30px; border-radius: 999px; overflow: hidden; background: rgba(58,32,19,0.1); }
+  .places-bar .pb-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #F49A5C, #E5702F); }
+  .places-bar.full .pb-fill { background: linear-gradient(90deg, #C9561F, #8A3A12); }
+  .places-bar span { position: relative; display: block; text-align: center; line-height: 30px; font-size: 13px; font-weight: 800; color: var(--ink); }
+  .places-bar.full span { color: #fff; }
+  .closed-banner { margin: 10px 0 4px; padding: 9px 12px; border-radius: 10px; background: #F7DCCF; color: #8A2414; font-size: 14px; font-weight: 600; }
+  .replies button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .my-seat { margin: 10px 0 0; padding: 9px 12px; border-radius: 10px; background: rgba(244,154,92,0.16); border: 1px solid rgba(229,112,47,0.4); font-size: 14px; color: var(--ink); }
+  .my-seat.ok { background: rgba(46,125,80,0.1); border-color: rgba(46,125,80,0.35); }
+  .seat-no { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; margin-right: 6px; border-radius: 50%;
+    background: #3A2013; color: #F6EAD5; font-size: 11px; font-weight: 800; flex: none; }
+  .unpaid-tag { font-size: 11px; font-weight: 700; color: #9A6B4C; background: rgba(58,32,19,0.08); padding: 1px 6px; border-radius: 999px; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1948,8 +1971,11 @@
     const ev = currentEvent;
     let { data: replies, error } = await db
       .from('attendance')
-      .select('player_id, reply, comment, paid')
+      .select('player_id, reply, comment, paid, in_at')
       .eq('event_id', ev.id);
+    if (error && /in_at/.test(error.message || '')) {         // event details (part 9) not set up yet
+      ({ data: replies, error } = await db.from('attendance').select('player_id, reply, comment, paid').eq('event_id', ev.id));
+    }
     if (error && /paid/.test(error.message || '')) {          // payments not set up yet
       ({ data: replies, error } = await db.from('attendance').select('player_id, reply, comment').eq('event_id', ev.id));
     }
@@ -1962,6 +1988,8 @@
     const meta = [];
     if (ev.start_time) meta.push('🕖 ' + niceTime(ev.start_time));
     if (ev.venue) meta.push('📍 ' + esc(ev.venue));
+    if (ev.address) meta.push('🗺️ <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) +
+      '" target="_blank" rel="noopener">' + esc(ev.address) + '</a>');
     if (ev.host) meta.push('🏠 Host: ' + esc(ev.host));
     if (ev.buy_in != null) meta.push('💷 Buy-in ' + money(ev.buy_in));
 
@@ -1969,12 +1997,13 @@
     (replies || []).forEach(r => groups[r.reply] && groups[r.reply].push(r));
     const nameOfP = (id) => people[id]?.display_name || 'Player';
     const byName = (a, b) => nameOfP(a.player_id).localeCompare(nameOfP(b.player_id));
+    const byArrival = (a, b) => (a.in_at && b.in_at) ? a.in_at.localeCompare(b.in_at) : byName(a, b);   // first come, first served
     const list = (key, title) => {
-      const arr = groups[key].sort(byName);
+      const arr = groups[key].sort(key === 'in' ? byArrival : byName);
       if (!arr.length) return '';
-      return '<h4><span class="dot ' + key + '"></span>' + title + ' <span class="n">(' + arr.length + ')</span></h4><ul>' +
-        arr.map(r => '<li>' + avatarHtml(r.player_id, 26) + '<span class="who-name">' + esc(nameOfP(r.player_id)) +
-          (r.paid ? ' <span class="paid-tag">✓ Paid</span>' : '') +
+      return '<h4><span class="dot ' + key + '"></span>' + title + ' <span class="n">(' + arr.length + (key === 'in' && ev.max_players ? ' of ' + ev.max_players : '') + ')</span></h4><ul>' +
+        arr.map((r, i) => '<li>' + (key === 'in' ? '<span class="seat-no">' + (i + 1) + '</span>' : '') + avatarHtml(r.player_id, 26) + '<span class="who-name">' + esc(nameOfP(r.player_id)) +
+          (r.paid ? ' <span class="paid-tag">✓ Paid</span>' : (key === 'in' && 'paid' in r ? ' <span class="unpaid-tag">Awaiting payment</span>' : '')) +
           (r.comment ? ' <span class="c">— ' + esc(r.comment) + '</span>' : '') + '</span>' +
           (me.is_admin && key !== 'out' && 'paid' in r
             ? '<button type="button" class="paytog' + (r.paid ? ' on' : '') + '" data-pid="' + r.player_id + '" data-paid="' + (r.paid ? 1 : 0) + '" aria-label="' +
@@ -1983,15 +2012,40 @@
     };
     const whoHtml = list('in', T.inHead) + list('maybe', T.maybeHead) + list('out', T.outHead);
 
+    // Places, closed registration and my seat
+    const taken = groups.in.length;
+    const full = ev.max_players != null && taken >= ev.max_players;
+    const closed = !!ev.registration_closed;
+    const myPaid = !!(mine && mine.paid);
+    let placeLine = '';
+    if (ev.max_players != null) {
+      const left = Math.max(ev.max_players - taken, 0);
+      placeLine = '<div class="places-bar' + (full ? ' full' : '') + '"><div class="pb-fill" style="width:' + Math.min(100, Math.round(taken / ev.max_players * 100)) + '%"></div>' +
+        '<span>' + (full ? '🔒 Full: all ' + ev.max_players + ' seats taken' : taken + ' of ' + ev.max_players + ' seats taken · ' + left + ' left') + '</span></div>';
+    }
+    let mySeat = '';
+    if (myReply === 'in') {
+      mySeat = '<div class="my-seat' + (myPaid ? ' ok' : '') + '">' + (myPaid
+        ? '🤠 <b>Your seat is confirmed.</b> See you at the table.'
+        : '⏳ <b>Seat held.</b> Pay your buy-in to confirm it. Alex or Phil will tick you off once it lands.') + '</div>';
+    } else if (full && !closed) {
+      mySeat = '<div class="my-seat">All seats are taken. Tap <b>' + T.maybe + '</b> and you\u2019ll hear if one opens up.</div>';
+    }
+
     $('eventBody').innerHTML =
+      (ev.name ? '<p class="ev-name">' + esc(ev.name) + '</p>' : '') +
       '<p class="ev-date">' + niceDate(ev.event_date, true) + '</p>' +
       (meta.length ? '<p class="ev-meta">' + meta.join('<br>') + '</p>' : '') +
+      formatBox(ev) +
       (ev.notes ? '<div class="ev-notes">' + esc(ev.notes) + '</div>' : '') +
+      placeLine +
+      (closed ? '<div class="closed-banner">🚫 Registration is closed. You can still pull out if you need to.</div>' : '') +
       '<div class="replies">' +
-        '<button type="button" data-r="in">' + T.in + '</button>' +
-        '<button type="button" data-r="maybe">' + T.maybe + '</button>' +
+        '<button type="button" data-r="in"' + ((closed || full) && myReply !== 'in' ? ' disabled' : '') + '>' + (full && myReply !== 'in' ? 'Full' : T.in) + '</button>' +
+        '<button type="button" data-r="maybe"' + (closed && myReply !== 'maybe' ? ' disabled' : '') + '>' + T.maybe + '</button>' +
         '<button type="button" data-r="out">' + T.out + '</button>' +
       '</div>' +
+      mySeat +
       '<div class="comment-row">' +
         '<input id="myComment" type="text" maxlength="120" placeholder="Add a note, e.g. running 20 mins late">' +
         '<button id="saveComment" type="button">Save</button>' +
@@ -2017,12 +2071,44 @@
     };
   }
 
+  // ---- Tournament format summary ----
+  const FORMAT_INFO = {
+    freezeout: ['Freezeout', 'Everyone buys in once and gets the same starting stack. Lose it and you\u2019re out. No re-buys.'],
+    rebuy: ['Re-buy', 'Bust out before the re-buy period ends and you can buy back in for a fresh starting stack. When it ends, everyone still in can take one add-on: half the buy-in for half a starting stack.'],
+    knockout: ['Knockout', 'Everyone has a bounty on their head; knock a player out and you collect it. Each entry is split 75% to the prize pot and 25% to the bounty, and every re-buy pays for a new bounty. Add-ons go to the pot only.'],
+    headsup: ['Heads Up', 'A one-on-one knockout bracket. Win your match to move to the next round, until two players meet in the final.']
+  };
+  const HU_ROUND_NAMES = { 4: ['Semis', 'Final'], 8: ['Quarters', 'Semis', 'Final'], 16: ['Round 1', 'Quarters', 'Semis', 'Final'],
+    32: ['Round 1', 'Round 2', 'Quarters', 'Semis', 'Final'] };
+  function formatBox(ev) {
+    const f = FORMAT_INFO[ev.format] ? ev.format : 'freezeout';
+    const [title, how] = FORMAT_INFO[f];
+    const bits = [];
+    if (f === 'rebuy' || f === 'knockout') {
+      const hrs = ev.rebuy_hours != null ? Number(ev.rebuy_hours) : null;
+      bits.push((ev.rebuy_limit ? 'Up to ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit > 1 ? 's' : '') : 'Unlimited re-buys') +
+        (hrs ? ' in the first ' + hrs + ' hr' + (hrs === 1 ? '' : 's') : '') +
+        (ev.rebuy_price != null && ev.buy_in != null && Number(ev.rebuy_price) !== Number(ev.buy_in) ? ' (' + money(ev.rebuy_price) + ' each)' : ''));
+      if (ev.addon_allowed !== false) bits.push('Add-on' + (ev.addon_price != null ? ' ' + money(ev.addon_price) : '') + ' when re-buys close');
+      if (f === 'knockout' && ev.buy_in != null) bits.push(money(Math.round(ev.buy_in * 25) / 100) + ' bounty on every entry');
+    } else if (f === 'headsup') {
+      const names = HU_ROUND_NAMES[ev.max_players] || [];
+      if (ev.max_players) bits.push(ev.max_players + '-player bracket');
+      if (Array.isArray(ev.hu_stacks) && ev.hu_stacks.length)
+        bits.push('Starting stacks: ' + ev.hu_stacks.map((v, i) => (names[i] || 'Round ' + (i + 1)) + ' ' + v + ' BB').join(', '));
+      if (ev.hu_final_bo3) bits.push('Final is best of 3');
+    }
+    return '<div class="ev-format"><div class="fmt-title">🎲 ' + title + '</div>' +
+      (bits.length ? '<ul>' + bits.map(b => '<li>' + esc(b) + '</li>').join('') + '</ul>' : '') +
+      '<details><summary>How it works</summary><p>' + how + '</p></details></div>';
+  }
+
   // ---- Paying the buy-in ----
   function payBox(ev, pay, mine) {
     const link = ev.pay_link || pay?.default_pay_link || '';
     const hasBank = !!(pay && (pay.bank_account || pay.bank_sort_code));
     if (!link && !hasBank) return '';
-    if (mine && mine.reply === 'out') return '';
+    if (!mine || mine.reply !== 'in') return '';          // only riders pay; it confirms their seat
     const amount = ev.buy_in != null ? money(ev.buy_in) : '';
     const ref = ('GPL ' + new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + (me.display_name || '')).slice(0, 18);
     const row = (label, val) => val ? '<div class="bank-row"><span class="bl">' + label + '</span><span class="bv">' + esc(val) + '</span>' +

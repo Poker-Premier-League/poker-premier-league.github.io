@@ -82,6 +82,25 @@
   .status.completed { background: #e7f4ec; color: #1b5e3a; }
   .status.cancelled { background: #eee; color: #777; }
 
+  /* Game builder */
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .seg button { flex: 1 1 22%; min-width: 64px; padding: 11px 6px; border-radius: 10px; border: 1px solid #D9C2A3; background: #FFFBF3;
+    font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; }
+  .seg.small button { padding: 8px 4px; font-size: 13px; }
+  .seg button.on { background: linear-gradient(180deg, #EF8443, #D2591D); border-color: #C9561F; color: #fff; box-shadow: 0 3px 10px rgba(210,89,29,0.35); }
+  .fmt-desc { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .opts { margin-top: 10px; padding: 4px 12px 12px; border-radius: 12px; background: rgba(229,112,47,0.07); border: 1px dashed rgba(229,112,47,0.45); }
+  .small-note { margin: 8px 0 0; }
+  .hu-stacks { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 4px; }
+  .hu-stacks label { margin: 0; font-size: 12px; }
+  .hu-stacks input { padding: 9px; }
+  .evlist .fmt { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #C9561F; }
+  .evlist .places { font-size: 12px; color: var(--muted); }
+  .status.closed { background: #fde3d3; color: #9a3a12; }
+  .evlist li { flex-wrap: wrap; row-gap: 8px; }
+  .evlist .info { flex: 1 1 100%; }
+  .evlist li .status { margin-right: auto; }
+
   /* Results entry */
   table.res { width: 100%; border-collapse: collapse; margin-top: 8px; }
   table.res th { text-align: left; font-size: 12px; color: var(--muted); padding: 6px 4px; border-bottom: 2px solid var(--line); }
@@ -198,24 +217,65 @@
       <h2 id="evFormTitle">New event</h2>
       <form id="evForm" novalidate>
         <input type="hidden" id="evId">
+        <label for="evName">Event name <span class="opt">(optional, e.g. Halloween Showdown)</span></label>
+        <input id="evName" type="text" maxlength="60">
         <div class="row2">
           <div><label for="evDate">Date</label><input id="evDate" type="date" required></div>
           <div><label for="evTime">Start time</label><input id="evTime" type="time" value="19:30"></div>
         </div>
         <label for="evVenue">Venue</label>
         <input id="evVenue" type="text" placeholder="e.g. Phil's house">
-        <div class="row2">
-          <div><label for="evHost">Host <span class="opt">(optional)</span></label><input id="evHost" type="text"></div>
-          <div><label for="evBuyin">Buy-in £</label><input id="evBuyin" type="number" inputmode="decimal" min="0" step="0.01" placeholder="20"></div>
+        <label for="evAddress">Address <span class="opt">(optional: players get a map link)</span></label>
+        <input id="evAddress" type="text" maxlength="200" placeholder="e.g. 12 High Street, Stanmore HA7 1AA">
+
+        <label>Tournament format</label>
+        <div class="seg" id="evFormat" role="radiogroup">
+          <button type="button" data-v="freezeout" class="on">Freezeout</button>
+          <button type="button" data-v="rebuy">Re-buy</button>
+          <button type="button" data-v="knockout">Knockout</button>
+          <button type="button" data-v="headsup">Heads Up</button>
+        </div>
+        <p class="fmt-desc" id="evFormatDesc"></p>
+
+        <div id="evRebuyOpts" class="opts hidden">
+          <label>Re-buys allowed per player</label>
+          <div class="seg small" id="evRebuyLimit">
+            <button type="button" data-v="1">1</button><button type="button" data-v="2">2</button>
+            <button type="button" data-v="3">3</button><button type="button" data-v="" class="on">Unlimited</button>
+          </div>
+          <label>Re-buy period</label>
+          <div class="seg small" id="evRebuyHours">
+            <button type="button" data-v="1">1 hr</button><button type="button" data-v="1.5">1.5 hrs</button>
+            <button type="button" data-v="2" class="on">2 hrs</button><button type="button" data-v="2.5">2.5 hrs</button>
+          </div>
+          <label class="check"><input id="evAddonOn" type="checkbox" checked> Add-on when the re-buy period ends</label>
+          <p class="muted small-note" id="evKoNote"></p>
+        </div>
+
+        <div id="evHuOpts" class="opts hidden">
+          <label for="evHuPlayers">Players <span class="opt">(Heads Up needs exactly 4, 8, 16 or 32)</span></label>
+          <select id="evHuPlayers"><option>4</option><option selected>8</option><option>16</option><option>32</option></select>
+          <label>Starting stack for each round <span class="opt">(big blinds, 30 to 100)</span></label>
+          <div id="evHuStacks" class="hu-stacks"></div>
+          <label class="check"><input id="evHuBo3" type="checkbox"> Final is best of 3</label>
         </div>
         <div class="row2">
+          <div><label for="evHost">Host <span class="opt">(optional)</span></label><input id="evHost" type="text"></div>
+          <div id="evMaxWrap"><label for="evMax">Player limit <span class="opt">(blank = no limit)</span></label><input id="evMax" type="number" inputmode="numeric" min="2" max="40" step="1" placeholder="e.g. 9"></div>
+        </div>
+        <div class="row2">
+          <div><label for="evBuyin">Buy-in £</label><input id="evBuyin" type="number" inputmode="decimal" min="0" step="0.01" placeholder="20"></div>
+          <div></div>
+        </div>
+        <div class="row2" id="evPrices">
           <div><label for="evRebuy">Rebuy £ <span class="opt">(blank = buy-in)</span></label><input id="evRebuy" type="number" inputmode="decimal" min="0" step="0.01"></div>
-          <div><label for="evAddon">Add-on £ <span class="opt">(blank = buy-in)</span></label><input id="evAddon" type="number" inputmode="decimal" min="0" step="0.01"></div>
+          <div><label for="evAddon">Add-on £ <span class="opt">(blank = half the buy-in)</span></label><input id="evAddon" type="number" inputmode="decimal" min="0" step="0.01"></div>
         </div>
         <label for="evPay">Monzo link for this night <span class="opt">(optional: blank = the default in Settings)</span></label>
         <input id="evPay" type="url" inputmode="url" placeholder="https://monzo.me/…">
         <label for="evNotes">Notes <span class="opt">(optional)</span></label>
         <textarea id="evNotes" placeholder="e.g. Bring cash. Doors open 7pm."></textarea>
+        <label class="check"><input id="evClosed" type="checkbox"> <span>Registration closed <span class="opt">(players can only pull out)</span></span></label>
         <div id="evStatusWrap" class="hidden">
           <label for="evStatus">Status</label>
           <select id="evStatus">
@@ -373,22 +433,84 @@
   }
 
   // ================= EVENTS =================
+  const FMT_NAME = { freezeout: 'Freezeout', rebuy: 'Re-buy', knockout: 'Knockout', headsup: 'Heads Up' };
   async function loadEvents() {
-    const { data, error } = await db.from('events').select('*').order('event_date', { ascending: false });
+    const [{ data, error }, { data: ins }] = await Promise.all([
+      db.from('events').select('*').order('event_date', { ascending: false }),
+      db.from('attendance').select('event_id').eq('reply', 'in')
+    ]);
     if (error) { $('evList').innerHTML = '<li class="muted">Couldn’t load events: ' + esc(error.message) + '</li>'; return; }
     events = data || [];
-    $('evList').innerHTML = events.length ? events.map(ev =>
-      '<li><div class="info"><div class="d">' + niceDate(ev.event_date) + '</div>' +
-      '<div class="v">' + esc([ev.venue, ev.buy_in != null ? '£' + Number(ev.buy_in) : ''].filter(Boolean).join(' · ') || 'No venue yet') + '</div></div>' +
-      '<span class="status ' + ev.status + '">' + ev.status + '</span>' +
-      '<button class="btn small secondary" data-edit="' + ev.id + '">Edit</button></li>').join('')
+    const taken = {}; (ins || []).forEach(r => { taken[r.event_id] = (taken[r.event_id] || 0) + 1; });
+    $('evList').innerHTML = events.length ? events.map(ev => {
+      const n = taken[ev.id] || 0;
+      return '<li><div class="info">' +
+        '<div class="fmt">' + (FMT_NAME[ev.format] || 'Freezeout') + '</div>' +
+        '<div class="d">' + (ev.name ? esc(ev.name) + ' · ' : '') + niceDate(ev.event_date) + '</div>' +
+        '<div class="v">' + esc([ev.venue, ev.buy_in != null ? '£' + Number(ev.buy_in) : ''].filter(Boolean).join(' · ') || 'No venue yet') + '</div>' +
+        '<div class="places">' + n + (ev.max_players ? ' of ' + ev.max_players : '') + ' riding in</div></div>' +
+        (ev.status === 'upcoming' && ev.registration_closed ? '<span class="status closed">Closed</span>' : '<span class="status ' + ev.status + '">' + ev.status + '</span>') +
+        (ev.status === 'upcoming' ? '<button class="btn small secondary" data-close="' + ev.id + '">' + (ev.registration_closed ? 'Reopen' : 'Close reg') + '</button>' : '') +
+        '<button class="btn small secondary" data-edit="' + ev.id + '">Edit</button></li>';
+    }).join('')
       : '<li class="muted">No events yet. Create the first one above.</li>';
     $('evList').querySelectorAll('[data-edit]').forEach(b => b.onclick = () => startEdit(Number(b.dataset.edit)));
+    $('evList').querySelectorAll('[data-close]').forEach(b => b.onclick = async () => {
+      const ev = events.find(e => e.id === Number(b.dataset.close));
+      b.disabled = true;
+      const { error } = await db.from('events').update({ registration_closed: !ev.registration_closed }).eq('id', ev.id);
+      if (error) { alert('Couldn\u2019t update: ' + error.message); b.disabled = false; return; }
+      loadEvents();
+    });
     fillResultsDropdown();
   }
 
+  // ---- Game builder: formats ----
+  const FORMATS = {
+    freezeout: 'Everyone buys in once and gets the same starting stack. Lose it and you\u2019re out. No re-buys.',
+    rebuy: 'Bust out before the re-buy period ends and you can buy back in for a fresh starting stack. When it ends, everyone still in can take one add-on: half the buy-in for half a starting stack.',
+    knockout: 'Everyone has a bounty on their head; knock a player out and you collect it. Always played with re-buys. Each entry is split 75% to the prize pot, 25% to the bounty, and every re-buy pays for a new bounty. Add-ons go to the pot only.',
+    headsup: 'A one-on-one knockout bracket. Win your match to move to the next round, until two players meet in the final.'
+  };
+  const HU_ROUNDS = { 4: ['Semi-finals', 'Final'], 8: ['Quarter-finals', 'Semi-finals', 'Final'],
+    16: ['Round 1', 'Quarter-finals', 'Semi-finals', 'Final'], 32: ['Round 1', 'Round 2', 'Quarter-finals', 'Semi-finals', 'Final'] };
+  const segVal = (id) => { const b = $(id).querySelector('button.on'); return b ? b.dataset.v : ''; };
+  function setSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v ?? ''))); }
+  ['evFormat', 'evRebuyLimit', 'evRebuyHours'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    setSeg(id, b.dataset.v); if (id === 'evFormat') paintFormat();
+  }));
+  function paintHuStacks(values) {
+    const n = Number($('evHuPlayers').value), rounds = HU_ROUNDS[n];
+    const old = values || [...$('evHuStacks').querySelectorAll('input')].map(i => Number(i.value) || 50);
+    $('evHuStacks').innerHTML = rounds.map((r, i) =>
+      '<div><label for="hu' + i + '">' + r + '</label><input id="hu' + i + '" type="number" inputmode="numeric" min="30" max="100" step="5" value="' + (old[i] ?? old[old.length - 1] ?? 50) + '"></div>').join('');
+  }
+  $('evHuPlayers').onchange = () => paintHuStacks();
+  function paintKoNote() {
+    const b = Number($('evBuyin').value);
+    $('evKoNote').textContent = segVal('evFormat') === 'knockout' && b > 0
+      ? 'Each £' + b + ' entry: £' + (b * 0.75).toFixed(2).replace(/\.00$/, '') + ' to the prize pot + £' + (b * 0.25).toFixed(2).replace(/\.00$/, '') + ' bounty.'
+      : '';
+  }
+  $('evBuyin').addEventListener('input', paintKoNote);
+  function paintFormat() {
+    const f = segVal('evFormat');
+    $('evFormatDesc').textContent = FORMATS[f];
+    const re = f === 'rebuy' || f === 'knockout', hu = f === 'headsup';
+    $('evRebuyOpts').classList.toggle('hidden', !re);
+    $('evPrices').classList.toggle('hidden', !re);
+    $('evHuOpts').classList.toggle('hidden', !hu);
+    $('evMaxWrap').classList.toggle('hidden', hu);
+    if (hu && !$('evHuStacks').children.length) paintHuStacks();
+    paintKoNote();
+  }
+  paintFormat();
+
   function resetEventForm() {
     $('evForm').reset();
+    setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setSeg('evRebuyHours', '2');
+    $('evHuStacks').innerHTML = '';
+    paintFormat();
     $('evId').value = '';
     $('evTime').value = '19:30';
     $('evFormTitle').textContent = 'New event';
@@ -406,6 +528,20 @@
     $('evDate').value = ev.event_date;
     $('evTime').value = ev.start_time ? ev.start_time.slice(0, 5) : '';
     $('evVenue').value = ev.venue || '';
+    $('evName').value = ev.name || '';
+    $('evAddress').value = ev.address || '';
+    $('evMax').value = ev.max_players ?? '';
+    $('evClosed').checked = !!ev.registration_closed;
+    setSeg('evFormat', ev.format || 'freezeout');
+    setSeg('evRebuyLimit', ev.rebuy_limit ?? '');
+    setSeg('evRebuyHours', ev.rebuy_hours != null ? String(Number(ev.rebuy_hours)) : '2');
+    $('evAddonOn').checked = ev.addon_allowed !== false;
+    if (ev.format === 'headsup') {
+      $('evHuPlayers').value = String([4, 8, 16, 32].includes(ev.max_players) ? ev.max_players : 8);
+      paintHuStacks(ev.hu_stacks || []);
+      $('evHuBo3').checked = !!ev.hu_final_bo3;
+    }
+    paintFormat();
     $('evHost').value = ev.host || '';
     $('evBuyin').value = ev.buy_in ?? '';
     $('evRebuy').value = ev.rebuy_price ?? '';
@@ -431,14 +567,34 @@
     e.preventDefault();
     clear('evMsg');
     if (!$('evDate').value) return msg('evMsg', 'Pick a date.');
+    const fmt = segVal('evFormat'), re = fmt === 'rebuy' || fmt === 'knockout', hu = fmt === 'headsup';
+    const buyIn = $('evBuyin').value === '' ? null : Number($('evBuyin').value);
+    let stacks = null;
+    if (hu) {
+      stacks = [...$('evHuStacks').querySelectorAll('input')].map(i => Number(i.value));
+      if (stacks.some(v => !(v >= 30 && v <= 100))) return msg('evMsg', 'Each Heads Up starting stack must be between 30 and 100 big blinds.');
+    }
+    const maxP = hu ? Number($('evHuPlayers').value) : ($('evMax').value === '' ? null : Number($('evMax').value));
+    if (maxP != null && !(maxP >= 2 && maxP <= 40)) return msg('evMsg', 'The player limit should be between 2 and 40.');
     const row = {
+      name: $('evName').value.trim() || null,
+      address: $('evAddress').value.trim() || null,
+      format: fmt,
+      rebuy_limit: re && segVal('evRebuyLimit') !== '' ? Number(segVal('evRebuyLimit')) : null,
+      rebuy_hours: re ? Number(segVal('evRebuyHours')) : null,
+      addon_allowed: re ? $('evAddonOn').checked : false,
+      hu_stacks: stacks,
+      hu_final_bo3: hu ? $('evHuBo3').checked : false,
+      max_players: maxP,
+      registration_closed: $('evClosed').checked,
       event_date: $('evDate').value,
       start_time: $('evTime').value || null,
       venue: $('evVenue').value.trim() || null,
       host: $('evHost').value.trim() || null,
-      buy_in: $('evBuyin').value === '' ? null : Number($('evBuyin').value),
-      rebuy_price: $('evRebuy').value === '' ? null : Number($('evRebuy').value),
-      addon_price: $('evAddon').value === '' ? null : Number($('evAddon').value),
+      buy_in: buyIn,
+      rebuy_price: !re || $('evRebuy').value === '' ? null : Number($('evRebuy').value),
+      addon_price: !re || !$('evAddonOn').checked ? null
+        : ($('evAddon').value === '' ? (buyIn != null ? Math.round(buyIn * 50) / 100 : null) : Number($('evAddon').value)),
       notes: $('evNotes').value.trim() || null,
       pay_link: $('evPay').value.trim() || null
     };
