@@ -1162,6 +1162,11 @@
   @keyframes ptrSpin { to { transform: rotate(360deg); } }
 
   .add-chip { margin-top: 4px; width: 100%; padding: 9px; font-size: 13px; }
+
+  /* ===== Safer gambling note: a quiet footer ===== */
+  .safer { position: relative; z-index: 2; max-width: 520px; margin: 30px auto 0; padding: 0 20px calc(16px + env(safe-area-inset-bottom));
+    text-align: center; font-size: 10.5px; line-height: 1.5; color: rgba(243,223,196,0.45); }
+  .safer a { color: inherit; text-decoration: underline; text-decoration-color: rgba(243,223,196,0.3); }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1505,12 +1510,14 @@
     <div id="pfCapWrap" class="hidden">
       <label for="pfCap">How many players can you host?</label>
       <input id="pfCap" type="number" inputmode="numeric" min="2" max="40" step="1" placeholder="e.g. 8">
+      <label for="pfAddr">Hosting address <span class="opt">(fills in the event address when you host; only league members see it)</span></label>
+      <input id="pfAddr" type="text" maxlength="200" autocomplete="street-address" placeholder="e.g. 12 High Street, Stanmore HA7 1AA">
     </div>
 
     <label>Do you have poker chips to play with?</label>
     <div class="yn" id="pfChips"><button type="button" data-v="1">Yay</button><button type="button" data-v="0">Nay</button></div>
     <div id="pfChipWrap" class="hidden">
-      <label>Your chip set <span class="opt">(up to 7 colours; leave the value blank if the chip has no number)</span></label>
+      <label>Your chip set <span class="opt">(up to 15 colours; leave the value blank if the chip has no number)</span></label>
       <div class="chip-head"><span>Colour</span><span>Quantity</span><span>Value</span></div>
       <div id="pfChipRows"></div>
       <button id="pfAddChip" class="btn secondary small add-chip" type="button">➕ Add more chips</button>
@@ -1524,6 +1531,10 @@
     <div id="pfMsg" class="msg"></div>
   </div>
 </div>
+
+<footer id="saferFooter" class="safer hidden">
+  18+ · When the fun stops, stop. Need help? National Gambling Helpline <a href="tel:08088020133">0808 8020 133</a> · <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener">gamcare.org.uk</a>
+</footer>
 
 <div id="photoModal" class="modal hidden" role="dialog" aria-modal="true">
   <div class="modal-card">
@@ -1627,6 +1638,7 @@
     $('homeCard').classList.toggle('hidden', name !== 'home');
     $('soonCard').classList.toggle('hidden', name !== 'soon');
     document.body.classList.toggle('soon-mode', name === 'soon');
+    $('saferFooter').classList.toggle('hidden', name !== 'home' && name !== 'auth');
   }
 
   // ---- Coming soon mode ----
@@ -1649,9 +1661,12 @@
   async function loadHome(user) {
     let { data: profile, error } = await db
       .from('profiles')
-      .select('display_name, nickname, is_admin, approved, can_host, host_capacity, has_chips, chip_set')
+      .select('display_name, nickname, is_admin, approved, can_host, host_capacity, has_chips, chip_set, host_address')
       .eq('id', user.id)
       .maybeSingle();
+    if (error && /host_address/.test(error.message || '')) {          // part 13 not set up yet
+      ({ data: profile, error } = await db.from('profiles').select('display_name, nickname, is_admin, approved, can_host, host_capacity, has_chips, chip_set').eq('id', user.id).maybeSingle());
+    }
     if (error && /can_host|chip/.test(error.message || '')) {          // profile questions (part 11) not set up yet
       ({ data: profile, error } = await db.from('profiles').select('display_name, nickname, is_admin, approved').eq('id', user.id).maybeSingle());
     }
@@ -2161,7 +2176,8 @@
     myReply = mine ? mine.reply : null;
 
     const meta = [];
-    if (ev.start_time) meta.push('🕖 ' + niceTime(ev.start_time));
+    if (ev.arrival_time) meta.push('🚪 Arrive from ' + niceTime(ev.arrival_time));
+    if (ev.start_time) meta.push('🃏 ' + (ev.arrival_time ? 'Cards in the air ' : '') + niceTime(ev.start_time));
     if (ev.venue) meta.push('📍 ' + esc(ev.venue));
     if (ev.address) meta.push('🗺️ <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) +
       '" target="_blank" rel="noopener">' + esc(ev.address) + '</a>');
@@ -2763,7 +2779,7 @@
     dot.style.background = c || 'transparent';
     dot.style.borderStyle = c ? 'solid' : 'dashed';
   }
-  const MAX_CHIPS = 7;
+  const MAX_CHIPS = 15;
   function chipRowHtml(i, r) {
     const opts = '<option value="">–</option>' + CHIP_VALUES.map(v => '<option value="' + v + '">' + chipLabel(v) + '</option>').join('');
     return '<div class="chip-row">' +
@@ -2802,6 +2818,7 @@
     $('pfNick').value = me.nickname || '';
     setYn('pfHost', me.can_host ?? null);
     $('pfCap').value = me.host_capacity ?? '';
+    $('pfAddr').value = me.host_address || '';
     setYn('pfChips', me.has_chips ?? null);
     paintChipRows(Array.isArray(me.chip_set) ? me.chip_set : []);
     paintProfileParts();
@@ -2837,6 +2854,7 @@
       if (!set.length) return pfmsg('Add at least one chip colour, or tap Nay.');
     }
     const row = { display_name: name, nickname: $('pfNick').value.trim() || null, can_host: host, host_capacity: host ? cap : null, has_chips: chips, chip_set: set };
+    if ('host_address' in me) row.host_address = host ? ($('pfAddr').value.trim() || null) : null;   // part 13
     const btn = $('pfSave'); btn.disabled = true; btn.textContent = 'Saving…';
     const { error } = await db.from('profiles').update(row).eq('id', me.id);
     btn.disabled = false; btn.textContent = $('pfLater').classList.contains('hidden') ? 'Save' : 'Save and ride in';

@@ -230,9 +230,11 @@
         <input type="hidden" id="evId">
         <label for="evName">Event name <span class="opt">(optional, e.g. Halloween Showdown)</span></label>
         <input id="evName" type="text" maxlength="60">
+        <label for="evDate">Date</label>
+        <input id="evDate" type="date" required>
         <div class="row2">
-          <div><label for="evDate">Date</label><input id="evDate" type="date" required></div>
-          <div><label for="evTime">Start time</label><input id="evTime" type="time" value="19:30"></div>
+          <div><label for="evArrive">Arrive from <span class="opt">(optional)</span></label><input id="evArrive" type="time" value="19:00"></div>
+          <div><label for="evTime">Play starts</label><input id="evTime" type="time" value="19:30"></div>
         </div>
         <label for="evVenue">Venue</label>
         <input id="evVenue" type="text" placeholder="e.g. Phil's house">
@@ -455,7 +457,8 @@
   })();
 
   async function loadPlayers() {
-    let { data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set').eq('approved', true).order('display_name');
+    let { data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set, host_address').eq('approved', true).order('display_name');
+    if (error) ({ data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set').eq('approved', true).order('display_name'));   // part 13 not run yet
     if (error) ({ data } = await db.from('profiles').select('id, display_name, nickname').eq('approved', true).order('display_name'));   // part 11 not run yet
     players = data || [];
     paintHostPicker();
@@ -477,6 +480,7 @@
     if (!p) { info.classList.add('hidden'); return; }
     const bits = [];
     if (p.host_capacity) bits.push('Can host up to ' + p.host_capacity + ' players.');
+    if (p.host_address) bits.push('Address filled in from their profile.');
     bits.push(p.has_chips && chipText(p.chip_set) ? 'Chips: ' + chipText(p.chip_set) + '.'
       : 'No chip set' + ($('evHostPick').dataset.chips ? ': chips from ' + $('evHostPick').dataset.chips + '.' : '. Someone needs to bring one.'));
     info.textContent = bits.join(' ');
@@ -488,6 +492,7 @@
     if (!p) return;
     $('evHost').value = p.display_name;
     if (!$('evVenue').value.trim()) $('evVenue').value = p.display_name + '\u2019s place';
+    if (p.host_address) $('evAddress').value = p.host_address;          // can still be changed by hand
     if (p.host_capacity && segVal('evFormat') !== 'headsup') $('evMax').value = p.host_capacity;
   };
 
@@ -599,6 +604,7 @@
     paintFormat();
     $('evId').value = '';
     $('evTime').value = '19:30';
+    $('evArrive').value = '19:00';
     $('evFormTitle').textContent = 'New event';
     $('evSave').textContent = 'Create event'; $('evSave').dataset.label = '';
     $('evStatusWrap').classList.add('hidden');
@@ -613,6 +619,7 @@
     $('evId').value = ev.id;
     $('evDate').value = ev.event_date;
     $('evTime').value = ev.start_time ? ev.start_time.slice(0, 5) : '';
+    $('evArrive').value = ev.arrival_time ? ev.arrival_time.slice(0, 5) : '';
     $('evVenue').value = ev.venue || '';
     $('evName').value = ev.name || '';
     $('evAddress').value = ev.address || '';
@@ -678,6 +685,7 @@
       registration_closed: $('evClosed').checked,
       event_date: $('evDate').value,
       start_time: $('evTime').value || null,
+      arrival_time: $('evArrive').value || null,
       venue: $('evVenue').value.trim() || null,
       host: $('evHost').value.trim() || null,
       buy_in: buyIn,
