@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Admin · Poker Premier League</title>
-<meta name="theme-color" content="#1d1007">
+<title>Admin · Gunslinger Poker League</title>
+<meta name="theme-color" content="#2A160C">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rye&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Anton&family=Oswald:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --felt: #0f3d2a; --felt-dark: #0a2a1d; --card: #fdfbf6; --ink: #1d1d1b;
@@ -132,13 +132,44 @@
   .theme-west .tabs button.active { background: linear-gradient(180deg, #f6cf7c, #d39a34); color: #2a1a0d; box-shadow: 0 0 18px rgba(242,196,107,0.55); }
   .theme-west .topbar a { border-color: rgba(242,196,107,0.55); color: #f7e3b5; background: rgba(0,0,0,0.25); }
   .theme-west .badge { background: linear-gradient(180deg, #f2c46b, #c88e2a); }
+
+  /* ===== GUNSLINGER POKER LEAGUE THEME (colours + type from the logo) ===== */
+  .theme-gpl { --felt: #D9622A; --felt-dark: #1E0F07; --card: #F6EAD5; --ink: #3A2013; --muted: #7A5A44;
+    --gold: #F49A5C; --red: #B23A24; --line: #E6D3B6; }
+  html:has(.theme-gpl) { background: #1E0F07; }
+  body.theme-gpl { background:
+      radial-gradient(ellipse 80% 44% at 50% 0%, rgba(244,154,92,0.40), rgba(244,154,92,0) 70%),
+      repeating-conic-gradient(from -4deg at 50% -8%, rgba(246,234,213,0.05) 0deg 8deg, rgba(246,234,213,0) 8deg 24deg),
+      linear-gradient(180deg, #4A2A19 0%, #2E180D 42%, #1E0F07 100%);
+    background-color: #1E0F07; }
+  .theme-gpl .suits { display: none; }
+  .admin-badge { display: block; width: 84px; height: 84px; margin: 0 auto 6px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5)); }
+  .theme-gpl h1 { font-family: 'Anton', Impact, sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 1px;
+    color: #F6EAD5; text-shadow: 3px 3px 0 #C9561F; margin-bottom: 2px; }
+  .admin-sub { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 3px; font-size: 12px; color: #F49A5C; }
+  .theme-gpl h2 { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; font-size: 15px; color: var(--felt); }
+  .theme-gpl .card { background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.6), rgba(255,255,255,0) 60%), linear-gradient(180deg, #FBF3E4, #F3E2C7);
+    border-color: rgba(58,32,19,0.2); }
+  .theme-gpl .btn { background: linear-gradient(180deg, #EF8443 0%, #D2591D 100%); font-family: 'Oswald', sans-serif; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px; text-decoration: none; box-shadow: 0 1px 0 rgba(255,225,195,0.5) inset, 0 6px 16px rgba(210,89,29,0.4); }
+  .theme-gpl .btn:hover { box-shadow: 0 0 0 3px rgba(244,154,92,0.35), 0 8px 22px rgba(210,89,29,0.5); }
+  .theme-gpl .btn.secondary { background: linear-gradient(180deg, #FFFBF3, #F1E0C4); color: var(--ink); box-shadow: 0 0 0 1px rgba(58,32,19,0.25), 0 4px 10px rgba(0,0,0,0.15); }
+  .theme-gpl .btn.danger { background: linear-gradient(180deg, #F7DCCF, #ECC1AE); color: #8A2414; }
+  .theme-gpl input, .theme-gpl select, .theme-gpl textarea { background: #FFFBF3; border-color: #D9C2A3; }
+  .theme-gpl input:focus, .theme-gpl select:focus, .theme-gpl textarea:focus { border-color: #E5702F; box-shadow: 0 0 0 3px rgba(229,112,47,0.28); }
+  .theme-gpl .tabs { background: rgba(30,15,7,0.9); border-color: rgba(244,154,92,0.3); }
+  .theme-gpl .tabs button { color: #F3DFC4; font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; font-size: 14px; }
+  .theme-gpl .tabs button.active { background: linear-gradient(180deg, #EF8443, #D2591D); color: #fff; box-shadow: 0 0 16px rgba(229,112,47,0.55); }
+  .theme-gpl .topbar a { border-color: rgba(244,154,92,0.6); color: #F6EAD5; }
+  .theme-gpl .badge { background: linear-gradient(180deg, #F7AE79, #E5702F); color: #2A160C; }
 </style>
 </head>
-<body class="theme-west">
+<body class="theme-west theme-gpl">
 
 <header>
-  <div class="suits">♠ ♥ ♦ ♣</div>
+  <img class="admin-badge" src="images/gpl-badge.svg" alt="">
   <h1>League Admin</h1>
+  <div class="admin-sub">Gunslinger Poker League</div>
 </header>
 
 <div id="loading" class="loading">Checking you're allowed in…</div>
