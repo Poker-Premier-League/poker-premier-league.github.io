@@ -3414,7 +3414,10 @@
     await checkSiteOpen();
     if (!siteOpen && !data.session) { showComingSoon(false); return; }
     if (data.session) {
-      if (!Sound.muted) showSplash();
+      // The doors + gunslinger intro plays once each time the app is opened, not when coming back from Admin
+      let introSeen = false;
+      try { introSeen = sessionStorage.getItem('gpl_intro_seen') === '1'; sessionStorage.setItem('gpl_intro_seen', '1'); } catch (_) {}
+      if (!Sound.muted && !introSeen) showSplash();
       await loadHome(data.session.user);
       $('splashHello').textContent = me ? 'Welcome back, ' + me.display_name : '';
     }
