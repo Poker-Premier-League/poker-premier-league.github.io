@@ -356,6 +356,22 @@
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
     <div class="card">
+      <h2>Test players</h2>
+      <p class="muted">Dummy players for trying things out. They can’t log in, and they show with a 🧪 in front of their name. Delete them all before the season starts.</p>
+      <div class="row2">
+        <div><label for="tpCount">How many</label>
+          <select id="tpCount"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>6</option><option>8</option><option>10</option><option>12</option></select></div>
+        <div style="display:flex;align-items:flex-end"><button id="tpAdd" class="btn full" type="button">🧪 Add test players</button></div>
+      </div>
+      <p id="tpList" class="muted small-note"></p>
+      <label for="tpEvent">Ride them into an event</label>
+      <select id="tpEvent"></select>
+      <button id="tpRide" class="btn secondary full" type="button" style="margin-top:8px">🤠 Ride them all in and mark paid</button>
+      <button id="tpRemove" class="btn danger full" type="button" style="margin-top:8px">Delete all test players</button>
+      <div id="tpMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
       <h2>Payout tables</h2>
       <p class="muted">Only admins can see these. Each row is the percentage of the prize pool for 1st, 2nd, 3rd… and must add up to 100. Players only see the amounts.</p>
       <div class="seg small" id="payKind" style="margin-top:10px">
@@ -457,11 +473,13 @@
   })();
 
   async function loadPlayers() {
-    let { data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set, host_address').eq('approved', true).order('display_name');
+    let { data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set, host_address, is_test').eq('approved', true).order('display_name');
+    if (error) ({ data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set, host_address').eq('approved', true).order('display_name'));   // part 14 not run yet
     if (error) ({ data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set').eq('approved', true).order('display_name'));   // part 13 not run yet
     if (error) ({ data } = await db.from('profiles').select('id, display_name, nickname').eq('approved', true).order('display_name'));   // part 11 not run yet
     players = data || [];
     paintHostPicker();
+    paintTestPlayers();
   }
 
   // ---- Host picker: fills in the host, venue and player limit from the host's profile ----
@@ -531,6 +549,7 @@
       loadEvents();
     });
     fillResultsDropdown();
+    paintTestPlayers();
   }
 
   // ---- Game builder: formats ----
@@ -944,6 +963,61 @@
   };
 
   // ================= POINTS & SETTINGS =================
+  // ================= TEST PLAYERS =================
+  async function callFn(body) {
+    const { data: s } = await db.auth.getSession();
+    const r = await fetch(SUPABASE_URL + '/functions/v1/send-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (s.session?.access_token || '') },
+      body: JSON.stringify(body)
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || ('error ' + r.status));
+    return j;
+  }
+  const testers = () => players.filter(p => p.is_test);
+  function paintTestPlayers() {
+    const t = testers();
+    $('tpList').textContent = t.length ? t.length + ' test player' + (t.length === 1 ? '' : 's') + ': ' + t.map(p => p.display_name.replace(/^🧪\s*/, '')).join(', ') : 'No test players yet.';
+    const upcoming = (events || []).filter(e => e.status === 'upcoming');
+    $('tpEvent').innerHTML = upcoming.length
+      ? upcoming.map(e => '<option value="' + e.id + '">' + esc((e.name ? e.name + ' · ' : '') + niceDate(e.event_date)) + '</option>').join('')
+      : '<option value="">No upcoming events</option>';
+    $('tpRide').disabled = !t.length || !upcoming.length;
+    $('tpRemove').disabled = !t.length;
+  }
+  $('tpAdd').onclick = async () => {
+    clear('tpMsg'); busy($('tpAdd'), true, 'Adding…');
+    try {
+      const j = await callFn({ type: 'test_add', count: Number($('tpCount').value) });
+      msg('tpMsg', '\u2713 Added ' + j.added.join(', '), 'ok');
+    } catch (e) { msg('tpMsg', 'Couldn\u2019t add: ' + (e.message || e)); }
+    busy($('tpAdd'), false);
+    await loadPlayers();
+  };
+  $('tpRide').onclick = async () => {
+    const eventId = Number($('tpEvent').value), t = testers();
+    if (!eventId || !t.length) return;
+    clear('tpMsg'); busy($('tpRide'), true, 'Riding in…');
+    let { error } = await db.from('attendance').upsert(t.map(p => ({ event_id: eventId, player_id: p.id, reply: 'in' })), { onConflict: 'event_id,player_id' });
+    for (const p of t) { if (error) break; ({ error } = await db.rpc('set_paid', { p_event: eventId, p_player: p.id, p_paid: true })); }
+    busy($('tpRide'), false);
+    if (error) return msg('tpMsg', 'Couldn\u2019t ride them in: ' + error.message);
+    msg('tpMsg', '\u2713 ' + t.length + ' test players are riding in, all paid.', 'ok');
+    loadEvents();
+  };
+  $('tpRemove').onclick = async () => {
+    const t = testers();
+    if (!confirm('Delete all ' + t.length + ' test players? Their replies, results and re-buys go too. Real players aren\u2019t touched.')) return;
+    clear('tpMsg'); busy($('tpRemove'), true, 'Deleting…');
+    try {
+      const j = await callFn({ type: 'test_remove' });
+      msg('tpMsg', '\u2713 Deleted ' + j.removed + ' test player' + (j.removed === 1 ? '' : 's') + '.', 'ok');
+    } catch (e) { msg('tpMsg', 'Couldn\u2019t delete: ' + (e.message || e)); }
+    busy($('tpRemove'), false);
+    await loadPlayers(); loadEvents();
+  };
+
   // ================= PAYOUT TABLES =================
   let payTables = [], payKind = 'standard';
   async function loadPayouts() {
