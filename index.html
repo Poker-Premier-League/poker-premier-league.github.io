@@ -1098,6 +1098,27 @@
   .seat-no { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; margin-right: 6px; border-radius: 50%;
     background: #3A2013; color: #F6EAD5; font-size: 11px; font-weight: 800; flex: none; }
   .unpaid-tag { font-size: 11px; font-weight: 700; color: #9A6B4C; background: rgba(58,32,19,0.08); padding: 1px 6px; border-radius: 999px; }
+
+  /* ===== Profile + sign-up questions ===== */
+  .profile-card { max-width: 420px; }
+  .pf-intro { margin: 4px 0 10px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+  .pf-photo { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
+  .pf-photo-label { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; color: #C9561F; margin-bottom: 6px; }
+  .pf-photo .btn.small { padding: 8px 12px; font-size: 13px; }
+  .yn { display: flex; gap: 8px; margin-top: 4px; }
+  .yn button { flex: 1; padding: 11px; border-radius: 10px; border: 1px solid #D9C2A3; background: #FFFBF3; font: inherit; font-weight: 800;
+    font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; color: var(--ink); cursor: pointer; }
+  .yn button.on[data-v="1"] { background: linear-gradient(180deg, #EF8443, #D2591D); border-color: #C9561F; color: #fff; }
+  .yn button.on[data-v="0"] { background: #3A2013; border-color: #3A2013; color: #F6EAD5; }
+  .chip-head, .chip-row { display: grid; grid-template-columns: 1.5fr 0.8fr 1fr; gap: 6px; align-items: center; }
+  .chip-head { margin: 4px 0 2px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); }
+  .chip-row { margin-bottom: 6px; }
+  .chip-row input, .chip-row select { padding: 9px 8px; font-size: 14px; min-width: 0; }
+  .chip-colour { position: relative; }
+  .chip-colour input { padding-left: 28px; width: 100%; box-sizing: border-box; }
+  .chip-dot { position: absolute; left: 9px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; border-radius: 50%;
+    border: 2px dashed rgba(58,32,19,0.35); box-sizing: border-box; }
+  #pfLater { margin-top: 10px; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -1418,6 +1439,48 @@
 
 <!-- PHOTO: menu + cropper -->
 <input id="photoFile" type="file" accept="image/*" class="hidden">
+<div id="profileModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pfTitle">
+  <div class="modal-card profile-card">
+    <h3 id="pfTitle">Your profile</h3>
+    <p id="pfIntro" class="pf-intro hidden">Answer a few quick questions so Alex and Phil know who can host and who has chips. You can change these any time by tapping your photo.</p>
+
+    <div class="pf-photo">
+      <span id="pfAvatar"></span>
+      <div>
+        <div class="pf-photo-label">Show me your face, partner</div>
+        <button id="pfPhotoBtn" class="btn secondary small" type="button">Add or change your photo</button>
+      </div>
+    </div>
+
+    <label for="pfName">Your name</label>
+    <input id="pfName" type="text" maxlength="40" autocomplete="name">
+    <label for="pfNick">Nickname <span class="opt">(optional)</span></label>
+    <input id="pfNick" type="text" maxlength="30" placeholder="e.g. The Kid">
+
+    <label>Can you host a poker night?</label>
+    <div class="yn" id="pfHost"><button type="button" data-v="1">Yay</button><button type="button" data-v="0">Nay</button></div>
+    <div id="pfCapWrap" class="hidden">
+      <label for="pfCap">How many players can you host?</label>
+      <input id="pfCap" type="number" inputmode="numeric" min="2" max="40" step="1" placeholder="e.g. 8">
+    </div>
+
+    <label>Do you have poker chips to play with?</label>
+    <div class="yn" id="pfChips"><button type="button" data-v="1">Yay</button><button type="button" data-v="0">Nay</button></div>
+    <div id="pfChipWrap" class="hidden">
+      <label>Your chip set <span class="opt">(up to 7 colours; leave the value blank if the chip has no number)</span></label>
+      <div class="chip-head"><span>Colour</span><span>Quantity</span><span>Value</span></div>
+      <div id="pfChipRows"></div>
+    </div>
+
+    <div class="btnrow">
+      <button id="pfClose" class="btn secondary" type="button">Close</button>
+      <button id="pfSave" class="btn" type="button">Save</button>
+    </div>
+    <button id="pfLater" class="textlink hidden" type="button">Ask me later</button>
+    <div id="pfMsg" class="msg"></div>
+  </div>
+</div>
+
 <div id="photoModal" class="modal hidden" role="dialog" aria-modal="true">
   <div class="modal-card">
     <h3 id="photoTitle">Your photo</h3>
@@ -1540,11 +1603,14 @@
   $('soonLogout').onclick = async () => { await db.auth.signOut(); showComingSoon(false); };
 
   async function loadHome(user) {
-    const { data: profile, error } = await db
+    let { data: profile, error } = await db
       .from('profiles')
-      .select('display_name, nickname, is_admin, approved')
+      .select('display_name, nickname, is_admin, approved, can_host, host_capacity, has_chips, chip_set')
       .eq('id', user.id)
       .maybeSingle();
+    if (error && /can_host|chip/.test(error.message || '')) {          // profile questions (part 11) not set up yet
+      ({ data: profile, error } = await db.from('profiles').select('display_name, nickname, is_admin, approved').eq('id', user.id).maybeSingle());
+    }
 
     if (error || !profile || !profile.approved) {
       await db.auth.signOut();
@@ -1568,6 +1634,7 @@
     loadMessages();
     refreshNotifUI();
     if (openMsgs) openMessages();
+    else if ('can_host' in me && (me.can_host == null || me.has_chips == null) && !profileAskedLater()) openProfile(true);   // the sign-up questions
   }
 
   // ---- Tabs (tap or swipe) ----
@@ -1920,6 +1987,7 @@
   async function refreshAvatars() {
     await loadProfiles();
     $('myAvatar').innerHTML = avatarHtml(me.id, 36);
+    if (!$('profileModal').classList.contains('hidden')) $('pfAvatar').innerHTML = avatarHtml(me.id, 64);
     await Promise.all([currentEvent ? renderEvent() : null, loadLeague()]);
   }
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2444,13 +2512,109 @@
     $('finalBody').innerHTML = html;
   }
 
+  // ---- Profile: name, photo, hosting, chip set ----
+  const CHIP_VALUES = [0.05, 0.10, 0.25, 0.50, 1, 5, 10, 25, 50, 100, 500, 1000, 5000, 10000, 25000, 100000, 500000];
+  const chipLabel = (v) => v < 1 ? v.toFixed(2) : v.toLocaleString('en-GB');
+  const profileAskedLater = () => { try { return sessionStorage.getItem('gpl_profile_later') === '1'; } catch (_) { return false; } };
+  const ynVal = (id) => { const b = $(id).querySelector('button.on'); return b ? b.dataset.v === '1' : null; };
+  function setYn(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', v != null && (b.dataset.v === '1') === v)); }
+  function paintProfileParts() {
+    $('pfCapWrap').classList.toggle('hidden', ynVal('pfHost') !== true);
+    $('pfChipWrap').classList.toggle('hidden', ynVal('pfChips') !== true);
+  }
+  ['pfHost', 'pfChips'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => { setYn(id, b.dataset.v === '1'); paintProfileParts(); }));
+  function swatch(colour) {                       // "Royal Blue" -> royalblue, so most chip colours get a real dot
+    const c = (colour || '').trim().toLowerCase().replace(/\s+/g, '');
+    return c && window.CSS && CSS.supports('color', c) ? c : '';
+  }
+  function paintDot(dot, colour) {
+    const c = swatch(colour);
+    dot.style.background = c || 'transparent';
+    dot.style.borderStyle = c ? 'solid' : 'dashed';
+  }
+  function paintChipRows(rows) {
+    const opts = '<option value="">–</option>' + CHIP_VALUES.map(v => '<option value="' + v + '">' + chipLabel(v) + '</option>').join('');
+    $('pfChipRows').innerHTML = Array.from({ length: 7 }, (_, i) => {
+      const r = rows[i] || {};
+      return '<div class="chip-row">' +
+        '<div class="chip-colour"><span class="chip-dot"></span>' +
+          '<input type="text" maxlength="20" placeholder="e.g. Red" aria-label="Chip ' + (i + 1) + ' colour" value="' + esc(r.colour || '') + '"></div>' +
+        '<input type="number" inputmode="numeric" min="1" max="10000" step="1" placeholder="Qty" aria-label="Chip ' + (i + 1) + ' quantity" value="' + (r.qty ?? '') + '">' +
+        '<select aria-label="Chip ' + (i + 1) + ' value">' + opts + '</select></div>';
+    }).join('');
+    $('pfChipRows').querySelectorAll('.chip-row').forEach((row, i) => {
+      const r = rows[i] || {};
+      if (r.value != null) row.querySelector('select').value = String(Number(r.value));
+      const inp = row.querySelector('.chip-colour input'), dot = row.querySelector('.chip-dot');
+      paintDot(dot, inp.value);
+      inp.oninput = () => paintDot(dot, inp.value);
+    });
+  }
+  function openProfile(welcome) {
+    $('pfTitle').textContent = welcome ? '🤠 Saddle up, partner' : 'Your profile';
+    $('pfIntro').classList.toggle('hidden', !welcome);
+    $('pfClose').classList.toggle('hidden', welcome);
+    $('pfLater').classList.toggle('hidden', !welcome);
+    $('pfSave').textContent = welcome ? 'Save and ride in' : 'Save';
+    $('pfAvatar').innerHTML = avatarHtml(me.id, 64);
+    $('pfName').value = me.display_name || '';
+    $('pfNick').value = me.nickname || '';
+    setYn('pfHost', me.can_host ?? null);
+    $('pfCap').value = me.host_capacity ?? '';
+    setYn('pfChips', me.has_chips ?? null);
+    paintChipRows(Array.isArray(me.chip_set) ? me.chip_set : []);
+    paintProfileParts();
+    pfmsg('');
+    $('profileModal').classList.remove('hidden');
+  }
+  function closeProfile() { $('profileModal').classList.add('hidden'); }
+  function pfmsg(t, type) { const m = $('pfMsg'); m.textContent = t; m.className = t ? 'msg ' + (type || 'error') : 'msg'; }
+  $('pfClose').onclick = closeProfile;
+  $('pfLater').onclick = () => { try { sessionStorage.setItem('gpl_profile_later', '1'); } catch (_) {} closeProfile(); };
+  $('pfPhotoBtn').onclick = () => openPhoto(me.id);
+  $('pfSave').onclick = async () => {
+    const name = $('pfName').value.trim();
+    const host = ynVal('pfHost'), chips = ynVal('pfChips');
+    if (!name) return pfmsg('Enter your name.');
+    if (host == null) return pfmsg('Can you host a poker night? Tap Yay or Nay.');
+    const cap = $('pfCap').value === '' ? null : Number($('pfCap').value);
+    if (host && !(cap >= 2 && cap <= 40)) return pfmsg('How many players can you host? Enter a number from 2 to 40.');
+    if (chips == null) return pfmsg('Do you have poker chips? Tap Yay or Nay.');
+    let set = null;
+    if (chips) {
+      set = [];
+      for (const row of $('pfChipRows').querySelectorAll('.chip-row')) {
+        const colour = row.querySelector('.chip-colour input').value.trim();
+        const qtyRaw = row.querySelector('input[type=number]').value;
+        const value = row.querySelector('select').value;
+        if (!colour && !qtyRaw && !value) continue;
+        const qty = Number(qtyRaw);
+        if (!colour) return pfmsg('Add a colour for each chip you\u2019ve filled in.');
+        if (!(Number.isInteger(qty) && qty >= 1)) return pfmsg('Add how many ' + colour + ' chips you have.');
+        set.push({ colour, qty, value: value === '' ? null : Number(value) });
+      }
+      if (!set.length) return pfmsg('Add at least one chip colour, or tap Nay.');
+    }
+    const row = { display_name: name, nickname: $('pfNick').value.trim() || null, can_host: host, host_capacity: host ? cap : null, has_chips: chips, chip_set: set };
+    const btn = $('pfSave'); btn.disabled = true; btn.textContent = 'Saving…';
+    const { error } = await db.from('profiles').update(row).eq('id', me.id);
+    btn.disabled = false; btn.textContent = $('pfLater').classList.contains('hidden') ? 'Save' : 'Save and ride in';
+    if (error) return pfmsg('Couldn\u2019t save: ' + error.message);
+    Object.assign(me, row);
+    $('whoName').textContent = me.display_name;
+    if (people[me.id]) Object.assign(people[me.id], { display_name: row.display_name, nickname: row.nickname });
+    closeProfile();
+    Sound.chips();
+    refreshAvatars();
+  };
+
   // ---- Photo: menu, cropper, upload ----
   const crop = { img: null, scale: 1, minScale: 1, x: 0, y: 0, forId: null };
   const STAGE = 600;                 // canvas pixels
   const CIRCLE = STAGE * 0.866;      // circle diameter (matches the ring)
   const OUT = 400;                   // saved photo size
 
-  $('myAvatarBtn').onclick = () => openPhoto(me.id);
+  $('myAvatarBtn').onclick = () => ('can_host' in me ? openProfile(false) : openPhoto(me.id));
   document.querySelectorAll('.photoClose').forEach(b => b.onclick = closePhoto);
   $('photoModal').onclick = (e) => { if (e.target === $('photoModal')) closePhoto(); };
 

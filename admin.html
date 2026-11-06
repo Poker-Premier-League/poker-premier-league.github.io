@@ -264,8 +264,11 @@
           <div id="evHuStacks" class="hu-stacks"></div>
           <label class="check"><input id="evHuBo3" type="checkbox"> Final is best of 3</label>
         </div>
+        <label for="evHostPick">Host</label>
+        <select id="evHostPick"><option value="">Pick a player who can host…</option></select>
+        <p id="evHostInfo" class="muted small-note hidden"></p>
         <div class="row2">
-          <div><label for="evHost">Host <span class="opt">(optional)</span></label><input id="evHost" type="text"></div>
+          <div><label for="evHost">Host name <span class="opt">(or type one)</span></label><input id="evHost" type="text"></div>
           <div id="evMaxWrap"><label for="evMax">Player limit <span class="opt">(blank = no limit)</span></label><input id="evMax" type="number" inputmode="numeric" min="2" max="40" step="1" placeholder="e.g. 9"></div>
         </div>
         <div class="row2">
@@ -433,9 +436,41 @@
   })();
 
   async function loadPlayers() {
-    const { data } = await db.from('profiles').select('id, display_name, nickname').eq('approved', true).order('display_name');
+    let { data, error } = await db.from('profiles').select('id, display_name, nickname, can_host, host_capacity, has_chips, chip_set').eq('approved', true).order('display_name');
+    if (error) ({ data } = await db.from('profiles').select('id, display_name, nickname').eq('approved', true).order('display_name'));   // part 11 not run yet
     players = data || [];
+    paintHostPicker();
   }
+
+  // ---- Host picker: fills in the host, venue and player limit from the host's profile ----
+  const chipText = (set) => (Array.isArray(set) && set.length)
+    ? set.map(c => c.colour + ' ×' + c.qty + (c.value != null ? ' (' + (c.value < 1 ? Number(c.value).toFixed(2) : Number(c.value).toLocaleString('en-GB')) + ')' : '')).join(', ')
+    : '';
+  function paintHostPicker() {
+    const hosts = players.filter(p => p.can_host);
+    $('evHostPick').innerHTML = '<option value="">' + (hosts.length ? 'Pick a player who can host…' : 'Nobody has said they can host yet') + '</option>' +
+      hosts.map(p => '<option value="' + p.id + '">' + esc(p.display_name) + (p.host_capacity ? ' (up to ' + p.host_capacity + ' players)' : '') + '</option>').join('');
+    const withChips = players.filter(p => p.has_chips).map(p => p.display_name);
+    $('evHostPick').dataset.chips = withChips.join(', ');
+  }
+  function showHostInfo(p) {
+    const info = $('evHostInfo');
+    if (!p) { info.classList.add('hidden'); return; }
+    const bits = [];
+    if (p.host_capacity) bits.push('Can host up to ' + p.host_capacity + ' players.');
+    bits.push(p.has_chips && chipText(p.chip_set) ? 'Chips: ' + chipText(p.chip_set) + '.'
+      : 'No chip set' + ($('evHostPick').dataset.chips ? ': chips from ' + $('evHostPick').dataset.chips + '.' : '. Someone needs to bring one.'));
+    info.textContent = bits.join(' ');
+    info.classList.remove('hidden');
+  }
+  $('evHostPick').onchange = () => {
+    const p = players.find(x => x.id === $('evHostPick').value);
+    showHostInfo(p);
+    if (!p) return;
+    $('evHost').value = p.display_name;
+    if (!$('evVenue').value.trim()) $('evVenue').value = p.display_name + '\u2019s place';
+    if (p.host_capacity && segVal('evFormat') !== 'headsup') $('evMax').value = p.host_capacity;
+  };
 
   // ================= EVENTS =================
   const FMT_NAME = { freezeout: 'Freezeout', rebuy: 'Re-buy', knockout: 'Knockout', headsup: 'Heads Up' };
@@ -541,6 +576,7 @@
     $('evForm').reset();
     setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setSeg('evRebuyHours', '2');
     $('evHuStacks').innerHTML = '';
+    $('evHostPick').value = ''; showHostInfo(null);
     paintFormat();
     $('evId').value = '';
     $('evTime').value = '19:30';
@@ -574,6 +610,9 @@
     }
     paintFormat();
     $('evHost').value = ev.host || '';
+    const hp = players.find(p => p.can_host && p.display_name === ev.host);
+    $('evHostPick').value = hp ? hp.id : '';
+    showHostInfo(hp);
     $('evBuyin').value = ev.buy_in ?? '';
     $('evRebuy').value = ev.rebuy_price ?? '';
     $('evAddon').value = ev.addon_price ?? '';
