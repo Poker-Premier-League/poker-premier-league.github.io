@@ -72,6 +72,8 @@
 
   /* Event list */
   .res-live { margin: 8px 0 12px; padding: 10px 12px; border-radius: 10px; background: #FFF1E3; border: 1px solid #E5702F; font-size: 14px; line-height: 1.45; }
+  .ld-setup { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .ld-setup h3 { margin: 0 0 4px; font-size: 16px; }
   .fee-sum { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #1E0F07; color: #F6EAD5; font-size: 14px; }
   .fee-sum b { color: #FBC891; font-size: 18px; }
   #feeList li { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center; padding: 8px 0; }
@@ -384,6 +386,17 @@
       <label class="check"><input id="ldShown" type="checkbox"> Show the game details to players</label>
       <button id="ldSave" class="btn full" type="button">Save The Last Draw</button>
       <div id="ldMsg" class="msg"></div>
+      <div class="ld-setup">
+        <h3>Set up the final night</h3>
+        <p class="muted">Creates the final as an event in the lobby: the current finalists are put in and marked as paid (free seats), registration is closed, and the prize pool is the season’s league fees. It doesn’t count towards league points. Change the format afterwards in Events → Edit.</p>
+        <p id="ldFinalists" class="muted small-note"></p>
+        <div class="row2">
+          <div><label for="ldDate">Date</label><input id="ldDate" type="date"></div>
+          <div><label for="ldTime">Cards in the air</label><input id="ldTime" type="time" value="19:30"></div>
+        </div>
+        <button id="ldCreate" class="btn secondary full" type="button">🏆 Create the final night</button>
+        <div id="ldMsg2" class="msg"></div>
+      </div>
     </div>
     <div class="card" id="feeCardAdmin">
       <h2>League fee</h2>
@@ -553,7 +566,63 @@
     if (error) { $('ldCardAdmin').classList.add('hidden'); return; }       // part 20 not run yet
     $('ldWhen').value = data?.when_text || ''; $('ldVenue').value = data?.venue || '';
     $('ldDetails').value = data?.details || ''; $('ldShown').checked = !!data?.details_shown;
+    const t = await db.from('last_draw_players').select('player_id').limit(1);   // part 21 needed for the final night
+    $('ldCreate').closest('.ld-setup').classList.toggle('hidden', !!t.error);
+    if (!t.error) { if (!events.length) await loadEvents(); paintFinalSetup().catch(() => {}); }
   }
+  // The finalists right now: top qualified players, skipping anyone who can't make it (same order as the app)
+  async function currentFinalists() {
+    const [lt, st, ldp] = await Promise.all([db.from('league_table').select('*'), db.from('league_settings').select('season_name, final_players').maybeSingle(),
+      db.from('last_draw_players').select('player_id, kind, season')]);
+    const season = st.data?.season_name, n = st.data?.final_players || 9;
+    const out = new Set((ldp.data || []).filter(r => r.kind === 'out' && r.season === season).map(r => r.player_id));
+    const num = (v) => Number(v || 0), avg = (p) => p.avg_finish == null ? 999 : Number(p.avg_finish);
+    return (lt.data || []).filter(p => p.qualified && !out.has(p.player_id)).sort((a, b) => num(b.league_points) - num(a.league_points) || b.wins - a.wins ||
+      a.last_places - b.last_places || avg(a) - avg(b) || a.rebuys - b.rebuys || a.display_name.localeCompare(b.display_name)).slice(0, n);
+  }
+  async function paintFinalSetup() {
+    const fin = await currentFinalists();
+    const existing = events.find(e => e.is_final && e.status === 'upcoming');
+    $('ldFinalists').textContent = fin.length ? 'Finalists right now (' + fin.length + '): ' + fin.map(p => p.display_name).join(', ') + '.' : 'Nobody has qualified yet.';
+    $('ldCreate').textContent = existing ? '🔄 Update the finalists on ' + niceDate(existing.event_date) : '🏆 Create the final night';
+    if (existing) { $('ldDate').value = existing.event_date; $('ldTime').value = (existing.start_time || '19:30').slice(0, 5); }
+  }
+  $('ldCreate').onclick = async () => {
+    clear('ldMsg2');
+    const fin = await currentFinalists();
+    if (fin.length < 2) return msg('ldMsg2', 'At least two players need to have qualified first.');
+    const existing = events.find(e => e.is_final && e.status === 'upcoming');
+    if (!existing && !$('ldDate').value) return msg('ldMsg2', 'Pick the date of the final.');
+    if (!confirm((existing ? 'Update the final night so these players are in:\n\n' : 'Create The Last Draw on ' + niceDate($('ldDate').value) + ' with these finalists in (free seats):\n\n') +
+      fin.map((p, i) => (i + 1) + '. ' + p.display_name).join('\n') + (existing ? '\n\nAnyone no longer in the 9 is moved to Out.' : '\n\nEveryone gets a new-showdown alert.'))) return;
+    busy($('ldCreate'), true, 'Saving…');
+    try {
+      let evId = existing?.id;
+      if (!existing) {
+        const { data: ld } = await db.from('last_draw').select('venue').eq('id', 1).maybeSingle();
+        const { data: made, error } = await db.from('events').insert({ name: 'The Last Draw', is_final: true, event_date: $('ldDate').value, start_time: $('ldTime').value || null,
+          venue: ld?.venue || null, buy_in: 0, format: 'freezeout', max_players: Math.max(fin.length, 2), registration_closed: true,
+          notes: 'The season final. Free seats for the finalists, who start with their league points as chips. Seats are drawn at the venue.' }).select('id').single();
+        if (error) throw error;
+        evId = made.id;
+      } else if ($('ldDate').value) {
+        const { error } = await db.from('events').update({ event_date: $('ldDate').value, start_time: $('ldTime').value || null }).eq('id', evId);
+        if (error) throw error;
+      }
+      for (const p of fin) { const { error } = await db.rpc('set_paid', { p_event: evId, p_player: p.player_id, p_paid: true }); if (error) throw error; }
+      if (existing) {                                      // anyone who has dropped out of the 9 is moved to Out
+        const { data: att } = await db.from('attendance').select('player_id, reply').eq('event_id', evId).eq('reply', 'in');
+        const keep = new Set(fin.map(p => p.player_id));
+        for (const a of (att || [])) if (!keep.has(a.player_id)) {
+          const { error } = await db.from('attendance').update({ reply: 'out', paid: false }).eq('event_id', evId).eq('player_id', a.player_id); if (error) throw error;
+        }
+      }
+      await loadEvents(); await paintFinalSetup();
+      msg('ldMsg2', '\u2713 ' + (existing ? 'Finalists updated.' : 'The final night is set up. It\u2019s in the lobby with all ' + fin.length + ' finalists in.'), 'ok');
+    } catch (e) { msg('ldMsg2', 'Couldn\u2019t do that: ' + (e.message || e)); }
+    busy($('ldCreate'), false);
+  };
+
   $('ldSave').onclick = async () => {
     clear('ldMsg');
     const row = { id: 1, when_text: $('ldWhen').value.trim() || null, venue: $('ldVenue').value.trim() || null,
@@ -671,7 +740,7 @@
       return '<li><div class="info">' +
         '<div class="fmt">' + (FMT_NAME[ev.format] || 'Freezeout') + '</div>' +
         '<div class="d">' + (ev.name ? esc(ev.name) + ' · ' : '') + niceDate(ev.event_date) + '</div>' +
-        '<div class="v">' + esc([ev.venue, ev.buy_in != null ? '£' + Number(ev.buy_in) : ''].filter(Boolean).join(' · ') || 'No venue yet') + '</div>' +
+        '<div class="v">' + esc([ev.is_final ? '🏆 The Last Draw' : '', ev.venue, !ev.is_final && ev.buy_in != null ? '£' + Number(ev.buy_in) : ''].filter(Boolean).join(' · ') || 'No venue yet') + '</div>' +
         '<div class="places">' + n + (ev.max_players ? ' of ' + ev.max_players : '') + ' riding in</div></div>' +
         (ev.status === 'upcoming' && ev.registration_closed ? '<span class="status closed">Closed</span>' : '<span class="status ' + ev.status + '">' + ev.status + '</span>') +
         (ev.status === 'upcoming' ? '<button class="btn small secondary" data-close="' + ev.id + '">' + (ev.registration_closed ? 'Reopen' : 'Close reg') + '</button>' : '') +
@@ -1018,7 +1087,7 @@
     const buyIn = ev && ev.buy_in != null ? Number(ev.buy_in) : null;
     const rebuyP = ev && ev.rebuy_price != null ? Number(ev.rebuy_price) : buyIn;
     const addonP = ev && ev.addon_price != null ? Number(ev.addon_price) : buyIn;
-    $('resFormula').innerHTML = buyIn
+    $('resFormula').innerHTML = ev?.is_final ? '🏆 <strong>The Last Draw.</strong> The final doesn\u2019t count towards league points: places decide the prize pot (the season\u2019s league fees).' : buyIn
       ? 'Buy-in <strong>£' + buyIn + '</strong> · rebuy <strong>£' + rebuyP + '</strong> · add-on <strong>£' + addonP + '</strong>'
       : '<span style="color:var(--red)">This event has no buy-in yet. Add one in the Events tab so points can be worked out.</span>';
     $('resTable').innerHTML =
@@ -1103,7 +1172,7 @@
     // Checks
     if (played.some(r => !Number.isInteger(r.position) || r.position < 1)) return msg('resMsg', 'Positions must be whole numbers from 1 upwards.');
     const evNow = events.find(e => e.id === eventId);
-    if (played.length && !(evNow && Number(evNow.buy_in) > 0)) return msg('resMsg', 'Add a buy-in to this event first (Events tab, then Edit) so points can be worked out.');
+    if (played.length && !evNow?.is_final && !(evNow && Number(evNow.buy_in) > 0)) return msg('resMsg', 'Add a buy-in to this event first (Events tab, then Edit) so points can be worked out.');
     if (played.some(r => !Number.isInteger(r.rebuys) || r.rebuys < 0 || !Number.isInteger(r.addons) || r.addons < 0)) return msg('resMsg', 'Rebuys and add-ons must be whole numbers (0 or more).');
     if (played.some(r => !Number.isInteger(r.knockouts) || r.knockouts < 0)) return msg('resMsg', 'Knockouts must be whole numbers (0 or more).');
     const seen = {};
@@ -1387,7 +1456,7 @@
   // ================= POINTS & SETTINGS =================
   // ================= BACKUP =================
   const BACKUP_TABLES = ['profiles', 'league_settings', 'points_table', 'payout_tables', 'events', 'attendance', 'event_entries',
-    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'messages', 'memories'];
+    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'last_draw_players', 'messages', 'memories'];
   const BACKUP_LABELS = { profiles: 'players', events: 'events', attendance: 'replies', results: 'results', event_entries: 're-buys/add-ons',
     seating: 'seats', league_fees: 'league fees', messages: 'messages', memories: 'photos listed' };
   function paintBackupDate() {
