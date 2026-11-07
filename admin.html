@@ -71,6 +71,12 @@
   .loading { text-align: center; color: #cfe3d7; padding: 30px; }
 
   /* Event list */
+  .fee-sum { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #1E0F07; color: #F6EAD5; font-size: 14px; }
+  .fee-sum b { color: #FBC891; font-size: 18px; }
+  #feeList li { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center; padding: 8px 0; }
+  #feeList .info { flex: 1; min-width: 0; }
+  .feetog { flex: none; min-width: 92px; min-height: 36px; border-radius: 9px; border: 1px solid var(--line); background: #fff; color: var(--ink); font-weight: 700; font-size: 13px; cursor: pointer; }
+  .feetog.on { background: #2e7d50; border-color: #2e7d50; color: #fff; }
   .evlist { list-style: none; margin: 0; padding: 0; }
   .evlist li { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
   .evlist li:last-child { border-bottom: 0; }
@@ -355,6 +361,18 @@
 
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
+    <div class="card" id="feeCardAdmin">
+      <h2>League fee</h2>
+      <p class="muted">Every player pays this once a season. It all goes into The Last Draw prize pot, and a player’s points only count once it’s paid. Changing the season name in League settings starts everyone as unpaid again. Set it to £0 to switch it off.</p>
+      <div class="row2">
+        <div><label for="feeAmount">Fee (£)</label><input id="feeAmount" type="number" inputmode="decimal" min="0" step="0.5"></div>
+        <div style="display:flex;align-items:flex-end"><button id="feeSave" class="btn secondary full" type="button">Save fee</button></div>
+      </div>
+      <p id="feeSummary" class="fee-sum"></p>
+      <ul id="feeList" class="evlist"></ul>
+      <button id="feeChase" class="btn full" type="button" style="margin-top:10px">🏆 Chase league fee</button>
+      <div id="feeMsg" class="msg"></div>
+    </div>
     <div class="card">
       <h2>Backup</h2>
       <p class="muted">Saves all the league’s data to one file on this device: players, events, replies and payments, results, re-buys, seating, settings, payout tables, messages and the photo list. Keep it somewhere safe, like your email or cloud drive. It doesn’t include the photos themselves or the invite code.</p>
@@ -487,7 +505,66 @@
     players = data || [];
     paintHostPicker();
     paintTestPlayers();
+    await loadFees();
   }
+
+  // ---- League fee (part 17) ----
+  let feeState = null;
+  async function loadFees() {
+    const { data: st, error } = await db.from('league_settings').select('season_name, league_fee').maybeSingle();
+    if (error || !st || st.league_fee == null) { $('feeCardAdmin').classList.add('hidden'); return; }   // part 17 not run yet
+    const { data: fees } = await db.from('league_fees').select('player_id, amount').eq('season', st.season_name);
+    feeState = { season: st.season_name, fee: Number(st.league_fee), paid: {} };
+    (fees || []).forEach(f => feeState.paid[f.player_id] = Number(f.amount));
+    paintFees();
+  }
+  function paintFees() {
+    const f = feeState; if (!f) return;
+    if (document.activeElement !== $('feeAmount')) $('feeAmount').value = f.fee;
+    const pot = Object.values(f.paid).reduce((t, a) => t + a, 0), n = Object.keys(f.paid).length;
+    const real = players.filter(p => !p.is_test);
+    const realPaid = real.filter(p => p.id in f.paid).length;
+    $('feeSummary').innerHTML = f.fee > 0
+      ? 'The Last Draw pot: <b>£' + pot.toLocaleString('en-GB') + '</b><br>' + esc(f.season) + ': ' + realPaid + ' of ' + real.length + ' players paid' + (n > realPaid ? ' (plus ' + (n - realPaid) + ' test)' : '') + '.'
+      : 'The league fee is switched off, so everyone’s points count.';
+    $('feeList').innerHTML = f.fee > 0 ? players.map(p => {
+      const paid = p.id in f.paid;
+      return '<li><div class="info"><div class="d">' + esc(p.display_name) + '</div></div>' +
+        '<button type="button" class="feetog' + (paid ? ' on' : '') + '" data-pid="' + p.id + '">' + (paid ? '✓ Paid' : 'Mark paid') + '</button></li>';
+    }).join('') : '';
+    $('feeChase').classList.toggle('hidden', !(f.fee > 0) || realPaid === real.length);
+    $('feeList').querySelectorAll('.feetog').forEach(b => b.onclick = async () => {
+      const paid = b.dataset.pid in f.paid;
+      const name = players.find(p => p.id === b.dataset.pid)?.display_name || 'this player';
+      if (paid && !confirm('Untick ' + name + '\u2019s league fee? Their points will stop counting.')) return;
+      b.disabled = true;
+      const { error } = await db.rpc('set_league_fee', { p_player: b.dataset.pid, p_paid: !paid });
+      if (error) { msg('feeMsg', 'Couldn\u2019t update: ' + error.message); b.disabled = false; return; }
+      clear('feeMsg'); await loadFees();
+    });
+  }
+  $('feeSave').onclick = async () => {
+    clear('feeMsg');
+    const v = Number($('feeAmount').value);
+    if ($('feeAmount').value === '' || !(v >= 0)) return msg('feeMsg', 'Enter the fee in pounds, or 0 to switch it off.');
+    if (feeState && Object.keys(feeState.paid).length && v !== feeState.fee &&
+        !confirm('Change the fee to £' + v + '? Fees already ticked keep the amount they were paid at.')) return;
+    busy($('feeSave'), true, 'Saving…');
+    const { error } = await db.from('league_settings').update({ league_fee: v }).eq('id', 1);
+    busy($('feeSave'), false);
+    if (error) return msg('feeMsg', 'Couldn\u2019t save: ' + error.message);
+    msg('feeMsg', v > 0 ? '\u2713 League fee set to £' + v + '.' : '\u2713 League fee switched off.', 'ok');
+    await loadFees();
+  };
+  $('feeChase').onclick = async () => {
+    if (!confirm('Send a league fee reminder to every player who hasn\u2019t paid?')) return;
+    busy($('feeChase'), true, 'Sending…'); clear('feeMsg');
+    try {
+      const j = await callFn({ type: 'nudge_fee' });
+      msg('feeMsg', j.people ? '\u2713 Sent to ' + j.people + ' player' + (j.people === 1 ? '' : 's') + (j.sent < j.people ? ' (some haven\u2019t turned notifications on)' : '') + '.' : 'Nobody to chase: everyone has paid.', 'ok');
+    } catch (e) { msg('feeMsg', 'Couldn\u2019t send: ' + (e.message || e)); }
+    busy($('feeChase'), false);
+  };
 
   // ---- Host picker: fills in the host, venue and player limit from the host's profile ----
   const chipText = (set) => (Array.isArray(set) && set.length)
@@ -972,9 +1049,9 @@
   // ================= POINTS & SETTINGS =================
   // ================= BACKUP =================
   const BACKUP_TABLES = ['profiles', 'league_settings', 'points_table', 'payout_tables', 'events', 'attendance', 'event_entries',
-    'seating', 'results', 'messages', 'memories'];
+    'seating', 'results', 'league_fees', 'messages', 'memories'];
   const BACKUP_LABELS = { profiles: 'players', events: 'events', attendance: 'replies', results: 'results', event_entries: 're-buys/add-ons',
-    seating: 'seats', messages: 'messages', memories: 'photos listed' };
+    seating: 'seats', league_fees: 'league fees', messages: 'messages', memories: 'photos listed' };
   function paintBackupDate() {
     let last = null; try { last = localStorage.getItem('gpl_last_backup'); } catch (e) {}
     if (!last) { $('bkLast').textContent = 'No backup downloaded on this device yet.'; return; }
@@ -1168,6 +1245,7 @@
     if (error) return msg('setMsg', 'Couldn\u2019t save: ' + error.message);
     settings = { ...settings, ...row };
     msg('setMsg', '✓ Settings saved. The league table is updated.', 'ok');
+    loadFees();                      // a new season name starts a fresh set of league fees
   };
 </script>
 </body>

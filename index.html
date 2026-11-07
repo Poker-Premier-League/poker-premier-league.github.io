@@ -712,6 +712,14 @@
   .userbar .linkbtn.icon { position: relative; }
 
   /* Payments */
+  .fee-head { font-family: 'Anton', Impact, sans-serif; font-size: 20px; text-transform: uppercase; color: var(--ink); margin: 0 0 4px; }
+  .fee-text { margin: 0 0 10px; font-size: 14px; }
+  .pot-line { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, #3A2013, #1E0F07); color: #F6EAD5; font-size: 13px; }
+  .pot-line .pot-amt { font-family: 'Anton', Impact, sans-serif; font-size: 24px; color: #FBC891; line-height: 1; }
+  .pot-line .pot-txt b { display: block; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; font-size: 12px; color: #F49A5C; }
+  .feetag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 8px; background: rgba(201,86,31,.14); color: #C9561F; font-size: 11px; font-weight: 600; }
+  table.league tr.feedue td.pts { opacity: .4; text-decoration: line-through; }
   .paybox { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(120,72,30,0.08); border: 1px solid rgba(120,72,30,0.25); }
   .paybox.is-paid { background: rgba(63,122,60,0.12); border-color: rgba(63,122,60,0.4); }
   .pay-head { font-weight: 800; font-size: 16px; }
@@ -1495,6 +1503,7 @@
         <div class="section-title" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
+      <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
         <p class="hf-help">Tap a player to see their <b>WANTED poster</b>, stats and every result.</p>
@@ -1515,7 +1524,8 @@
       <div id="wantedCard" class="wanted hidden" aria-label="League leader"></div>
       <div class="card section">
         <div class="section-title" data-t="league">League table <span id="seasonName" class="season"></span></div>
-        <p class="hint">Best <span id="bestN">4</span> finishes count · play <span id="minEv">2</span>+ events to qualify. Tap a player to see their results.</p>
+        <p class="hint">Best <span id="bestN">4</span> finishes count · play <span id="minEv">2</span>+ events<span id="feeHint" class="hidden"> and pay the league fee</span> to qualify. Tap a player to see their results.</p>
+        <div id="potLine" class="pot-line hidden"></div>
         <div id="tableBody"><p class="empty">Loading…</p></div>
       </div>
       <div class="card section">
@@ -1527,6 +1537,7 @@
 
     <!-- ===== RESULTS ===== -->
     <section id="panel-results" class="panel hidden" role="tabpanel">
+      <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
         <p class="hf-help">Choose a player to see their <b>WANTED poster</b>, stats and every result.</p>
@@ -2869,7 +2880,51 @@
   }
 
   // ---- League table ----
+  // ---- League fee (part 17): £25 a season, all into The Last Draw pot ----
+  let feeInfo = null;     // { fee, season, paidIds:Set, pot, count, pay }
+  async function loadFee() {
+    const { data: st, error } = await db.from('league_settings')
+      .select('season_name, league_fee, default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
+    if (error || !st || st.league_fee == null) { feeInfo = null; paintFeeCard(); return; }   // not set up yet
+    const { data: fees } = await db.from('league_fees').select('player_id, amount').eq('season', st.season_name);
+    feeInfo = { fee: Number(st.league_fee), season: st.season_name, pay: st,
+      paidIds: new Set((fees || []).map(f => f.player_id)),
+      pot: (fees || []).reduce((t, f) => t + Number(f.amount || 0), 0), count: (fees || []).length };
+    paintFeeCard();
+  }
+  function paintFeeCard() {
+    const card = $('feeCard');
+    const due = feeInfo && feeInfo.fee > 0 && !feeInfo.paidIds.has(me.id);
+    card.classList.toggle('hidden', !due);
+    $('potLine').classList.toggle('hidden', !(feeInfo && feeInfo.fee > 0));
+    $('feeHint').classList.toggle('hidden', !(feeInfo && feeInfo.fee > 0));
+    if (feeInfo && feeInfo.fee > 0) {
+      $('potLine').innerHTML = '<span class="pot-amt">' + money(feeInfo.pot) + '</span><span class="pot-txt"><b>The Last Draw prize pot</b>' +
+        feeInfo.count + ' league fee' + (feeInfo.count === 1 ? '' : 's') + ' paid so far. The 9 finalists play for it, free of charge.</span>';
+    }
+    if (!due) { card.innerHTML = ''; return; }
+    const pay = feeInfo.pay, link = monzoFor(pay.default_pay_link, feeInfo.fee);
+    const hasBank = !!(pay.bank_account || pay.bank_sort_code);
+    const ref = ('GPL fee ' + (me.display_name || '')).slice(0, 18);
+    const row = (label, val) => val ? '<div class="bank-row"><span class="bl">' + label + '</span><span class="bv">' + esc(val) + '</span>' +
+      '<button type="button" class="copy" data-copy="' + esc(val) + '">Copy</button></div>' : '';
+    card.innerHTML = '<p class="fee-head">🏆 League fee due</p>' +
+      '<p class="fee-text">It\u2019s <b>' + money(feeInfo.fee) + '</b> for ' + esc(feeInfo.season) + ', and every penny goes into the prize pot for <b>The Last Draw</b>. ' +
+      'Your league points only count once it\u2019s paid. Alex or Phil will tick you off when it lands.</p>' +
+      (link ? '<a class="btn pay-monzo" href="' + esc(link) + '" target="_blank" rel="noopener">Pay ' + money(feeInfo.fee) + ' with Monzo</a>' : '') +
+      (hasBank ? '<button id="feeBankToggle" class="textlink" type="button">' + (link ? 'Can\u2019t use Monzo? Pay by bank transfer' : 'Show bank details') + '</button>' +
+        '<div id="feeBankBox" class="bank' + (link ? ' hidden' : '') + '">' +
+          row('Name', pay.bank_name) + row('Sort code', pay.bank_sort_code) + row('Account', pay.bank_account) + row('Reference', ref) + '</div>' : '');
+    const t = $('feeBankToggle'); if (t) t.onclick = () => $('feeBankBox').classList.toggle('hidden');
+    card.querySelectorAll('.copy').forEach(b => b.onclick = async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied \u2713'; }
+      catch (_) { b.textContent = 'Hold to copy'; }
+      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+    });
+  }
+
   async function loadLeague() {
+    await loadFee();
     const box = $('tableBody');
     const [settingsRes, tableRes, resultsRes] = await Promise.all([
       db.from('league_settings').select('season_name, best_n, min_events, final_players, final_chips_per_point, season_review').maybeSingle(),
@@ -2917,12 +2972,14 @@
       const cls = ['player'];
       if (p.player_id === me.id) cls.push('me');
       if (!p.qualified) cls.push('nq');
+      const feeDue = p.fee_paid === false;               // part 17: points only count once the fee is paid
+      if (feeDue) cls.push('feedue');
       if (p.rank === 1 && pts(p.league_points) > 0) cls.push('leader');
       return '<tr class="' + cls.join(' ') + '" data-id="' + p.player_id + '">' +
         '<td class="pos">' + (p.qualified ? (p.shared ? '=' : '') + p.rank : '\u2013') + '</td>' +
         '<td><div class="pl">' + avatarHtml(p.player_id, 34) + '<div>' + esc(p.display_name) +
           (p.nickname ? '<span class="nick">\u201C' + esc(p.nickname) + '\u201D</span>' : '') +
-          (p.qualified ? '' : '<span class="nqtag">Not qualified yet</span>') + '</div></div></td>' +
+          (p.qualified ? '' : (feeDue ? '<span class="feetag">League fee due</span>' : '<span class="nqtag">Not qualified yet</span>')) + '</div></div></td>' +
         '<td class="num">' + p.events_played + '</td>' +
         '<td class="num pts">' + pts(p.league_points).toFixed(2) + '</td></tr>';
     };
@@ -2930,7 +2987,7 @@
     let html = '<table class="league"><thead><tr><th></th><th>Player</th><th class="num">Played</th><th class="num">Pts</th></tr></thead><tbody>';
     html += qualified.map(rowHtml).join('');
     if (notYet.length) {
-      html += '<tr class="divider"><td colspan="4">Need ' + st.min_events + '+ events to qualify</td></tr>';
+      html += '<tr class="divider"><td colspan="4">Need ' + st.min_events + '+ events' + (feeInfo && feeInfo.fee > 0 ? ' and the league fee paid' : '') + ' to qualify</td></tr>';
       html += notYet.map(rowHtml).join('');
     }
     html += '</tbody></table>';
