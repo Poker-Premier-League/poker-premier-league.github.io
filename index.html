@@ -1104,6 +1104,64 @@
   .my-seat { margin: 10px 0 0; padding: 9px 12px; border-radius: 10px; background: rgba(244,154,92,0.16); border: 1px solid rgba(229,112,47,0.4); font-size: 14px; color: var(--ink); }
   .my-seat.ok { background: rgba(46,125,80,0.1); border-color: rgba(46,125,80,0.35); }
 
+  /* ---- Live tournament table (phase 4, step 2) ---- */
+  .live { margin: 14px 0 0; padding: 14px 12px 12px; border-radius: 16px; color: #F6EAD5;
+    background: radial-gradient(120% 80% at 50% 0%, #3A2013 0%, #24120A 55%, #170A04 100%); box-shadow: inset 0 1px 0 rgba(251,200,145,.12), 0 8px 24px rgba(30,15,7,.25); }
+  .live h4 { margin: 0; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 20px; letter-spacing: .5px; text-transform: uppercase; color: #FBC891; }
+  .live .st-sub { margin: 6px 0 4px; font-size: 12.5px; color: rgba(246,234,213,.75); }
+  .live-top { display: flex; align-items: center; gap: 8px; }
+  .live-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff4d3d; box-shadow: 0 0 0 0 rgba(255,77,61,.6); animation: livePulse 1.6s infinite; }
+  .live-dot.off { background: #8a7a6a; animation: none; }
+  @keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(255,77,61,.55); } 70% { box-shadow: 0 0 0 9px rgba(255,77,61,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,61,0); } }
+  .live-clock { margin-left: auto; font-family: 'Anton', Impact, sans-serif; font-size: 30px; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+  .live-rb { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.3); font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+  .live-rb b { font-variant-numeric: tabular-nums; color: #FBC891; }
+  .live-rb.closed { color: rgba(246,234,213,.7); }
+  .live-bar { display: block; height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .live-bar span { display: block; height: 100%; background: linear-gradient(90deg, #FBC891, #E5702F); border-radius: 3px; transition: width 1s linear; }
+  .live-tiles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 10px 0 0; }
+  .live-tiles div { padding: 8px 6px; border-radius: 10px; background: rgba(251,200,145,.08); border: 1px solid rgba(251,200,145,.14); text-align: center; }
+  .live-tiles b { display: block; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 19px; color: #FBC891; line-height: 1.1; }
+  .live-tiles b small { font-size: 13px; opacity: .7; }
+  .live-tiles span { display: block; font-size: 9.5px; letter-spacing: .4px; text-transform: uppercase; opacity: .7; line-height: 1.25; }
+  .live-reopen { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 12.5px; color: rgba(246,234,213,.8); }
+  .live-reopen span { flex: 1; }
+  .live-reopen button { flex: none; min-width: 52px; min-height: 36px; border-radius: 9px; border: 1px solid #FBC891; background: transparent; color: #FBC891; font: 600 13px 'Oswald', sans-serif; cursor: pointer; }
+  .live-out { display: block; width: 100%; margin: 12px 0 0; min-height: 48px; border: 0; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(#3b3b3b, #1a1a1a); color: #fff; font: 600 16px 'Oswald', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 3px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12); }
+  .live-h { margin: 14px 0 6px; font-family: 'Oswald', sans-serif; font-size: 12.5px; letter-spacing: 1.5px; text-transform: uppercase; color: #F49A5C; }
+  .live-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .live-list li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(251,200,145,.06); font-size: 14px; }
+  .live-list li.me { background: rgba(229,112,47,.2); outline: 1px solid rgba(229,112,47,.6); }
+  .live-list .ln { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .live-list .ln small { display: block; font-size: 11.5px; opacity: .65; }
+  .live-list .lb { display: flex; gap: 5px; font-size: 12.5px; font-style: normal; }
+  .live-list .lb i { font-style: normal; }
+  .live-list .lb .pend { opacity: .8; }
+  .live-list.out li { opacity: .85; }
+  .live-list .lp { min-width: 34px; font-family: 'Anton', Impact, sans-serif; font-size: 16px; color: #FBC891; }
+  .live .lo { flex: none; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(251,200,145,.45); background: transparent; color: #FBC891;
+    font: 600 12px 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; }
+  .live-feed { margin: 12px 0 0; font-size: 13px; }
+  .live-feed summary { cursor: pointer; color: #FBC891; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; font-size: 12.5px; }
+  .live-feed ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .live-feed li { padding: 5px 0; border-top: 1px solid rgba(251,200,145,.12); }
+  .live-feed .t { display: inline-block; min-width: 58px; opacity: .55; font-variant-numeric: tabular-nums; }
+  .live-feed .rb { font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(251,200,145,.15); color: #FBC891; }
+  .live-sheet { margin: 12px 0 0; padding: 12px; border-radius: 12px; background: #F6EAD5; color: #1E0F07; }
+  .ls-title { font-family: 'Anton', Impact, sans-serif; font-size: 19px; text-transform: uppercase; margin: 0 0 8px; }
+  .ls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
+  .ls-grid button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 10px; border: 1.5px solid rgba(58,32,19,.18); background: #fff; color: #1E0F07; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .ls-grid button.on { border-color: #E5702F; background: #FFE8D8; }
+  .ls-grid .nb { width: 34px; height: 34px; border-radius: 50%; background: #e8dccb; display: flex; align-items: center; justify-content: center; }
+  .ls-btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+  .ls-btns button { flex: 1 1 40%; min-height: 44px; border-radius: 10px; border: 1.5px solid #3A2013; background: transparent; color: #3A2013; font: 600 14px 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; }
+  .ls-btns button.go { background: #E5702F; border-color: #E5702F; color: #1E0F07; }
+  .ls-p { margin: 0 0 4px; font-size: 13.5px; } .ls-p.small { font-size: 12px; opacity: .75; margin-top: 8px; }
+  .ls-l { display: block; margin: 8px 0 4px; font-size: 12.5px; font-weight: 600; }
+  .live-sheet select { width: 100%; min-height: 42px; border-radius: 9px; border: 1px solid rgba(58,32,19,.3); padding: 0 8px; font-size: 15px; background: #fff; }
+  .live-reset { display: block; margin: 12px auto 0; font-size: 12px; opacity: .7; }
+
   /* ---- Game night seating (phase 4) ---- */
   .tpick { display: flex; gap: 8px; }
   .tpick button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 76px; padding: 8px 4px; border-radius: 12px;
@@ -2418,9 +2476,14 @@
     const [potRes, entRes, seatRes] = await Promise.all([
       db.rpc('event_pot', { p_event: ev.id }),
       hasRebuys ? db.from('event_entries').select('id, player_id, kind, confirmed').eq('event_id', ev.id).order('created_at') : Promise.resolve({ data: [] }),
-      db.from('seating').select('player_id, table_no, seat_no, is_dealer').eq('event_id', ev.id)     // part 15; skipped if not set up
+      db.from('seating').select('player_id, table_no, seat_no, is_dealer').eq('event_id', ev.id),    // part 15; skipped if not set up
     ]);
     const seats = seatRes.error ? null : (seatRes.data || []);
+    let busts = null;                                                                                // part 18; skipped if not set up
+    if ('clock_started_at' in ev) {
+      const { data: bd, error: be } = await db.from('busts').select('id, player_id, by_player, final, clock_secs, created_at').eq('event_id', ev.id).order('created_at');
+      busts = be ? null : (bd || []);
+    }
     const pot = potRes.error ? null : potRes.data;
     const entries = entRes.error ? [] : (entRes.data || []);
     if (error) { $('eventBody').innerHTML = '<p class="empty">Couldn’t load replies: ' + esc(error.message) + '</p>'; return; }
@@ -2493,6 +2556,7 @@
       '</div>' +
       mySeat +
       seatingBox(ev, seats, replies || []) +
+      liveBox(ev, busts, replies || [], entries, pot) +
       prizeBox(ev, pot) +
       (hasRebuys && myReply === 'in' && myPaid ? rebuyBox(ev, pay, entries) : '') +
       '<div class="comment-row">' +
@@ -2516,6 +2580,7 @@
     document.querySelectorAll('.replies button').forEach(b => b.onclick = () => saveReply(b.dataset.r));
     bindMoney(ev);
     bindSeating(ev, seats, replies || []);
+    bindLive(ev, busts, replies || [], entries);
     $('saveComment').onclick = () => {
       if (!myReply) { flash('Tap In, Maybe or Out first.', true); return; }
       saveReply(myReply);
@@ -2647,6 +2712,191 @@
     if (det) det.ontoggle = () => { seatMoveOpen = det.open; };
   }
 
+  // ---- Live tournament table (phase 4, step 2) ----
+  const clockSecs = (ev) => !ev.clock_started_at ? null : Math.max(0,
+    ((ev.clock_paused_at ? Date.parse(ev.clock_paused_at) : Date.now()) - Date.parse(ev.clock_started_at)) / 1000 - (ev.clock_paused_secs || 0));
+  const rebuyEndSecs = (ev) => ev.rebuy_hours == null ? null : (Number(ev.rebuy_hours) * 60 + (ev.rebuy_extra_min || 0)) * 60;
+  function rebuysTimerOpen(ev) {                    // before the clock starts, or with no period set, it's down to the admins
+    if (!ev.clock_started_at || rebuyEndSecs(ev) == null) return true;
+    return clockSecs(ev) < rebuyEndSecs(ev);
+  }
+  const hms = (t) => { t = Math.max(0, Math.floor(t)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = t % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
+  let liveSheet = null;          // { pid, step: 'who' | 'rebuy' | 'edit', by, bustId }
+  let liveTimer = null, livePoll = null, liveEv = null;
+
+  function liveBox(ev, busts, replies, entries, pot) {
+    if (busts === null) return '';                                       // part 18 not run yet
+    const admin = me.is_admin && ev.status === 'upcoming';
+    const field = replies.filter(r => r.reply === 'in' && r.paid).map(r => r.player_id);
+    if (!ev.clock_started_at) {
+      if (!admin || field.length < 2) return '';
+      return '<div class="live" id="liveBox"><div class="live-top"><span class="live-dot off"></span><h4>Tournament clock</h4></div>' +
+        '<p class="st-sub">' + field.length + ' paid players. Start the clock when the cards are in the air. Re-buys close by themselves when the period runs out.</p>' +
+        '<div class="seat-admin"><button type="button" class="go" data-clock="start">⏱ Start the clock</button></div></div>';
+    }
+    const hasRb = ev.format === 'rebuy' || ev.format === 'knockout';
+    const finals = busts.filter(b => b.final);
+    const outIds = new Set(finals.map(b => b.player_id));
+    const stillIn = field.filter(id => !outIds.has(id)).sort((a, b) => firstName(a).localeCompare(firstName(b)));
+    const kos = {}; busts.forEach(b => { if (b.by_player) kos[b.by_player] = (kos[b.by_player] || 0) + 1; });
+    const cnt = (pid, kind) => entries.filter(e => e.player_id === pid && e.kind === kind && e.confirmed).length;
+    const pend = (pid) => entries.some(e => e.player_id === pid && !e.confirmed);
+    const paused = !!ev.clock_paused_at;
+    const end = rebuyEndSecs(ev);
+    let html = '<div class="live" id="liveBox"><div class="live-top"><span class="live-dot' + (paused ? ' off' : '') + '"></span><h4>' + (paused ? 'Paused' : 'Live') + '</h4>' +
+      '<span class="live-clock" data-clock-el>' + hms(clockSecs(ev)) + '</span></div>';
+
+    // Re-buy countdown
+    if (hasRb) {
+      if (ev.rebuys_closed) html += '<div class="live-rb closed">Re-buys and add-ons are closed</div>';
+      else if (end == null) html += '<div class="live-rb">Re-buys open until an admin closes them</div>';
+      else if (rebuysTimerOpen(ev)) {
+        const pct = Math.min(100, clockSecs(ev) / end * 100);
+        html += '<div class="live-rb"><span>Re-buys close in <b data-rb-el>' + hms(end - clockSecs(ev)) + '</b></span>' +
+          '<span class="live-bar"><span data-rb-bar style="width:' + pct.toFixed(1) + '%"></span></span></div>';
+      } else html += '<div class="live-rb closed">Re-buy period over' + (ev.addon_allowed !== false ? ' · add-ons still open' : '') + '</div>';
+    }
+
+    // Tiles
+    html += '<div class="live-tiles"><div><b>' + stillIn.length + '<small>/' + field.length + '</small></b><span>Still in</span></div>' +
+      '<div><b>' + (pot ? money(pot.pot) : '–') + '</b><span>Prize pool</span></div>' +
+      (ev.format === 'knockout' && pot ? '<div><b>' + money(pot.bounty_pool) + '</b><span>Bounties<br>' + money(pot.bounty_value) + ' each</span></div>' : '') +
+      (hasRb ? '<div><b>' + entries.filter(e => e.kind === 'rebuy' && e.confirmed).length + ' · ' + entries.filter(e => e.kind === 'addon' && e.confirmed).length + '</b><span>Re-buys<br>add-ons</span></div>' : '') +
+      '</div>';
+
+    // Admin controls
+    if (admin) {
+      html += '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>';
+      if (hasRb && end != null && (!rebuysTimerOpen(ev) || ev.rebuys_closed))
+        html += '<div class="live-reopen"><span>Reopen re-buys for</span><button type="button" data-reopen="10">10m</button><button type="button" data-reopen="15">15m</button><button type="button" data-reopen="30">30m</button></div>';
+    }
+
+    // The "I'm out" panel
+    const meIn = stillIn.includes(me.id);
+    if (liveSheet) html += liveSheetHtml(ev, liveSheet, stillIn, busts, entries);
+    else if (meIn) html += '<button type="button" class="live-out" data-out="' + me.id + '">💀 I’m out</button>';
+
+    // Still in
+    html += '<div class="live-h">Still in (' + stillIn.length + ')</div><ul class="live-list">' + stillIn.map(id =>
+      '<li' + (id === me.id ? ' class="me"' : '') + '>' + avatarHtml(id, 30) + '<span class="ln">' + esc(id === me.id ? 'You' : firstName(id)) + '</span>' +
+      '<span class="lb">' + (cnt(id, 'rebuy') ? '<i title="Re-buys">🔁' + (cnt(id, 'rebuy') > 1 ? '×' + cnt(id, 'rebuy') : '') + '</i>' : '') +
+      (cnt(id, 'addon') ? '<i title="Add-on">➕</i>' : '') + (pend(id) ? '<i class="pend" title="Waiting for an admin">⏳</i>' : '') +
+      (kos[id] ? '<i title="Knockouts">💥' + kos[id] + '</i>' : '') + '</span>' +
+      (admin && id !== me.id ? '<button type="button" class="lo" data-out="' + id + '">Out…</button>' : '') + '</li>').join('') + '</ul>';
+
+    // Out, in order (last out at the top)
+    if (finals.length) {
+      const ordered = [...finals].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      html += '<div class="live-h">Out</div><ul class="live-list out">' + ordered.map((b, i) => ({ b, place: field.length - i })).reverse().map(({ b, place }) =>
+        '<li>' + '<span class="lp">' + ordinal(place) + '</span>' + avatarHtml(b.player_id, 26) + '<span class="ln">' + esc(firstName(b.player_id)) +
+        '<small>' + (b.by_player ? 'by ' + esc(firstName(b.by_player)) : 'went out') + (b.clock_secs != null ? ' · ' + hms(b.clock_secs).replace(/^0:/, '') : '') + '</small></span>' +
+        (admin ? '<button type="button" class="lo" data-edit="' + b.id + '">Edit</button>'
+          : (b.player_id === me.id && Date.now() - Date.parse(b.created_at) < 110000 ? '<button type="button" class="lo" data-undo="' + b.id + '">Undo</button>' : '')) + '</li>').join('') + '</ul>';
+    }
+
+    // Knockout feed (includes busts where they re-bought)
+    if (busts.length) {
+      html += '<details class="live-feed"><summary>💥 Knockouts (' + busts.filter(b => b.by_player).length + ')</summary><ul>' + [...busts].reverse().map(b =>
+        '<li><span class="t">' + (b.clock_secs != null ? hms(b.clock_secs) : '') + '</span>' +
+        (b.by_player ? '<b>' + esc(firstName(b.by_player)) + '</b> knocked out <b>' + esc(firstName(b.player_id)) + '</b>' : '<b>' + esc(firstName(b.player_id)) + '</b> went out') +
+        (b.final ? '' : ' <span class="rb">re-bought</span>') +
+        (admin && !b.final ? ' <button type="button" class="lo" data-edit="' + b.id + '">Edit</button>' : '') + '</li>').join('') + '</ul></details>';
+    }
+    if (admin) html += '<button type="button" class="textlink light live-reset" data-clock="reset">Reset the clock</button>';
+    return html + '</div>';
+  }
+
+  function liveSheetHtml(ev, sh, stillIn, busts, entries) {
+    const who = sh.pid === me.id ? 'you' : firstName(sh.pid);
+    const others = stillIn.filter(id => id !== sh.pid);
+    const pick = (sel) => '<div class="ls-grid">' + others.map(id =>
+      '<button type="button" data-by="' + id + '" class="' + (sel === id ? 'on' : '') + '">' + avatarHtml(id, 34) + '<span>' + esc(id === me.id ? 'Me' : firstName(id)) + '</span></button>').join('') +
+      '<button type="button" data-by="" class="nobody' + (sel === '' ? ' on' : '') + '"><span class="nb">—</span><span>Nobody</span></button></div>';
+    if (sh.step === 'edit') {
+      const b = busts.find(x => x.id === sh.bustId); if (!b) return '';
+      const opts = [...new Set([...stillIn, b.by_player].filter(Boolean))].filter(id => id !== b.player_id);
+      return '<div class="live-sheet"><div class="ls-title">Edit: ' + esc(firstName(b.player_id)) + '</div>' +
+        '<label class="ls-l">Knocked out by</label><select id="lsBy"><option value="">Nobody</option>' +
+        opts.map(id => '<option value="' + id + '"' + (id === b.by_player ? ' selected' : '') + '>' + esc(people[id]?.display_name || 'Player') + '</option>').join('') + '</select>' +
+        '<label class="ls-l">What happened</label><select id="lsFinal"><option value="1"' + (b.final ? ' selected' : '') + '>Out for good</option><option value="0"' + (b.final ? '' : ' selected') + '>Re-bought and still in</option></select>' +
+        '<div class="ls-btns"><button type="button" class="go" data-ls="save">Save</button><button type="button" data-ls="undo">Undo this knockout</button><button type="button" data-ls="cancel">Cancel</button></div></div>';
+    }
+    if (sh.step === 'who') {
+      return '<div class="live-sheet"><div class="ls-title">' + (sh.pid === me.id ? 'Who knocked you out?' : 'Who knocked out ' + esc(who) + '?') + '</div>' +
+        pick(sh.by) + '<div class="ls-btns"><button type="button" data-ls="cancel">Cancel</button></div></div>';
+    }
+    // step 'rebuy': re-buy or out for good
+    const rb = entries.filter(e => e.player_id === sh.pid && e.kind === 'rebuy').length;
+    const canRb = (ev.format === 'rebuy' || ev.format === 'knockout') && !ev.rebuys_closed && rebuysTimerOpen(ev) && !(ev.rebuy_limit != null && rb >= ev.rebuy_limit);
+    const price = ev.rebuy_price ?? ev.buy_in;
+    return '<div class="live-sheet"><div class="ls-title">' + (sh.by ? 'Knocked out by ' + esc(sh.by === me.id ? 'you' : firstName(sh.by)) : 'Went out') + '</div>' +
+      (canRb ? '<p class="ls-p">Re-buys are still open' + (rebuyEndSecs(ev) != null ? ' for <b data-rb-el>' + hms(rebuyEndSecs(ev) - clockSecs(ev)) + '</b>' : '') + '.</p>' : '') +
+      '<div class="ls-btns">' + (canRb ? '<button type="button" class="go" data-ls="rebuy">🔁 Re-buy' + (price != null ? ' ' + money(price) : '') + '</button>' : '') +
+      '<button type="button" class="' + (canRb ? '' : 'go') + '" data-ls="final">' + (sh.pid === me.id ? 'I’m out for good' : 'Out for good') + '</button>' +
+      '<button type="button" data-ls="back">Back</button></div>' +
+      (canRb ? '<p class="ls-p small">A re-buy is sent to Alex and Phil. Pay it, and it counts once they approve it.</p>' : '') + '</div>';
+  }
+
+  function bindLive(ev, busts, replies, entries) {
+    clearInterval(liveTimer); clearInterval(livePoll); liveEv = ev;
+    const box = $('liveBox'); if (!box) return;
+    const rpcRun = async (btn, fn, args, after) => {
+      if (btn) btn.disabled = true;
+      const { error } = await db.rpc(fn, args);
+      if (error) { alert('Couldn’t do that: ' + error.message); if (btn) btn.disabled = false; return false; }
+      if (after) after();
+      await renderEvent(); return true;
+    };
+    box.querySelectorAll('[data-clock]').forEach(b => b.onclick = () => {
+      const a = b.dataset.clock;
+      if (a === 'reset' && !confirm('Reset the clock to zero? Knockouts already recorded stay as they are.')) return;
+      if (a === 'start' && !confirm('Start the tournament clock now?')) return;
+      rpcRun(b, 'clock_control', { p_event: ev.id, p_action: a }, () => { if (a === 'start') Sound.chips(); });
+    });
+    box.querySelectorAll('[data-reopen]').forEach(b => b.onclick = () => {
+      if (confirm('Reopen re-buys for ' + b.dataset.reopen + ' minutes?')) rpcRun(b, 'clock_control', { p_event: ev.id, p_action: 'reopen', p_minutes: Number(b.dataset.reopen) });
+    });
+    box.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { liveSheet = { pid: b.dataset.out, step: 'who', by: null }; renderEvent(); });
+    box.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { liveSheet = { step: 'edit', bustId: Number(b.dataset.edit) }; renderEvent(); });
+    box.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => {
+      if (confirm('Undo going out?')) rpcRun(b, 'undo_bust', { p_id: Number(b.dataset.undo) });
+    });
+    box.querySelectorAll('.live-sheet [data-by]').forEach(b => b.onclick = () => { liveSheet.by = b.dataset.by; liveSheet.step = 'rebuy'; renderEvent(); });
+    box.querySelectorAll('[data-ls]').forEach(b => b.onclick = async () => {
+      const a = b.dataset.ls, sh = liveSheet;
+      if (a === 'cancel') { liveSheet = null; return renderEvent(); }
+      if (a === 'back') { liveSheet.step = 'who'; return renderEvent(); }
+      if (a === 'rebuy' || a === 'final') {
+        await rpcRun(b, 'record_bust', { p_event: ev.id, p_player: sh.pid, p_by: sh.by || null, p_rebuy: a === 'rebuy' }, () => { liveSheet = null; Sound.chips(); });
+      }
+      if (a === 'save') {
+        await rpcRun(b, 'edit_bust', { p_id: sh.bustId, p_by: $('lsBy').value || null, p_final: $('lsFinal').value === '1' }, () => { liveSheet = null; });
+      }
+      if (a === 'undo' && confirm('Undo this knockout? If they re-bought, a re-buy that hasn’t been approved yet is taken back too.')) {
+        await rpcRun(b, 'undo_bust', { p_id: sh.bustId }, () => { liveSheet = null; });
+      }
+    });
+    if (!ev.clock_started_at) return;
+    // Tick the clocks every second without redrawing the card
+    let rbRan = false;
+    const tick = () => {
+      const t = clockSecs(ev), end = rebuyEndSecs(ev);
+      document.querySelectorAll('[data-clock-el]').forEach(el => el.textContent = hms(t));
+      if (end != null) {
+        document.querySelectorAll('[data-rb-el]').forEach(el => el.textContent = hms(end - t));
+        document.querySelectorAll('[data-rb-bar]').forEach(el => el.style.width = Math.min(100, t / end * 100).toFixed(1) + '%');
+        if (!ev.rebuys_closed && t >= end && !rbRan && box.querySelector('[data-rb-el]')) { rbRan = true; renderEvent(); }   // countdown just ran out
+      }
+    };
+    if (!ev.clock_paused_at) liveTimer = setInterval(tick, 1000);
+    // Everyone's phone checks for news every 10 seconds while the game is on
+    livePoll = setInterval(() => {
+      if (document.hidden || liveSheet || refreshing || busyEditing() || currentTab !== 'lobby') return;
+      renderEvent();
+    }, 10000);
+  }
+
   // ---- Tournament format summary ----
   const FORMAT_INFO = {
     freezeout: ['Freezeout', 'Everyone buys in once and gets the same starting stack. Lose it and you\u2019re out. No re-buys.'],
@@ -2656,6 +2906,10 @@
   };
   const HU_ROUND_NAMES = { 4: ['Semis', 'Final'], 8: ['Quarters', 'Semis', 'Final'], 16: ['Round 1', 'Quarters', 'Semis', 'Final'],
     32: ['Round 1', 'Round 2', 'Quarters', 'Semis', 'Final'] };
+  function hrsText(h) {                       // 1.75 -> "1 hr 45 mins"
+    const t = Math.round(Number(h) * 60), hh = Math.floor(t / 60), mm = t % 60;
+    return [hh ? hh + ' hr' + (hh === 1 ? '' : 's') : '', mm ? mm + ' mins' : ''].filter(Boolean).join(' ');
+  }
   function formatBox(ev) {
     const f = FORMAT_INFO[ev.format] ? ev.format : 'freezeout';
     const [title, how] = FORMAT_INFO[f];
@@ -2663,7 +2917,7 @@
     if (f === 'rebuy' || f === 'knockout') {
       const hrs = ev.rebuy_hours != null ? Number(ev.rebuy_hours) : null;
       bits.push((ev.rebuy_limit ? 'Up to ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit > 1 ? 's' : '') : 'Unlimited re-buys') +
-        (hrs ? ' in the first ' + hrs + ' hr' + (hrs === 1 ? '' : 's') : '') +
+        (hrs ? ' in the first ' + hrsText(hrs) : '') +
         (ev.rebuy_price != null && ev.buy_in != null && Number(ev.rebuy_price) !== Number(ev.buy_in) ? ' (' + money(ev.rebuy_price) + ' each)' : ''));
       if (ev.addon_allowed !== false) bits.push('Add-on' + (ev.addon_price != null ? ' ' + money(ev.addon_price) : '') + ' when re-buys close');
       if (f === 'knockout' && ev.buy_in != null) bits.push(money(Math.round(ev.buy_in * 25) / 100) + ' bounty on every entry');
@@ -2741,6 +2995,7 @@
     let html = '<div class="rebuy-box"><div class="rb-head">🔁 Re-buys and add-ons</div>';
     if (status.length) html += '<div class="rb-mine">You\u2019ve had: ' + status.join(' + ') + '</div>';
     if (ev.rebuys_closed) return html + '<p class="pz-wait">Re-buys and add-ons are closed.</p></div>';
+    const rbTimeUp = !rebuysTimerOpen(ev);           // the re-buy period has run out on the clock (add-ons still open)
     const link = ev.pay_link || pay?.default_pay_link || '';
     if (pending) {
       const price = pending.kind === 'addon' ? adPrice : rbPrice;
@@ -2749,12 +3004,13 @@
         (link ? '<a class="btn pay-monzo" target="_blank" rel="noopener" href="' + esc(monzoFor(link, price)) + '">Pay ' + (price != null ? money(price) + ' ' : '') + 'with Monzo</a>' : '') +
         '<button type="button" class="textlink" id="rbCancel" data-id="' + pending.id + '">Cancel the request</button></div>';
     }
-    const atLimit = ev.rebuy_limit != null && rb.length >= ev.rebuy_limit;
+    const atLimit = (ev.rebuy_limit != null && rb.length >= ev.rebuy_limit) || rbTimeUp;
     const canAddon = ev.addon_allowed !== false && !ad.length;
     html += '<div class="rb-btns">' +
       '<button type="button" class="btn secondary small" data-ask="rebuy"' + (atLimit ? ' disabled' : '') + '>🔁 Request re-buy' + (rbPrice != null ? ' ' + money(rbPrice) : '') + '</button>' +
       (ev.addon_allowed !== false ? '<button type="button" class="btn secondary small" data-ask="addon"' + (canAddon ? '' : ' disabled') + '>➕ Request add-on' + (adPrice != null ? ' ' + money(adPrice) : '') + '</button>' : '') +
-      '</div>' + (atLimit ? '<p class="pz-wait">You\u2019ve used all ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit === 1 ? '' : 's') + '.</p>' : '');
+      '</div>' + (rbTimeUp ? '<p class="pz-wait">The re-buy period has ended. Add-ons are still open.</p>'
+        : atLimit ? '<p class="pz-wait">You\u2019ve used all ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit === 1 ? '' : 's') + '.</p>' : '');
     html += '<p class="pz-wait">Tap to send a request to Alex and Phil, then pay. It counts once they approve it.</p>';
     html += '<div id="rbMsg" class="saved"></div></div>';
     return html;

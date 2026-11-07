@@ -266,7 +266,15 @@
           <div class="seg small" id="evRebuyHours">
             <button type="button" data-v="1">1 hr</button><button type="button" data-v="1.5">1.5 hrs</button>
             <button type="button" data-v="2" class="on">2 hrs</button><button type="button" data-v="2.5">2.5 hrs</button>
+            <button type="button" data-v="other">Other</button>
           </div>
+          <div id="evRbOther" class="row2 hidden" style="margin-top:8px">
+            <div><label for="evRbH">Hours</label>
+              <select id="evRbH"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+            <div><label for="evRbM">Minutes</label>
+              <select id="evRbM"><option>0</option><option>15</option><option>30</option><option>45</option></select></div>
+          </div>
+          <p class="muted small-note">Re-buys close by themselves when this runs out on the tournament clock. Admins can reopen them for a few minutes on the night.</p>
           <label class="check"><input id="evAddonOn" type="checkbox" checked> Add-on when the re-buy period ends</label>
           <p class="muted small-note" id="evKoNote"></p>
         </div>
@@ -649,7 +657,21 @@
   function setSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v ?? ''))); }
   ['evFormat', 'evRebuyLimit', 'evRebuyHours'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
     setSeg(id, b.dataset.v); if (id === 'evFormat') paintFormat();
+    if (id === 'evRebuyHours') $('evRbOther').classList.toggle('hidden', b.dataset.v !== 'other');
   }));
+  // Re-buy period: a quick button, or "Other" with hours and minutes typed in (part 18)
+  const QUICK_HOURS = ['1', '1.5', '2', '2.5'];
+  function setRebuyHours(h) {
+    const v = h == null ? '2' : String(Number(h));
+    const quick = QUICK_HOURS.includes(v);
+    setSeg('evRebuyHours', quick ? v : 'other');
+    $('evRbOther').classList.toggle('hidden', quick);
+    if (!quick) { $('evRbH').value = String(Math.floor(Number(v))); $('evRbM').value = String(Math.round((Number(v) % 1) * 60 / 15) * 15); }
+  }
+  function rebuyHoursVal() {
+    const v = segVal('evRebuyHours');
+    return v === 'other' ? Number($('evRbH').value) + Number($('evRbM').value) / 60 : Number(v);
+  }
   function paintHuStacks(values) {
     const n = Number($('evHuPlayers').value), rounds = HU_ROUNDS[n];
     const old = values || [...$('evHuStacks').querySelectorAll('input')].map(i => Number(i.value) || 50);
@@ -701,7 +723,7 @@
 
   function resetEventForm() {
     $('evForm').reset();
-    setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setSeg('evRebuyHours', '2');
+    setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setRebuyHours(2);
     $('evHuStacks').innerHTML = '';
     $('evHostPick').value = ''; showHostInfo(null);
     paintFormat();
@@ -730,7 +752,7 @@
     $('evClosed').checked = !!ev.registration_closed;
     setSeg('evFormat', ev.format || 'freezeout');
     setSeg('evRebuyLimit', ev.rebuy_limit ?? '');
-    setSeg('evRebuyHours', ev.rebuy_hours != null ? String(Number(ev.rebuy_hours)) : '2');
+    setRebuyHours(ev.rebuy_hours);
     $('evAddonOn').checked = ev.addon_allowed !== false;
     if (ev.format === 'headsup') {
       $('evHuPlayers').value = String([4, 8, 16, 32].includes(ev.max_players) ? ev.max_players : 8);
@@ -775,12 +797,13 @@
     }
     const maxP = hu ? Number($('evHuPlayers').value) : ($('evMax').value === '' ? null : Number($('evMax').value));
     if (maxP != null && !(maxP >= 2 && maxP <= 40)) return msg('evMsg', 'The player limit should be between 2 and 40.');
+    if (re && !(rebuyHoursVal() >= 0.25 && rebuyHoursVal() <= 8)) return msg('evMsg', 'The re-buy period should be between 15 minutes and 8 hours.');
     const row = {
       name: $('evName').value.trim() || null,
       address: $('evAddress').value.trim() || null,
       format: fmt,
       rebuy_limit: re && segVal('evRebuyLimit') !== '' ? Number(segVal('evRebuyLimit')) : null,
-      rebuy_hours: re ? Number(segVal('evRebuyHours')) : null,
+      rebuy_hours: re ? rebuyHoursVal() : null,
       addon_allowed: re ? $('evAddonOn').checked : false,
       hu_stacks: stacks,
       hu_final_bo3: hu ? $('evHuBo3').checked : false,
