@@ -1104,6 +1104,26 @@
   .my-seat { margin: 10px 0 0; padding: 9px 12px; border-radius: 10px; background: rgba(244,154,92,0.16); border: 1px solid rgba(229,112,47,0.4); font-size: 14px; color: var(--ink); }
   .my-seat.ok { background: rgba(46,125,80,0.1); border-color: rgba(46,125,80,0.35); }
 
+  .viewas-bar { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 900;
+    display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 999px; white-space: nowrap;
+    background: #1E0F07; color: #F6EAD5; border: 1px solid #E5702F; box-shadow: 0 6px 20px rgba(0,0,0,.45); font-size: 13px; font-weight: 600; }
+  .viewas-bar button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: #E5702F; color: #1E0F07; font: 600 13px 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; }
+  /* ---- Game night layout ---- */
+  .gn-head { display: flex; flex-direction: column; gap: 2px; margin: 0 0 4px; }
+  .gn-name { font-family: 'Anton', Impact, sans-serif; font-size: 22px; text-transform: uppercase; line-height: 1.1; color: var(--ink); }
+  .gn-sub { font-size: 13px; opacity: .75; }
+  .ev-more { margin: 14px 0 0; border-radius: 12px; border: 1px solid rgba(120,72,30,.25); background: rgba(120,72,30,.05); }
+  .ev-more > summary { cursor: pointer; padding: 12px 14px; font-weight: 700; font-size: 14px; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  .ev-more > summary::-webkit-details-marker { display: none; }
+  .ev-more > summary::after { content: '▾'; font-size: 13px; transition: transform .2s; }
+  .ev-more[open] > summary::after { transform: rotate(180deg); }
+  .ev-more[open] { padding: 0 12px 12px; }
+  .ev-more[open] > summary { padding: 12px 2px; }
+  .admin-zone { margin: 12px 0 0; padding: 8px 10px 10px; border-radius: 12px; border: 1px dashed rgba(251,200,145,.4); background: rgba(0,0,0,.18); }
+  .admin-zone .az-l { font-family: 'Oswald', sans-serif; font-size: 11.5px; letter-spacing: 1.5px; text-transform: uppercase; color: #F49A5C; }
+  .admin-zone .seat-admin { margin-top: 6px; }
+  .admin-zone .live-reset { margin-top: 8px; }
+
   /* ---- Live tournament table (phase 4, step 2) ---- */
   .live { margin: 14px 0 0; padding: 14px 12px 12px; border-radius: 16px; color: #F6EAD5;
     background: radial-gradient(120% 80% at 50% 0%, #3A2013 0%, #24120A 55%, #170A04 100%); box-shadow: inset 0 1px 0 rgba(251,200,145,.12), 0 8px 24px rgba(30,15,7,.25); }
@@ -1202,6 +1222,7 @@
   .gseat .plate .n { flex: none; width: 15px; height: 15px; border-radius: 50%; background: #FBC891; color: #1E0F07; font: 600 9.5px/15px 'Oswald', sans-serif; text-align: center; }
   .gseat .plate .nm { overflow: hidden; text-overflow: ellipsis; }
   .gseat.me .plate { border-color: #E5702F; }
+  .gseat.gone { opacity: .38; filter: grayscale(1); }
   .gseat.me .plate .n { background: #E5702F; }
   .gseat.me .plate .nm { color: #FFB27A; }
   .gdealer { position: absolute; z-index: 3; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%;
@@ -1525,7 +1546,8 @@
 
 <!-- LOGGED IN -->
 <div id="homeCard" class="hidden">
-  <div id="soonBanner" class="soon-banner hidden">🤠 <b>Coming soon mode is on.</b> Only admins can see the site. Open it to everyone in Admin → Settings.</div>
+  <div id="viewAsBar" class="viewas-bar hidden" role="status"><span>👁 You’re viewing as a player</span><button id="viewAsBack" type="button">Back to admin</button></div>
+    <div id="soonBanner" class="soon-banner hidden">🤠 <b>Coming soon mode is on.</b> Only admins can see the site. Open it to everyone in Admin → Settings.</div>
   <div class="userbar">
     <span class="me-wrap">
       <button id="myAvatarBtn" class="av-btn" type="button" title="Change your photo"><span id="myAvatar"></span><span class="av-edit">✎</span></button>
@@ -1557,8 +1579,8 @@
         <button id="notifCardOn" class="btn small-btn" type="button">Turn on</button>
         <button id="notifCardClose" class="app-card-x" type="button" aria-label="Hide this">×</button>
       </div>
-      <div class="card section">
-        <div class="section-title" data-t="nextEvent">Next event</div>
+      <div class="card section" id="eventCard">
+        <div class="section-title" id="eventTitle" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
       <div id="feeCard" class="card section hidden"></div>
@@ -1732,6 +1754,11 @@
       <button id="pfAddChip" class="btn secondary small add-chip" type="button">➕ Add more chips</button>
     </div>
 
+    <div id="pfViewAsWrap" class="hidden">
+      <label>Admin</label>
+      <button id="pfViewAs" class="btn secondary full" type="button">👁 View as a player</button>
+      <p class="opt" style="margin:4px 0 0">See the app exactly as everyone else does. It only changes your screen.</p>
+    </div>
     <div id="pfTableWrap" class="hidden">
       <label>Game night table colour <span class="opt">(only changes what you see)</span></label>
       <div class="tpick" id="pfTable">
@@ -1929,11 +1956,14 @@
     const { data: ts, error: tsErr } = await db.from('profiles').select('table_style').eq('id', user.id).maybeSingle();   // part 16
     if (!tsErr && ts) me.table_style = ts.table_style;
     $('whoName').textContent = profile.display_name;
-    $('adminBadge').classList.toggle('hidden', !profile.is_admin);
+    me.real_admin = !!profile.is_admin;                 // "View as player" only changes what this screen shows
+    let asPlayer = false; try { asPlayer = sessionStorage.getItem('gpl_view_player') === '1'; } catch (_) {}
+    me.is_admin = me.real_admin && !asPlayer;
+    paintViewAs();
     await loadProfiles();
     $('myAvatar').innerHTML = avatarHtml(me.id, 36);
     paintLobbyChips();
-    $('adminLink').classList.toggle('hidden', !profile.is_admin);
+    paintViewAs();
     showScreen('home');
     await Promise.all([loadEvent(), loadLeague(), loadWall()]);
     const start = (location.hash.match(/^#(lobby|league|results|wall)/) || [])[1] || 'lobby';
@@ -2437,6 +2467,7 @@
   // ---- Next event ----
   let currentEvent = null;
   let myReply = null;
+  let evMoreOpen = false;     // game night: is 'Event details, replies and payments' open?
 
   async function loadEvent() {
     const box = $('eventBody');
@@ -2541,9 +2572,10 @@
       mySeat = '<div class="my-seat">All seats are taken. Tap <b>' + T.maybe + '</b> and you\u2019ll hear if one opens up.</div>';
     }
 
-    $('eventBody').innerHTML =
-      (ev.name ? '<p class="ev-name">' + esc(ev.name) + '</p>' : '') +
-      '<p class="ev-date">' + niceDate(ev.event_date, true) + '</p>' +
+    // Game night layout: once the clock starts (or the seats are drawn on the day), the live table and
+    // seating go first and the pre-game details fold away (they're all still there, one tap away).
+    const gameNight = !!ev.clock_started_at || (!!(seats && seats.length) && ev.event_date === todayStr());
+    const detailsHtml =
       (meta.length ? '<p class="ev-meta">' + meta.join('<br>') + '</p>' : '') +
       formatBox(ev) +
       (ev.notes ? '<div class="ev-notes">' + esc(ev.notes) + '</div>' : '') +
@@ -2554,11 +2586,9 @@
         '<button type="button" data-r="maybe"' + (closed && myReply !== 'maybe' ? ' disabled' : '') + '>' + T.maybe + '</button>' +
         '<button type="button" data-r="out">' + T.out + '</button>' +
       '</div>' +
-      mySeat +
-      seatingBox(ev, seats, replies || []) +
-      liveBox(ev, busts, replies || [], entries, pot) +
-      prizeBox(ev, pot) +
-      (hasRebuys && myReply === 'in' && myPaid ? rebuyBox(ev, pay, entries) : '') +
+      mySeat;
+    const moneyHtml = prizeBox(ev, pot) + (hasRebuys && myReply === 'in' && myPaid ? rebuyBox(ev, pay, entries, busts) : '');
+    const chatHtml =
       '<div class="comment-row">' +
         '<input id="myComment" type="text" maxlength="120" placeholder="Add a note, e.g. running 20 mins late">' +
         '<button id="saveComment" type="button">Save</button>' +
@@ -2566,6 +2596,29 @@
       '<div id="replySaved" class="saved"></div>' +
       payBox(ev, pay, mine) +
       '<div class="who">' + (whoHtml || '<p class="empty">' + T.noReplies + '</p>') + '</div>';
+    const seatHtml = seatingBox(ev, seats, replies || [], busts), liveHtml = liveBox(ev, busts, replies || [], entries, pot);
+
+    if (gameNight) {
+      $('eventBody').innerHTML =
+        '<div class="gn-head">' + (ev.name ? '<span class="gn-name">' + esc(ev.name) + '</span>' : '') +
+          '<span class="gn-sub">' + niceDate(ev.event_date, true) + (ev.venue ? ' · ' + esc(ev.venue) : '') + '</span></div>' +
+        (ev.clock_started_at ? liveHtml + seatHtml : seatHtml + liveHtml) +
+        moneyHtml +
+        '<details class="ev-more" id="evMore"' + (evMoreOpen ? ' open' : '') + '><summary>📋 Event details, replies and payments</summary>' +
+          detailsHtml + chatHtml + '</details>';
+    } else {
+      $('eventBody').innerHTML =
+        (ev.name ? '<p class="ev-name">' + esc(ev.name) + '</p>' : '') +
+        '<p class="ev-date">' + niceDate(ev.event_date, true) + '</p>' +
+        detailsHtml + seatHtml + liveHtml + moneyHtml + chatHtml;
+    }
+    // Move the card to the top of the lobby on game night, and put it back afterwards
+    const card = $('eventCard'), panel = $('panel-lobby');
+    if (gameNight && panel.firstElementChild !== card) panel.insertBefore(card, panel.firstElementChild);
+    if (!gameNight && card.previousElementSibling !== $('notifCard')) $('notifCard').after(card);
+    card.classList.toggle('game-night', gameNight);
+    $('eventTitle').firstChild.textContent = (gameNight ? (ev.clock_started_at ? 'Game night · live' : 'Game night') : T.nextEvent) + ' ';
+    const more = $('evMore'); if (more) more.ontoggle = () => { evMoreOpen = more.open; };
 
     $('myComment').value = mine?.comment || '';
     paintReplyButtons();
@@ -2605,7 +2658,7 @@
   const mixHex = (a, b, t) => { const x = hexRgb(a), y = hexRgb(b);
     return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
   const hexA = (h, a) => 'rgba(' + hexRgb(h).join(',') + ',' + a + ')';
-  function tableDrawing(rows) {
+  function tableDrawing(rows, outIds) {
     const th = TABLE_THEMES[tableStyle()];
     const style = '--felt1:' + th.felt1 + ';--felt2:' + th.felt2 + ';--rail1:' + th.rail1 + ';--rail2:' + th.rail2 + ';--trim:' + th.trim + ';--logo-op:' + th.logo +
       ';--rail-hi:' + mixHex(th.rail1, '#ffffff', .25) + ';--felt-hi:' + mixHex(th.felt1, '#ffffff', .12) +
@@ -2617,7 +2670,7 @@
     sorted.forEach((r, i) => {
       const a = -Math.PI / 2 + 2 * Math.PI * i / n;
       const x = 50 + 41 * Math.cos(a), y = 50 + 42.5 * Math.sin(a);
-      html += '<div class="gseat' + (r.player_id === me.id ? ' me' : '') + '" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%">' +
+      html += '<div class="gseat' + (r.player_id === me.id ? ' me' : '') + (outIds && outIds.has(r.player_id) ? ' gone' : '') + '" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%">' +
         '<span class="ring">' + avatarHtml(r.player_id, 40) + '</span><span class="plate"><span class="n">' + r.seat_no + '</span><span class="nm">' +
         esc(r.player_id === me.id ? 'You' : firstName(r.player_id)) + '</span></span></div>';
       if (r.is_dealer) {
@@ -2628,7 +2681,8 @@
     return html + '</div>';
   }
 
-  function seatingBox(ev, seats, replies) {
+  function seatingBox(ev, seats, replies, busts) {
+    const outIds = new Set((busts || []).filter(b => b.final).map(b => b.player_id));
     if (seats === null) return '';                                  // part 15 not run yet
     const paid = replies.filter(r => r.reply === 'in' && r.paid);
     const admin = me.is_admin && ev.status === 'upcoming';
@@ -2655,7 +2709,7 @@
         (ev.seats_drawn_at ? ' · drawn ' + new Date(ev.seats_drawn_at).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }) : '') + '</p>';
       if (tables.length > 1) html += '<div class="seat-tabs">' + tables.map(t =>
         '<button type="button" data-tab="' + t + '" class="' + (t === seatTab ? 'on' : '') + '">Table ' + t + ' (' + seats.filter(s => s.table_no === t).length + ')</button>').join('') + '</div>';
-      html += tableDrawing(seats.filter(s => s.table_no === seatTab));
+      html += tableDrawing(seats.filter(s => s.table_no === seatTab), outIds);
     }
 
     if (mine) {
@@ -2671,7 +2725,7 @@
     }
 
     if (admin) {
-      html += '<div class="seat-admin">' +
+      html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div><div class="seat-admin">' +
         '<button type="button" class="go" id="seatDraw">' + (seats.length ? 'Re-draw' : (hu ? 'Draw matches' : 'Draw seats')) + '</button>' +
         (seats.length && !hu ? '<button type="button" id="seatDealer">' + (seats.some(s => s.is_dealer) ? 'Re-pick dealer' : 'Pick dealer') + '</button>' : '') +
         (seats.length ? '<button type="button" id="seatClear">Clear</button>' : '') + '</div>';
@@ -2688,6 +2742,7 @@
             ' <small>' + (s ? 'seat ' + s.seat_no : 'not seated') + '</small></span>' + btns + '</div>';
         }).join('') + '</details>';
       }
+      html += '</div>';
     }
     return html + '</div>';
   }
@@ -2740,7 +2795,7 @@
       if (!admin || field.length < 2) return '';
       return '<div class="live" id="liveBox"><div class="live-top"><span class="live-dot off"></span><h4>Tournament clock</h4></div>' +
         '<p class="st-sub">' + field.length + ' paid players. Start the clock when the cards are in the air. Re-buys close by themselves when the period runs out.</p>' +
-        '<div class="seat-admin"><button type="button" class="go" data-clock="start">⏱ Start the clock</button></div></div>';
+        '<div class="admin-zone"><div class="az-l">🛠 Admin only</div><div class="seat-admin"><button type="button" class="go" data-clock="start">⏱ Start the clock</button></div></div></div>';
     }
     const hasRb = ev.format === 'rebuy' || ev.format === 'knockout';
     const finals = busts.filter(b => b.final);
@@ -2774,9 +2829,10 @@
 
     // Admin controls
     if (admin) {
-      html += '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>';
+      html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div><div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>';
       if (hasRb && end != null && (!rebuysTimerOpen(ev) || ev.rebuys_closed))
         html += '<div class="live-reopen"><span>Reopen re-buys for</span><button type="button" data-reopen="10">10m</button><button type="button" data-reopen="15">15m</button><button type="button" data-reopen="30">30m</button></div>';
+      html += '<button type="button" class="textlink light live-reset" data-clock="reset">Reset the clock</button></div>';
     }
 
     // The "I'm out" panel
@@ -2810,7 +2866,6 @@
         (b.final ? '' : ' <span class="rb">re-bought</span>') +
         (admin && !b.final ? ' <button type="button" class="lo" data-edit="' + b.id + '">Edit</button>' : '') + '</li>').join('') + '</ul></details>';
     }
-    if (admin) html += '<button type="button" class="textlink light live-reset" data-clock="reset">Reset the clock</button>';
     return html + '</div>';
   }
 
@@ -2990,7 +3045,7 @@
     const m = (link || '').match(/^(https:\/\/monzo\.me\/[^\/?#]+)/i);
     return m && amount ? m[1] + '/' + Number(amount).toFixed(2) : link;
   }
-  function rebuyBox(ev, pay, entries) {
+  function rebuyBox(ev, pay, entries, busts) {
     const mine = entries.filter(e => e.player_id === me.id);
     const rb = mine.filter(e => e.kind === 'rebuy');
     const ad = mine.filter(e => e.kind === 'addon');
@@ -3013,12 +3068,14 @@
     }
     const atLimit = (ev.rebuy_limit != null && rb.length >= ev.rebuy_limit) || rbTimeUp;
     const canAddon = ev.addon_allowed !== false && !ad.length;
+    const live = !!ev.clock_started_at && busts != null;     // during the game, re-buys go through "I'm out"
+    if (live && ev.addon_allowed === false) return html + '<p class="pz-wait">Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy.</p></div>';
     html += '<div class="rb-btns">' +
-      '<button type="button" class="btn secondary small" data-ask="rebuy"' + (atLimit ? ' disabled' : '') + '>🔁 Request re-buy' + (rbPrice != null ? ' ' + money(rbPrice) : '') + '</button>' +
+      (live ? '' : '<button type="button" class="btn secondary small" data-ask="rebuy"' + (atLimit ? ' disabled' : '') + '>🔁 Request re-buy' + (rbPrice != null ? ' ' + money(rbPrice) : '') + '</button>') +
       (ev.addon_allowed !== false ? '<button type="button" class="btn secondary small" data-ask="addon"' + (canAddon ? '' : ' disabled') + '>➕ Request add-on' + (adPrice != null ? ' ' + money(adPrice) : '') + '</button>' : '') +
       '</div>' + (rbTimeUp ? '<p class="pz-wait">The re-buy period has ended. Add-ons are still open.</p>'
         : atLimit ? '<p class="pz-wait">You\u2019ve used all ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit === 1 ? '' : 's') + '.</p>' : '');
-    html += '<p class="pz-wait">Tap to send a request to Alex and Phil, then pay. It counts once they approve it.</p>';
+    html += '<p class="pz-wait">' + (live ? 'Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy. ' : '') + 'Tap to send a request to Alex and Phil, then pay. It counts once they approve it.</p>';
     html += '<div id="rbMsg" class="saved"></div></div>';
     return html;
   }
@@ -3548,6 +3605,25 @@
     if (currentEvent) renderEvent();
   });
   function closeProfile() { $('profileModal').classList.add('hidden'); }
+
+  // ---- Admins: "View as player" (only changes this screen; nothing else is affected) ----
+  function paintViewAs() {
+    const viewing = me.real_admin && !me.is_admin;
+    $('adminBadge').classList.toggle('hidden', !me.is_admin);
+    $('adminLink').classList.toggle('hidden', !me.is_admin);
+    $('viewAsBar').classList.toggle('hidden', !viewing);
+    $('pfViewAsWrap').classList.toggle('hidden', !me.real_admin);
+    $('pfViewAs').textContent = viewing ? '🛠 Back to the admin view' : '👁 View as a player';
+  }
+  async function setViewAsPlayer(on) {
+    try { on ? sessionStorage.setItem('gpl_view_player', '1') : sessionStorage.removeItem('gpl_view_player'); } catch (_) {}
+    me.is_admin = me.real_admin && !on;
+    liveSheet = null; seatMoveOpen = false;
+    paintViewAs();
+    await refreshAll(true);
+  }
+  $('pfViewAs').onclick = () => { const on = me.is_admin; closeProfile(); setViewAsPlayer(on); };
+  $('viewAsBack').onclick = () => setViewAsPlayer(false);
   function pfmsg(t, type) { const m = $('pfMsg'); m.textContent = t; m.className = t ? 'msg ' + (type || 'error') : 'msg'; }
   $('pfClose').onclick = closeProfile;
   $('pfLater').onclick = () => { try { sessionStorage.setItem('gpl_profile_later', '1'); } catch (_) {} closeProfile(); };
