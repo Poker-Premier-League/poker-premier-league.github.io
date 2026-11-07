@@ -1157,6 +1157,33 @@
   .ld-mini .open { width: 34px; height: 34px; border-radius: 50%; border: 2px dashed rgba(120,72,30,.4); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; opacity: .7; }
   .ld-go { width: 100%; }
 
+  /* ---- Ratings ballot ---- */
+  .rate-top { display: flex; align-items: center; gap: 12px; }
+  .rate-star { font-size: 30px; }
+  .rate-top b { display: block; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 21px; text-transform: uppercase; }
+  .rate-top span { font-size: 12.5px; opacity: .75; }
+  .rate-bar { height: 6px; margin: 10px 0 0; border-radius: 3px; background: rgba(120,72,30,.15); overflow: hidden; }
+  .rate-bar span { display: block; height: 100%; background: linear-gradient(90deg, #FBC891, #E5702F); }
+  .rate-help { font-size: 12.5px; opacity: .75; margin: 8px 0 0; }
+  .rate-modal { max-width: 440px; }
+  .rate-sub { font-size: 13.5px; margin: 0 0 10px; text-align: center; }
+  .rate-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .rate-people button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 12px; border: 1.5px solid rgba(58,32,19,.18); background: #fff; cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--ink); }
+  .rate-people button i { font-style: normal; font-size: 11px; font-weight: 600; color: #C9561F; }
+  .rate-people button.done { border-color: #2e7d50; background: #EEF7F0; }
+  .rate-people button.done i { color: #2e7d50; }
+  .rate-who { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 0 0 8px; }
+  .rate-who b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 22px; text-transform: uppercase; }
+  .rate-m { padding: 10px 0; border-top: 1px solid rgba(120,72,30,.15); }
+  .rm-h { display: flex; justify-content: space-between; align-items: baseline; } .rm-h b { font-size: 15px; } .rm-h span { font-family: 'Anton', Impact, sans-serif; font-size: 18px; color: #C9561F; }
+  .rm-btns { display: grid; grid-template-columns: repeat(5, 1fr) 1.3fr; gap: 5px; margin: 6px 0 0; }
+  .rm-btns button { min-height: 42px; border-radius: 10px; border: 1.5px solid rgba(58,32,19,.25); background: #fff; font: 600 16px 'Oswald', sans-serif; color: var(--ink); cursor: pointer; }
+  .rm-btns button.na { font-size: 13px; }
+  .rm-btns button.on { background: #E5702F; border-color: #E5702F; color: #1E0F07; }
+  .rm-btns button.na.on { background: #3A2013; border-color: #3A2013; color: #F6EAD5; }
+  .rm-d { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; opacity: .85; min-height: 2.8em; }
+  .rate-btns { display: flex; gap: 8px; } .rate-btns .btn { flex: 1; }
+
   /* ---- After the night: prizes ---- */
   .pz-podium { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
   .pz-podium li { flex: 1 1 28%; min-width: 92px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px; border-radius: 14px;
@@ -1668,6 +1695,7 @@
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
       <div id="prizeCard" class="card section prize-card hidden"></div>
+      <div id="rateCard" class="card section rate-card hidden"></div>
       <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
@@ -1871,6 +1899,13 @@
 <footer id="saferFooter" class="safer hidden">
   18+ · When the fun stops, stop. Need help? National Gambling Helpline <a href="tel:08088020133">0808 8020 133</a> · <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener">gamcare.org.uk</a>
 </footer>
+
+<div id="rateModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="rateTitle">
+  <div class="modal-card rate-modal">
+    <h3 id="rateTitle">⭐ Rate the table</h3>
+    <div id="rateBody"></div>
+  </div>
+</div>
 
 <div id="buildModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="buildTitle">
   <div class="modal-card build-card">
@@ -2664,6 +2699,89 @@
     return html + '</div>';
   }
 
+  // ---- Player ratings (phase 7): the ballot after each night ----
+  const RATING_METRICS = [
+    { k: 'tf', name: 'Trigger Finger', what: 'Aggression: how often they bet and raise instead of checking and calling',
+      d: ['Holstered or Hot-Headed: always checks and limps, or fires every street with anything', 'VATs: bets good hands but leans too passive or too aggressive', 'Marksman: picks their moments, pressures with strong hands and semi-bluffs'] },
+    { k: 'hn', name: 'High Noon', what: 'Thinking time: how long the table waits for their decisions',
+      d: ['Snap Shooter or Hollywood: acts on instinct, or stalls over easy spots', 'Slow Draw: mostly good pace, but rushes easy spots or drags out routine ones', 'Steady Gunhand: steady pace, takes time only when the pot deserves it'] },
+    { k: 'st', name: 'Silver Tongue', what: 'Table talk: chatter, needling and mind games',
+      d: ['Loose Lips: gives away their hand, or talks so much it slows the game', 'Saloon Regular: quiet or chatty, with no strategy behind it', 'Snake Oil Salesman: uses talk to draw mistakes without giving anything away'] },
+    { k: 'is', name: 'Iron Sheriff', what: 'Discipline: folding weak hands, avoiding tilt, sticking to a plan',
+      d: ['Tilter: gets bored and plays junk, punts chips after a bad beat', 'Deputy: mostly sticks to the plan, slips after a bad beat or cold run', 'The Stoic: folds for hours when card-dead, shrugs off bad beats'] },
+    { k: 'bh', name: 'Bounty Hunter', what: 'Hero calls: calling big bets with marginal hands to catch bluffs',
+      d: ['Easy Mark or Ego Caller: folds to any big river bet, or calls with fourth pair on a feeling', 'Hunch Player: the odd hero call, more instinct than evidence', 'Dead-Eye: rare hero calls backed by a clear tell or a betting line that doesn’t add up'] }
+  ];
+  let ballot = null;     // { ev, players: [ids], mine: {pid: {tf..}}, cur: pid|null, draft: {} }
+  async function loadRateCard() {
+    const card = $('rateCard');
+    const since = new Date(Date.now() - 7 * 864e5); const iso = since.getFullYear() + '-' + String(since.getMonth() + 1).padStart(2, '0') + '-' + String(since.getDate()).padStart(2, '0');
+    const { data: evs, error } = await db.from('events').select('*').eq('status', 'completed').gte('event_date', iso).order('event_date', { ascending: false });
+    const list = (evs || []).filter(e => !e.is_final);
+    if (error || !list.length) { card.classList.add('hidden'); return; }
+    const { data: myRes } = await db.from('results').select('event_id').eq('player_id', me.id).in('event_id', list.map(e => e.id));
+    const ev = list.find(e => (myRes || []).some(r => r.event_id === e.id));
+    if (!ev) { card.classList.add('hidden'); return; }
+    const [rr, mr] = await Promise.all([
+      db.from('results').select('player_id').eq('event_id', ev.id),
+      db.from('ratings').select('rated_id, metric, score').eq('event_id', ev.id)       // only ever your own ballot
+    ]);
+    if (mr.error) { card.classList.add('hidden'); return; }                            // part 22 not set up yet
+    const players = (rr.data || []).map(r => r.player_id).filter(id => id !== me.id).sort((a, b) => firstName(a).localeCompare(firstName(b)));
+    const mine = {}; (mr.data || []).forEach(r => { (mine[r.rated_id] = mine[r.rated_id] || {})[r.metric] = r.score; });
+    ballot = { ev, players, mine, cur: null, draft: {} };
+    const done = players.filter(id => mine[id]).length;
+    const closes = new Date(ev.event_date + 'T12:00:00'); closes.setDate(closes.getDate() + 7);
+    if (!players.length) { card.classList.add('hidden'); return; }
+    card.innerHTML = '<div class="rate-top"><span class="rate-star">⭐</span><div><b>' + (done === players.length ? 'Thanks for rating the table!' : 'Rate the table') + '</b>' +
+      '<span>' + (ev.name ? esc(ev.name) + ' · ' : '') + niceDate(ev.event_date) + ' · ' + done + ' of ' + players.length + ' rated · closes ' +
+      closes.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + '</span></div></div>' +
+      '<div class="rate-bar"><span style="width:' + Math.round(done / players.length * 100) + '%"></span></div>' +
+      '<p class="rate-help">Anonymous and just for fun. Nobody sees who gave which score.</p>' +
+      '<button type="button" class="btn ' + (done === players.length ? 'secondary ' : '') + 'full" id="rateOpen">' + (done === players.length ? 'Change my ratings' : done ? 'Carry on rating' : 'Rate now') + '</button>';
+    card.classList.remove('hidden');
+    $('rateOpen').onclick = () => { ballot.cur = null; paintBallot(); $('rateModal').classList.remove('hidden'); };
+  }
+  function paintBallot() {
+    const b = ballot, body = $('rateBody');
+    if (!b.cur) {
+      body.innerHTML = '<p class="rate-sub">' + (b.ev.name ? esc(b.ev.name) + ' · ' : '') + niceDate(b.ev.event_date, true) + '. Tap a player to rate them on all five. Didn’t see enough? Use N/A.</p>' +
+        '<div class="rate-people">' + b.players.map(id => '<button type="button" data-p="' + id + '" class="' + (b.mine[id] ? 'done' : '') + '">' + avatarHtml(id, 44) +
+          '<span>' + esc(firstName(id)) + '</span><i>' + (b.mine[id] ? '✓ Rated' : 'To rate') + '</i></button>').join('') + '</div>' +
+        '<button type="button" class="btn secondary full" id="rateClose">Close</button>';
+      body.querySelectorAll('[data-p]').forEach(x => x.onclick = () => { b.cur = x.dataset.p; b.draft = { ...(b.mine[b.cur] || {}) }; paintBallot(); });
+      $('rateClose').onclick = () => { $('rateModal').classList.add('hidden'); loadRateCard(); };
+      return;
+    }
+    const id = b.cur;
+    body.innerHTML = '<div class="rate-who">' + avatarHtml(id, 52) + '<b>' + esc(people[id]?.display_name || 'Player') + '</b></div>' +
+      RATING_METRICS.map(m => {
+        const v = b.draft[m.k];
+        const pick = v === undefined ? '' : v === null ? 'N/A' : v;
+        const desc = v ? (v === 1 ? m.d[0] : v === 3 ? m.d[1] : v === 5 ? m.d[2] : v === 2 ? 'Between: ' + m.d[0].split(':')[0] + ' and ' + m.d[1].split(':')[0] : 'Between: ' + m.d[1].split(':')[0] + ' and ' + m.d[2].split(':')[0]) : (v === null ? 'Not enough to judge.' : m.what);
+        return '<div class="rate-m"><div class="rm-h"><b>' + m.name + '</b><span>' + pick + '</span></div>' +
+          '<div class="rm-btns">' + [1, 2, 3, 4, 5].map(n => '<button type="button" data-m="' + m.k + '" data-v="' + n + '" class="' + (v === n ? 'on' : '') + '">' + n + '</button>').join('') +
+          '<button type="button" data-m="' + m.k + '" data-v="na" class="na' + (v === null ? ' on' : '') + '">N/A</button></div>' +
+          '<p class="rm-d">' + esc(desc) + '</p></div>';
+      }).join('') +
+      '<p class="rate-help">5 is best, 1 is worst. Both extremes score low: the best play is balanced and deliberate.</p>' +
+      '<div class="rate-btns"><button type="button" class="btn secondary" id="rateBack">Back</button><button type="button" class="btn" id="rateSave">Save</button></div>' +
+      '<div id="rateMsg" class="msg"></div>';
+    body.querySelectorAll('[data-m]').forEach(x => x.onclick = () => { b.draft[x.dataset.m] = x.dataset.v === 'na' ? null : Number(x.dataset.v); paintBallot(); });
+    $('rateBack').onclick = () => { b.cur = null; paintBallot(); };
+    $('rateSave').onclick = async () => {
+      const missing = RATING_METRICS.filter(m => b.draft[m.k] === undefined);
+      if (missing.length) { $('rateMsg').textContent = 'Pick a score (or N/A) for ' + missing.map(m => m.name).join(', ') + '.'; $('rateMsg').className = 'msg error'; return; }
+      $('rateSave').disabled = true;
+      const { error } = await db.rpc('submit_rating', { p_event: b.ev.id, p_rated: id, p_scores: b.draft });
+      if (error) { $('rateSave').disabled = false; $('rateMsg').textContent = 'Couldn’t save: ' + error.message; $('rateMsg').className = 'msg error'; return; }
+      b.mine[id] = { ...b.draft }; Sound.chips();
+      const nextId = b.players.find(p => !b.mine[p]);
+      b.cur = nextId || null; b.draft = nextId ? { ...(b.mine[nextId] || {}) } : {};
+      paintBallot(); $('rateBody').scrollTop = 0; document.querySelector('.rate-modal').scrollTop = 0;
+    };
+  }
+
   // ---- After the night: who won what (shows for 3 days after the event) ----
   async function loadPrizeCard() {
     const card = $('prizeCard');
@@ -2700,6 +2818,7 @@
 
   async function loadEvent() {
     loadPrizeCard().catch(() => {});
+    loadRateCard().catch(() => {});
     const box = $('eventBody');
     const { data: events, error } = await db
       .from('events')
