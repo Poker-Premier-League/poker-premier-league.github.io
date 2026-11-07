@@ -1194,6 +1194,13 @@
   .tp-msg { min-height: 16px; margin-top: 4px; font-size: 12.5px; color: #2e7d50; }
   .seating { margin: 14px 0 0; padding: 14px 12px 12px; border-radius: 16px; color: #F6EAD5;
     background: radial-gradient(120% 70% at 50% 38%, #3A2013 0%, #24120A 55%, #170A04 100%); box-shadow: inset 0 1px 0 rgba(251,200,145,.12), 0 8px 24px rgba(30,15,7,.25); }
+  .seating > summary { list-style: none; cursor: pointer; display: flex; align-items: center; flex-wrap: wrap; gap: 2px 10px; padding-right: 22px; position: relative; }
+  .seating > summary::-webkit-details-marker { display: none; }
+  .seating > summary::after { content: '▾'; position: absolute; right: 2px; top: 4px; color: #FBC891; font-size: 14px; transition: transform .2s; }
+  .seating[open] > summary::after { transform: rotate(180deg); }
+  .seating[open] > summary { margin-bottom: 4px; }
+  .seating .st-line { font-size: 13px; color: rgba(246,234,213,.85); }
+  .seating[open] .st-line { display: none; }
   .seating h4 { margin: 0 0 2px; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 20px; letter-spacing: .5px; text-transform: uppercase; color: #FBC891; }
   .seating .st-sub { margin: 0 0 10px; font-size: 12.5px; color: rgba(246,234,213,.7); }
   .seat-tabs { display: flex; gap: 4px; margin: 0 0 6px; padding: 4px; border-radius: 12px; background: rgba(0,0,0,.35); }
@@ -2651,6 +2658,7 @@
   };
   let seatTab = null;          // which table is showing
   let seatMoveOpen = false;    // keep 'Move players' open after a move
+  let seatOpen = null;         // seating folded/unfolded by the player (null = automatic)
   const firstName = (id) => ((people[id]?.display_name || 'Player').replace(/[^\p{L}\p{N}\s'-]/gu, '').trim().split(/\s+/)[0] || 'Player');
 
   // Colour helpers worked out here rather than in CSS, so older phones draw the table properly
@@ -2690,7 +2698,7 @@
     const hu = ev.format === 'headsup';
     const mine = seats.find(s => s.player_id === me.id);
     const tables = [...new Set(seats.map(s => s.table_no))].sort((a, b) => a - b);
-    let html = '<div class="seating" id="seatingBox"><h4>' + (hu ? '🤠 The draw' : '🪑 Seating') + '</h4>';
+    let html = '';
 
     if (!seats.length) {
       html += '<p class="st-sub">' + paid.length + ' paid player' + (paid.length === 1 ? '' : 's') + ' ready. ' +
@@ -2744,11 +2752,27 @@
       }
       html += '</div>';
     }
-    return html + '</div>';
+    // Foldable: open before the clock starts, folded to one line once it's running (tap to open again)
+    let line = '';
+    if (seats.length && mine) {
+      const d = seats.find(x => x.is_dealer && x.table_no === mine.table_no);
+      if (hu) {
+        const opp = seats.find(x => x.table_no === mine.table_no && x.player_id !== me.id);
+        line = opp ? 'Match ' + mine.table_no + ' vs ' + esc(firstName(opp.player_id)) : 'You\u2019ve got a bye';
+      } else {
+        line = (tables.length > 1 ? 'Table ' + mine.table_no + ', seat ' : 'You\u2019re in seat ') + mine.seat_no +
+          (d ? ' \u00B7 ' + (d.player_id === me.id ? 'you have the button' : esc(firstName(d.player_id)) + ' has the button') : '');
+      }
+    } else if (seats.length) line = seats.length + ' players' + (tables.length > 1 ? ' over ' + tables.length + ' tables' : '');
+    else line = 'Not drawn yet';
+    const open = seatOpen != null ? seatOpen : !ev.clock_started_at;
+    return '<details class="seating" id="seatingBox"' + (open ? ' open' : '') + '><summary><h4>' + (hu ? '🤠 The draw' : '🪑 Seating') + '</h4>' +
+      '<span class="st-line">' + line + '</span></summary>' + html + '</details>';
   }
 
   function bindSeating(ev, seats, replies) {
     const box = $('seatingBox'); if (!box) return;
+    box.querySelector('summary').onclick = () => { seatOpen = !box.open; };     // only a real tap counts, not the page redrawing
     box.querySelectorAll('.seat-tabs button').forEach(b => b.onclick = () => { seatTab = Number(b.dataset.tab); renderEvent(); });
     const run = async (btn, fn, args, after) => {
       btn.disabled = true;
