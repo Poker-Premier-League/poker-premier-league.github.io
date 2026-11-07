@@ -1196,6 +1196,7 @@
   .ls-p { margin: 0 0 4px; font-size: 13.5px; } .ls-p.small { font-size: 12px; opacity: .75; margin-top: 8px; }
   .ls-l { display: block; margin: 8px 0 4px; font-size: 12.5px; font-weight: 600; }
   .live-sheet select { width: 100%; min-height: 42px; border-radius: 9px; border: 1px solid rgba(58,32,19,.3); padding: 0 8px; font-size: 15px; background: #fff; }
+  .live-tbc { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: rgba(251,200,145,.15); color: #FBC891; font-family: 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; }
   .live.won { background: radial-gradient(120% 80% at 50% 0%, #6B3B22 0%, #3A2013 50%, #170A04 100%); }
   .live-winner { display: flex; align-items: center; gap: 14px; margin: 12px 0 4px; padding: 12px 14px; border-radius: 14px;
     background: linear-gradient(135deg, rgba(251,200,145,.22), rgba(229,112,47,.18)); border: 1px solid rgba(251,200,145,.5); }
@@ -2686,7 +2687,8 @@
     if (gameNight && panel.firstElementChild !== card) panel.insertBefore(card, panel.firstElementChild);
     if (!gameNight && card.previousElementSibling !== $('notifCard')) $('notifCard').after(card);
     card.classList.toggle('game-night', gameNight);
-    $('eventTitle').firstChild.textContent = (gameNight ? (ev.clock_started_at ? 'Game night · live' : 'Game night') : T.nextEvent) + ' ';
+    const gameOver = !!document.querySelector('#liveBox.won');          // one player left, results not saved yet
+    $('eventTitle').firstChild.textContent = (gameNight ? (gameOver ? 'Game night · finished' : ev.clock_started_at ? 'Game night · live' : 'Game night') : T.nextEvent) + ' ';
     const more = $('evMore'); if (more) more.ontoggle = () => { evMoreOpen = more.open; };
 
     $('myComment').value = mine?.comment || '';
@@ -2896,7 +2898,7 @@
     const winner = stillIn.length === 1 && finals.length > 0 ? stillIn[0] : null;
     const endSecs = winner ? Math.max(...finals.map(b => b.clock_secs || 0)) : null;
     let html = '<div class="live' + (winner ? ' won' : '') + '" id="liveBox"><div class="live-top"><span class="live-dot' + (paused || winner ? ' off' : '') + '"></span><h4>' +
-      (winner ? 'Game over' : paused ? 'Paused' : 'Live') + '</h4>' +
+      (winner ? 'Game over' : paused ? 'Paused' : 'Live') + '</h4>' + (winner ? '<span class="live-tbc">Results to be confirmed</span>' : '') +
       '<span class="live-clock"' + (winner ? '' : ' data-clock-el') + '>' + hms(winner ? endSecs : clockSecs(ev)) + '</span></div>';
     if (winner) {
       html += '<div class="live-winner">' + avatarHtml(winner, 64) + '<div><span class="lw-k">🏆 Winner</span><b>' + esc(people[winner]?.display_name || 'Player') + '</b>' +

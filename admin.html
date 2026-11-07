@@ -1030,12 +1030,24 @@
     busy($('resClear'), true, 'Clearing…');
     let { error } = await db.from('results').delete().eq('event_id', eventId);
     if (!error) ({ error } = await db.from('events').update({ status: 'upcoming' }).eq('id', eventId));
+    // Game night too? (clock and knockouts from the live table, part 18)
+    let resetLive = false;
+    if (!error) {
+      const { data: bs } = await db.from('busts').select('id').eq('event_id', eventId);
+      const ev = events.find(e => e.id === eventId);
+      if (((bs && bs.length) || ev?.clock_started_at) &&
+          confirm('Also reset game night for this event? That clears the tournament clock and every knockout, so the lobby goes back to before the game started. (Seats, payments, re-buys and add-ons stay.)')) {
+        for (const b of (bs || [])) { const r = await db.rpc('undo_bust', { p_id: b.id }); if (r.error) { error = r.error; break; } }
+        if (!error) ({ error } = await db.rpc('clock_control', { p_event: eventId, p_action: 'reset' }));
+        resetLive = !error;
+      }
+    }
     busy($('resClear'), false);
     if (error) return msg('resMsg', 'Couldn\u2019t clear: ' + error.message);
     await loadEvents();
     $('resEvent').value = eventId;
     await renderResults();
-    msg('resMsg', '✓ Results cleared. The event is back to "upcoming".', 'ok');
+    msg('resMsg', '✓ Results cleared. The event is back to "upcoming"' + (resetLive ? ', and game night has been reset.' : '.'), 'ok');
   };
 
   $('resSave').onclick = async () => {
