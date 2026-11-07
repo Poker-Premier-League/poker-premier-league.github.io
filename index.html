@@ -1172,6 +1172,27 @@
   .ptype-foot { font-size: 12px; opacity: .7; text-align: center; margin: 4px 0 0; }
   .ptype-lock { font-size: 14px; }
 
+  /* ---- Polls ---- */
+  .poll { padding: 12px 0; border-top: 1px solid rgba(120,72,30,.15); }
+  .poll:first-of-type { border-top: 0; }
+  .poll-h { display: flex; gap: 10px; align-items: center; }
+  .poll-i { font-size: 24px; }
+  .poll-h b { display: block; font-size: 16px; } .poll-h span { font-size: 12.5px; opacity: .7; }
+  .poll-note { margin: 6px 0 0; font-size: 13.5px; }
+  .popt { margin: 8px 0 0; padding: 10px; border-radius: 12px; background: rgba(120,72,30,.06); border: 1px solid rgba(120,72,30,.12); }
+  .popt.top { background: #FFF1E3; border-color: #E5702F; }
+  .popt-l { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14.5px; }
+  .ptop { font-style: normal; font-size: 11.5px; color: #C9561F; margin-left: 4px; }
+  .popt-b { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 0; }
+  .popt-b button { min-height: 40px; border-radius: 10px; border: 1.5px solid rgba(58,32,19,.22); background: #fff; color: var(--ink); font: 600 14px 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; }
+  .popt-b button.yay.on { background: #2e7d50; border-color: #2e7d50; color: #fff; }
+  .popt-b button.maybe.on { background: #E0A030; border-color: #E0A030; color: #1E0F07; }
+  .popt-b button.nay.on { background: #8a3a2a; border-color: #8a3a2a; color: #fff; }
+  .popt-t { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0 0; font-size: 12.5px; opacity: .85; }
+  .popt-t .yy { color: #2e7d50; font-weight: 700; }
+  .pav { display: inline-flex; align-items: center; } .pav .av { margin-left: -5px; border: 1.5px solid #fff; } .pav .av:first-child { margin-left: 0; }
+  .poll-help { font-size: 12.5px; opacity: .7; margin: 10px 0 0; }
+
   /* ---- Ratings ballot ---- */
   .rate-top { display: flex; align-items: center; gap: 12px; }
   .rate-star { font-size: 30px; }
@@ -1604,8 +1625,8 @@
   <div class="volume-note">🔊 <b>When You Log In:</b> Take Your Phone <b>Off Silent</b> And <b>Turn The Volume Up!</b></div>
 
   <button id="buildBtn" class="build-strip" type="button" aria-haspopup="dialog">
-    <span class="bs-top"><span>🔨 Build progress</span><b>6 of 8 phases done</b></span>
-    <span class="bs-bar"><span style="width:75%"></span><i style="left:75%;width:12.5%"></i></span>
+    <span class="bs-top"><span>🔨 Build progress</span><b>7 of 8 phases done</b></span>
+    <span class="bs-bar"><span style="width:87.5%"></span><i style="left:87.5%;width:12.5%"></i></span>
     <span class="bs-tap">See what’s ready and what’s next ›</span>
   </button>
 
@@ -1711,6 +1732,7 @@
       </div>
       <div id="prizeCard" class="card section prize-card hidden"></div>
       <div id="rateCard" class="card section rate-card hidden"></div>
+      <div id="pollCard" class="card section poll-card hidden"></div>
       <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
@@ -1939,13 +1961,10 @@
       <li>League entry, with every fee going into The Last Draw prize pot</li>
       <li>The Last Draw: the season’s final table, prize pot and dealers</li>
       <li>Player ratings and player types</li>
+      <li>Polls for dates, venues and formats</li>
     </ul>
     <div class="bl-head now">🛠️ Working on now</div>
-    <ul class="bl"><li>Polls for dates, venues and formats</li></ul>
-    <div class="bl-head next">🔜 Coming next</div>
-    <ul class="bl">
-      <li>Season calendar</li>
-    </ul>
+    <ul class="bl"><li>Season calendar</li></ul>
     <button id="buildClose" class="btn" type="button">Back</button>
   </div>
 </div>
@@ -2878,6 +2897,53 @@
         (provisional ? ' · provisional until 2 nights are rated' : '') + '. Just for fun.</p></div>';
   }
 
+  // ---- Polls (phase 6): dates, venues and formats ----
+  const POLL_ICON = { date: '📅', venue: '🏠', format: '🎲' };
+  async function loadPolls() {
+    const card = $('pollCard');
+    const since = new Date(Date.now() - 7 * 864e5).toISOString();
+    const { data: polls, error } = await db.from('polls').select('*').order('created_at', { ascending: false });
+    if (error) { card.classList.add('hidden'); return; }                     // part 24 not set up yet
+    const shown = (polls || []).filter(p => !p.closed_at && Date.parse(p.closes_at) > Date.now() || (p.closed_at || p.closes_at) > since);
+    if (!shown.length) { card.classList.add('hidden'); return; }
+    const ids = shown.map(p => p.id);
+    const [oR, vR] = await Promise.all([db.from('poll_options').select('*').in('poll_id', ids), db.from('poll_votes').select('*').in('poll_id', ids)]);
+    const opts = oR.data || [], votes = vR.data || [];
+    const open = (p) => !p.closed_at && Date.parse(p.closes_at) > Date.now();
+    const tally = (o) => { const v = votes.filter(x => x.option_id === o.id); return { yay: v.filter(x => x.vote === 'yay'), maybe: v.filter(x => x.vote === 'maybe'), nay: v.filter(x => x.vote === 'nay') }; };
+    const rank = (a, b) => tally(b).yay.length - tally(a).yay.length || tally(b).maybe.length - tally(a).maybe.length || a.sort - b.sort;
+    let html = '<div class="section-title">📊 Polls</div>';
+    shown.sort((a, b) => open(b) - open(a) || b.created_at.localeCompare(a.created_at)).forEach(p => {
+      const os = opts.filter(o => o.poll_id === p.id).sort(open(p) ? (a, b) => a.sort - b.sort || a.id - b.id : rank);
+      const answered = votes.some(v => v.poll_id === p.id && v.player_id === me.id);
+      const top = !open(p) && os[0] && tally(os[0]).yay.length ? os[0].id : null;
+      html += '<div class="poll' + (open(p) ? '' : ' closed') + '"><div class="poll-h"><span class="poll-i">' + (POLL_ICON[p.kind] || '📊') + '</span><div><b>' + esc(p.title) + '</b>' +
+        '<span>' + (open(p) ? (answered ? '✓ You’ve answered · ' : '') + 'closes ' + new Date(p.closes_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+          : 'Closed · the result') + '</span></div></div>' +
+        (p.note ? '<p class="poll-note">' + esc(p.note) + '</p>' : '') +
+        os.map(o => {
+          const t = tally(o), mine = votes.find(v => v.option_id === o.id && v.player_id === me.id)?.vote;
+          return '<div class="popt' + (o.id === top ? ' top' : '') + '"><div class="popt-l">' + (o.host_id ? avatarHtml(o.host_id, 26) : '') + '<span>' + esc(o.label) + (o.id === top ? ' <i class="ptop">🏆 Top pick</i>' : '') + '</span></div>' +
+            (open(p) ? '<div class="popt-b">' + ['yay', 'maybe', 'nay'].map(v => '<button type="button" data-o="' + o.id + '" data-p="' + p.id + '" data-v="' + v + '" class="' + v + (mine === v ? ' on' : '') + '">' +
+              { yay: 'Yay', maybe: 'Maybe', nay: 'Nay' }[v] + '</button>').join('') + '</div>' : '') +
+            '<div class="popt-t"><span class="yy">' + t.yay.length + ' Yay</span><span>' + t.maybe.length + ' Maybe</span><span>' + t.nay.length + ' Nay</span>' +
+              (t.yay.length ? '<span class="pav">' + t.yay.slice(0, 8).map(v => avatarHtml(v.player_id, 20)).join('') + (t.yay.length > 8 ? '+' + (t.yay.length - 8) : '') + '</span>' : '') + '</div></div>';
+        }).join('') + '</div>';
+    });
+    html += '<p class="poll-help">Say Yay to every option that suits you. Players who say Yay get priority.</p>';
+    card.innerHTML = html; card.classList.remove('hidden');
+    card.querySelectorAll('[data-o]').forEach(b => b.onclick = async () => {
+      b.disabled = true;
+      const opt = Number(b.dataset.o), poll = Number(b.dataset.p), v = b.dataset.v;
+      const { error } = b.classList.contains('on')
+        ? await db.from('poll_votes').delete().eq('option_id', opt).eq('player_id', me.id)                   // tap again to clear
+        : await db.from('poll_votes').upsert({ option_id: opt, poll_id: poll, player_id: me.id, vote: v }, { onConflict: 'option_id,player_id' });
+      if (error) { alert('Couldn’t save: ' + error.message); b.disabled = false; return; }
+      if (v === 'yay' && !b.classList.contains('on')) Sound.chips();
+      loadPolls();
+    });
+  }
+
   // ---- After the night: who won what (shows for 3 days after the event) ----
   async function loadPrizeCard() {
     const card = $('prizeCard');
@@ -2915,6 +2981,7 @@
   async function loadEvent() {
     loadPrizeCard().catch(() => {});
     loadRateCard().catch(() => {});
+    loadPolls().catch(() => {});
     const box = $('eventBody');
     const { data: events, error } = await db
       .from('events')

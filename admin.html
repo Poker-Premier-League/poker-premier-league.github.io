@@ -74,6 +74,16 @@
   .res-live { margin: 8px 0 12px; padding: 10px 12px; border-radius: 10px; background: #FFF1E3; border: 1px solid #E5702F; font-size: 14px; line-height: 1.45; }
   .ld-setup { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); }
   .ld-setup h3 { margin: 0 0 4px; font-size: 16px; }
+  .poll-list-h { margin: 18px 0 4px; font-size: 16px; }
+  .pdate-row { display: flex; gap: 6px; margin-top: 6px; align-items: center; } .pdate-row input { flex: 1; min-width: 0; }
+  .pdate-row button { flex: none; width: 40px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  .pchecks { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .pchecks label { display: flex; align-items: center; gap: 8px; font-weight: 500; margin: 0; }
+  .pres { width: 100%; margin-top: 6px; font-size: 13.5px; border-collapse: collapse; }
+  .pres td { padding: 4px 2px; border-top: 1px solid var(--line); vertical-align: top; } .pres .c { text-align: right; white-space: nowrap; }
+  .pres tr.top td { font-weight: 700; color: #2e7d50; }
+  .pres small { display: block; font-weight: 400; color: var(--muted); }
+  .poll-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .fee-sum { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #1E0F07; color: #F6EAD5; font-size: 14px; }
   .fee-sum b { color: #FBC891; font-size: 18px; }
   #feeList li { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center; padding: 8px 0; }
@@ -329,6 +339,26 @@
       <h2>All events</h2>
       <ul id="evList" class="evlist"><li class="muted">Loading…</li></ul>
     </div>
+
+    <div class="card" id="pollAdmin">
+      <h2>Polls</h2>
+      <p class="muted">Plan the next block of games about 2 months ahead: a poll for dates, one for venues and one for the format. Everyone gets an alert when it opens, 2 days in, the day before it closes, and with the result.</p>
+      <label>What’s the poll for?</label>
+      <div class="seg small" id="pollKind">
+        <button type="button" data-v="date" class="on">📅 Dates</button><button type="button" data-v="venue">🏠 Venues</button><button type="button" data-v="format">🎲 Format</button>
+      </div>
+      <label for="pollTitle">Title</label>
+      <input id="pollTitle" type="text" maxlength="80">
+      <label for="pollNote">Note <span class="opt">(optional)</span></label>
+      <input id="pollNote" type="text" maxlength="300" placeholder="e.g. Say Yay to every Saturday you can make">
+      <div id="pollOpts"></div>
+      <label for="pollDays">Open for</label>
+      <select id="pollDays"><option value="3">3 days</option><option value="5">5 days</option><option value="7" selected>1 week</option><option value="10">10 days</option><option value="14">2 weeks</option></select>
+      <button id="pollCreate" class="btn full" type="button" style="margin-top:12px">📊 Send the poll</button>
+      <div id="pollMsg" class="msg"></div>
+      <h3 class="poll-list-h">Your polls</h3>
+      <ul id="pollList" class="evlist"><li class="muted">Loading…</li></ul>
+    </div>
   </section>
 
   <!-- ================= RESULTS ================= -->
@@ -541,6 +571,7 @@
     $('whoName').textContent = profile.display_name;
     $('app').classList.remove('hidden');
     await Promise.all([loadPlayers(), loadSettings(), loadEvents(), loadPayouts(), loadLastDrawAdmin()]);
+    await loadPollsAdmin(); paintPollOpts();
     const go = (location.hash.match(/^#results=(\d+)/) || [])[1];         // "Finish the night" from the lobby
     if (go && events.some(e => String(e.id) === go)) {
       $('resEvent').value = go;
@@ -558,6 +589,119 @@
     paintHostPicker();
     paintTestPlayers();
     await loadFees();
+  }
+
+  // ---- Polls (part 24) ----
+  const POLL_TITLES = { date: 'Dates for the next block of games', venue: 'Where should we play?', format: 'Which format?' };
+  const FORMAT_LABELS = { freezeout: 'Freezeout', rebuy: 'Re-buy', knockout: 'Knockout', headsup: 'Heads Up' };
+  let pollData = { polls: [], opts: [], votes: [] };
+  const pollKind = () => segVal('pollKind');
+  function paintPollOpts() {
+    const k = pollKind(), box = $('pollOpts');
+    if (!$('pollTitle').dataset.touched) $('pollTitle').value = POLL_TITLES[k];
+    if (k === 'date') {
+      box.innerHTML = '<label>Dates to choose from</label><div id="pdates"></div><button type="button" class="btn secondary small" id="pdAdd" style="margin-top:6px">➕ Add a date</button>';
+      const add = (d) => { const row = document.createElement('div'); row.className = 'pdate-row';
+        row.innerHTML = '<input type="date" value="' + (d || '') + '"><input type="time" value="19:30"><button type="button" aria-label="Remove">✕</button>';
+        row.querySelector('button').onclick = () => row.remove(); $('pdates').appendChild(row); };
+      add(); add(); add();
+      $('pdAdd').onclick = () => add();
+    } else if (k === 'venue') {
+      const hosts = players.filter(p => p.can_host && !p.is_test);
+      box.innerHTML = '<label>Venues to choose from <span class="opt">(players who said they can host)</span></label><div class="pchecks">' +
+        (hosts.length ? hosts.map(p => '<label><input type="checkbox" data-host="' + p.id + '" checked> ' + esc(p.display_name) + (p.host_capacity ? ' (up to ' + p.host_capacity + ')' : '') + '</label>').join('') : '<span class="muted">Nobody has said they can host yet.</span>') +
+        '</div><label for="pvOther">Another venue <span class="opt">(optional)</span></label><input id="pvOther" type="text" maxlength="80" placeholder="e.g. The Red Lion back room">';
+    } else {
+      const lastDate = pollData.polls.find(p => p.kind === 'date');
+      let yays = null;
+      if (lastDate) { const os = pollData.opts.filter(o => o.poll_id === lastDate.id);
+        const counts = os.map(o => pollData.votes.filter(v => v.option_id === o.id && v.vote === 'yay').length); yays = counts.length ? Math.max(...counts) : null; }
+      const huOk = [4, 8, 16, 32].includes(yays);
+      box.innerHTML = '<label>Formats to choose from</label><div class="pchecks">' +
+        ['freezeout', 'rebuy', 'knockout', 'headsup'].map(f => '<label><input type="checkbox" data-format="' + f + '"' + (f === 'headsup' ? (huOk ? '' : ' disabled') : ' checked') + '> ' + FORMAT_LABELS[f] + '</label>').join('') + '</div>' +
+        '<p class="muted small-note">Heads Up can only be offered when exactly 4, 8, 16 or 32 players have said Yay' + (yays != null ? ' (the top date in your last date poll has ' + yays + ')' : '') + '.</p>';
+    }
+  }
+  $('pollKind').querySelectorAll('button').forEach(b => b.onclick = () => { setSeg('pollKind', b.dataset.v); delete $('pollTitle').dataset.touched; paintPollOpts(); });
+  $('pollTitle').oninput = () => { $('pollTitle').dataset.touched = '1'; };
+  $('pollCreate').onclick = async () => {
+    clear('pollMsg');
+    const k = pollKind(), title = $('pollTitle').value.trim();
+    if (!title) return msg('pollMsg', 'Give the poll a title.');
+    let options = [];
+    if (k === 'date') {
+      options = [...document.querySelectorAll('#pdates .pdate-row')].map(r => ({ d: r.children[0].value, t: r.children[1].value })).filter(x => x.d)
+        .map((x, i) => ({ label: new Date(x.d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + (x.t ? ' · ' + x.t : ''), opt_date: x.d, opt_time: x.t || null, sort: i }));
+    } else if (k === 'venue') {
+      options = [...document.querySelectorAll('[data-host]:checked')].map((c, i) => { const p = players.find(x => x.id === c.dataset.host);
+        return { label: (p?.display_name || 'Host') + '’s place', host_id: c.dataset.host, sort: i }; });
+      if ($('pvOther').value.trim()) options.push({ label: $('pvOther').value.trim(), sort: options.length });
+    } else {
+      options = [...document.querySelectorAll('[data-format]:checked')].map((c, i) => ({ label: FORMAT_LABELS[c.dataset.format], format: c.dataset.format, sort: i }));
+    }
+    if (options.length < 2) return msg('pollMsg', 'Add at least two options to choose from.');
+    if (!confirm('Send "' + title + '" to everyone with ' + options.length + ' options? It opens straight away.')) return;
+    busy($('pollCreate'), true, 'Sending…');
+    const closes = new Date(Date.now() + Number($('pollDays').value) * 864e5).toISOString();
+    const { data: poll, error } = await db.from('polls').insert({ kind: k, title, note: $('pollNote').value.trim() || null, closes_at: closes }).select('id').single();
+    let err = error;
+    if (!err) ({ error: err } = await db.from('poll_options').insert(options.map(o => ({ ...o, poll_id: poll.id }))));
+    busy($('pollCreate'), false);
+    if (err) return msg('pollMsg', 'Couldn’t send: ' + err.message);
+    msg('pollMsg', '✓ Poll sent. Everyone has been told.', 'ok');
+    $('pollNote').value = ''; delete $('pollTitle').dataset.touched;
+    await loadPollsAdmin(); paintPollOpts();
+  };
+  async function loadPollsAdmin() {
+    const { data: polls, error } = await db.from('polls').select('*').order('created_at', { ascending: false });
+    if (error) { $('pollAdmin').classList.add('hidden'); return; }            // part 24 not run yet
+    const ids = (polls || []).map(p => p.id);
+    const [oR, vR] = ids.length ? await Promise.all([db.from('poll_options').select('*').in('poll_id', ids), db.from('poll_votes').select('*').in('poll_id', ids)]) : [{ data: [] }, { data: [] }];
+    pollData = { polls: polls || [], opts: oR.data || [], votes: vR.data || [] };
+    const name = (id) => players.find(p => p.id === id)?.display_name || 'Player';
+    const open = (p) => !p.closed_at && Date.parse(p.closes_at) > Date.now();
+    $('pollList').innerHTML = pollData.polls.length ? pollData.polls.map(p => {
+      const os = pollData.opts.filter(o => o.poll_id === p.id);
+      const t = (o) => { const v = pollData.votes.filter(x => x.option_id === o.id); return { y: v.filter(x => x.vote === 'yay'), m: v.filter(x => x.vote === 'maybe'), n: v.filter(x => x.vote === 'nay') }; };
+      os.sort((a, b) => t(b).y.length - t(a).y.length || t(b).m.length - t(a).m.length || a.sort - b.sort);
+      const voters = new Set(pollData.votes.filter(v => v.poll_id === p.id).map(v => v.player_id)).size;
+      return '<li style="display:block"><div class="info"><div class="d">' + ({ date: '📅', venue: '🏠', format: '🎲' }[p.kind]) + ' ' + esc(p.title) + '</div>' +
+        '<div class="v">' + (open(p) ? 'Open until ' + new Date(p.closes_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'Closed') + ' · ' + voters + ' answered</div></div>' +
+        '<table class="pres">' + os.map((o, i) => '<tr class="' + (i === 0 && t(o).y.length ? 'top' : '') + '"><td>' + esc(o.label) +
+          (t(o).y.length ? '<small>Yay: ' + t(o).y.map(v => esc(name(v.player_id))).join(', ') + '</small>' : '') + '</td><td class="c">' + t(o).y.length + ' Yay · ' + t(o).m.length + ' Maybe · ' + t(o).n.length + ' Nay</td></tr>').join('') + '</table>' +
+        '<div class="poll-btns">' + (open(p) ? '<button type="button" class="btn secondary small" data-pclose="' + p.id + '">Close now and send the result</button>' : '') +
+          (os.length && t(os[0]).y.length ? '<button type="button" class="btn small" data-puse="' + p.id + '">Use the top pick for a new event</button>' : '') +
+          '<button type="button" class="btn danger small" data-pdel="' + p.id + '">Delete</button></div></li>';
+    }).join('') : '<li class="muted">No polls yet.</li>';
+    $('pollList').querySelectorAll('[data-pclose]').forEach(b => b.onclick = async () => {
+      if (!confirm('Close this poll now? Everyone gets the result.')) return;
+      const { error } = await db.from('polls').update({ closed_at: new Date().toISOString() }).eq('id', Number(b.dataset.pclose));
+      if (error) return alert('Couldn’t close: ' + error.message);
+      loadPollsAdmin();
+    });
+    $('pollList').querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this poll and all its answers? Nobody is told.')) return;
+      const { error } = await db.from('polls').delete().eq('id', Number(b.dataset.pdel));
+      if (error) return alert('Couldn’t delete: ' + error.message);
+      loadPollsAdmin();
+    });
+    $('pollList').querySelectorAll('[data-puse]').forEach(b => b.onclick = () => usePollResult(Number(b.dataset.puse)));
+  }
+  // Fill the event form from a poll's top pick (date, host/venue or format). Other fields stay as they are.
+  function usePollResult(pollId) {
+    const p = pollData.polls.find(x => x.id === pollId); if (!p) return;
+    const t = (o) => pollData.votes.filter(v => v.option_id === o.id && v.vote === 'yay').length;
+    const m = (o) => pollData.votes.filter(v => v.option_id === o.id && v.vote === 'maybe').length;
+    const top = pollData.opts.filter(o => o.poll_id === pollId).sort((a, b) => t(b) - t(a) || m(b) - m(a) || a.sort - b.sort)[0];
+    if (!top) return;
+    if (p.kind === 'date') { $('evDate').value = top.opt_date || ''; if (top.opt_time) $('evTime').value = top.opt_time.slice(0, 5); }
+    if (p.kind === 'venue') {
+      if (top.host_id && [...$('evHostPick').options].some(o => o.value === top.host_id)) { $('evHostPick').value = top.host_id; $('evHostPick').onchange(); }
+      else $('evVenue').value = top.label;
+    }
+    if (p.kind === 'format' && top.format) { setSeg('evFormat', top.format); paintFormat(); }
+    $('evForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    msg('evMsg', '✓ Filled in from the poll: ' + top.label + '. Check the rest of the form, then save. Players reply Ride In as normal.', 'ok');
   }
 
   // ---- The Last Draw (part 20) ----
@@ -1456,7 +1600,7 @@
   // ================= POINTS & SETTINGS =================
   // ================= BACKUP =================
   const BACKUP_TABLES = ['profiles', 'league_settings', 'points_table', 'payout_tables', 'events', 'attendance', 'event_entries',
-    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'last_draw_players', 'messages', 'memories'];
+    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'last_draw_players', 'polls', 'poll_options', 'poll_votes', 'ratings', 'messages', 'memories'];
   const BACKUP_LABELS = { profiles: 'players', events: 'events', attendance: 'replies', results: 'results', event_entries: 're-buys/add-ons',
     seating: 'seats', league_fees: 'league fees', messages: 'messages', memories: 'photos listed' };
   function paintBackupDate() {
