@@ -1108,6 +1108,46 @@
     display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 999px; white-space: nowrap;
     background: #1E0F07; color: #F6EAD5; border: 1px solid #E5702F; box-shadow: 0 6px 20px rgba(0,0,0,.45); font-size: 13px; font-weight: 600; }
   .viewas-bar button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: #E5702F; color: #1E0F07; font: 600 13px 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; }
+  /* ---- The Last Draw ---- */
+  .theme-gpl .tabbar button { font-size: 12.5px; letter-spacing: .6px; padding-left: 2px; padding-right: 2px; white-space: nowrap; }
+  .ld-hero { display: flex; align-items: center; gap: 14px; margin: 0 0 12px; padding: 16px; border-radius: 18px; color: #F6EAD5;
+    background: radial-gradient(120% 90% at 20% 0%, #6B3B22 0%, #3A2013 45%, #170A04 100%); box-shadow: 0 8px 24px rgba(30,15,7,.3); }
+  .ld-badge { width: 84px; height: 84px; flex: none; filter: drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+  .ld-kick { font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #F49A5C; }
+  .ld-title { margin: 0 0 6px; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 34px; line-height: 1; text-transform: uppercase; color: #FBC891; }
+  .ld-when { font-size: 13.5px; margin-top: 2px; }
+  .ld-pot { margin: 0 0 12px; padding: 14px; border-radius: 16px; background: linear-gradient(135deg, #3A2013, #1E0F07); color: #F6EAD5; border: 1px solid rgba(229,112,47,.5); }
+  .ld-pot-top { display: flex; align-items: center; gap: 12px; }
+  .ld-pot-amt { font-family: 'Anton', Impact, sans-serif; font-size: 40px; line-height: 1; color: #FBC891; }
+  .ld-pot-t { font-size: 13px; opacity: .9; } .ld-pot-t b { display: block; font-family: 'Oswald', sans-serif; font-size: 12.5px; letter-spacing: 1.5px; text-transform: uppercase; color: #F49A5C; }
+  .ld-places { display: flex; gap: 6px; margin-top: 10px; }
+  .ld-places span { flex: 1; padding: 8px 4px; border-radius: 10px; background: rgba(251,200,145,.1); text-align: center; font-family: 'Anton', Impact, sans-serif; font-size: 18px; color: #fff; }
+  .ld-places b { display: block; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: #FBC891; }
+  .ld-places small { display: block; font-family: 'Inter', sans-serif; font-size: 10.5px; opacity: .6; }
+  .ld-table-wrap { color: #F6EAD5; margin: 0 0 12px; padding: 14px 8px; border-radius: 18px; background: radial-gradient(120% 70% at 50% 40%, #3A2013 0%, #24120A 55%, #170A04 100%); }
+  .ld-stack { position: absolute; z-index: 1; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+  .ld-stack .discs { display: flex; flex-direction: column-reverse; }
+  .ld-stack i { display: block; width: 20px; height: 4px; margin-top: -1px; border-radius: 50%; border: 1px solid rgba(0,0,0,.45); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+  .ld-stack i.c0 { background: #E5702F; } .ld-stack i.c1 { background: #F6EAD5; } .ld-stack i.c2 { background: #3A2013; }
+  .ld-stack .cc { margin-top: 2px; padding: 0 5px; border-radius: 6px; background: rgba(23,10,4,.8); color: #FBC891; font: 600 10px/14px 'Oswald', sans-serif; }
+  .gseat.open .open-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); color: rgba(246,234,213,.6); font: 600 14px 'Oswald', sans-serif; border: 2px dashed rgba(251,200,145,.45); }
+  .gseat.open .ring { background: transparent; box-shadow: none; }
+  .gseat.open .plate { opacity: .7; }
+  .ld-list ol { list-style: none; margin: 0; padding: 0; }
+  .ld-list li { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(120,72,30,.15); font-size: 14px; }
+  .ld-list li.me { background: rgba(229,112,47,.1); border-radius: 8px; }
+  .ld-list .r { width: 22px; text-align: center; font-family: 'Anton', Impact, sans-serif; color: #C9561F; }
+  .ld-list .nm { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ld-list .pt { font-size: 12px; opacity: .65; } .ld-list .ch { min-width: 64px; text-align: right; font-family: 'Anton', Impact, sans-serif; font-size: 16px; }
+  .ld-next { margin: 10px 0 0; font-size: 13px; } .ld-next b { display: block; font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #C9561F; }
+  .ld-list .hint { margin-top: 10px; }
+  .ld-lock { font-size: 14px; } .ld-det { font-size: 14.5px; line-height: 1.5; }
+  .ld-admin-note { font-size: 12.5px; padding: 8px 10px; border-radius: 8px; border: 1px dashed #C9561F; }
+  .ld-mini { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+  .ld-mini span { position: relative; } .ld-mini i { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%; background: #3A2013; color: #FBC891; font: 600 9.5px/16px 'Oswald', sans-serif; font-style: normal; text-align: center; }
+  .ld-mini .open { width: 34px; height: 34px; border-radius: 50%; border: 2px dashed rgba(120,72,30,.4); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; opacity: .7; }
+  .ld-go { width: 100%; }
+
   /* ---- After the night: prizes ---- */
   .pz-podium { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
   .pz-podium li { flex: 1 1 28%; min-width: 92px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px; border-radius: 14px;
@@ -1599,6 +1639,7 @@
   <nav class="tabbar" role="tablist" aria-label="Sections">
     <button type="button" role="tab" data-tab="lobby" aria-selected="true" class="active">Lobby</button>
     <button type="button" role="tab" data-tab="league" aria-selected="false">League</button>
+    <button type="button" role="tab" data-tab="lastdraw" aria-selected="false">Last Draw</button>
     <button type="button" role="tab" data-tab="results" aria-selected="false">Results</button>
     <button type="button" role="tab" data-tab="wall" aria-selected="false">Wall</button>
   </nav>
@@ -1644,10 +1685,16 @@
         <div id="tableBody"><p class="empty">Loading…</p></div>
       </div>
       <div class="card section">
-        <div class="section-title" data-t="final">Final night · starting stacks</div>
+        <div class="section-title">🏆 The Last Draw</div>
         <p class="hint" id="finalHint">The top 9 qualified players make the final. Starting chips = league points × 10,000.</p>
         <div id="finalBody"><p class="empty">Loading…</p></div>
+        <button type="button" class="btn ld-go" id="ldGo">See the final table ›</button>
       </div>
+    </section>
+
+    <!-- ===== THE LAST DRAW ===== -->
+    <section id="panel-lastdraw" class="panel hidden" role="tabpanel">
+      <div id="ldBody"><p class="empty">Loading…</p></div>
     </section>
 
     <!-- ===== RESULTS ===== -->
@@ -2001,7 +2048,7 @@
     paintViewAs();
     showScreen('home');
     await Promise.all([loadEvent(), loadLeague(), loadWall()]);
-    const start = (location.hash.match(/^#(lobby|league|results|wall)/) || [])[1] || 'lobby';
+    const start = (location.hash.match(/^#(lobby|league|lastdraw|results|wall)/) || [])[1] || 'lobby';
     const openMsgs = /^#messages/.test(location.hash);
     showPanel(start, { noScroll: true });
     loadMessages();
@@ -2011,7 +2058,7 @@
   }
 
   // ---- Tabs (tap or swipe) ----
-  const TABS = ['lobby', 'league', 'results', 'wall'];
+  const TABS = ['lobby', 'league', 'lastdraw', 'results', 'wall'];
   let currentTab = 'lobby';
   function showPanel(name, opts = {}) {
     currentTab = name;
@@ -2027,6 +2074,7 @@
     history.replaceState(null, '', '#' + name + playerPart);
     if (name === 'results') loadHistory();
     if (name === 'wall') loadWall();
+    if (name === 'lastdraw') loadLastDraw();
     if (!opts.noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => showPanel(b.dataset.tab));
@@ -2069,6 +2117,7 @@
       paintLobbyChips();
       await Promise.all([loadEvent(), loadLeague(), loadMessages(),
         currentTab === 'results' ? loadHistory() : null, currentTab === 'wall' ? loadWall() : null]);
+      if (currentTab === 'lastdraw') loadLastDraw();
     } catch (_) { /* try again next time */ }
     refreshing = false; lastRefresh = Date.now();
     return true;
@@ -2503,6 +2552,68 @@
   let currentEvent = null;
   let myReply = null;
   let evMoreOpen = false;     // game night: is 'Event details, replies and payments' open?
+
+  // ---- The Last Draw (phase 5): the season final ----
+  let ldInfo = null;
+  async function loadLastDraw() {
+    const box = $('ldBody');
+    if (!lastLeague) await loadLeague();
+    const { data, error } = await db.rpc('last_draw_info');
+    ldInfo = error ? null : data;                                   // part 20 not set up yet: still show the table
+    const st = (lastLeague && lastLeague.st) || { final_players: 9, final_chips_per_point: 10000 };
+    const n = (ldInfo && ldInfo.final_players) || st.final_players || 9, per = (ldInfo && ldInfo.chips_per_point) || st.final_chips_per_point || 10000;
+    const qualified = (lastLeague && lastLeague.qualified) || [];
+    const finalists = qualified.slice(0, n), next = qualified.slice(n, n + 3);
+    const chips = (p) => Math.round(Number(p.league_points || 0) * per);
+    let html = '<div class="ld-hero"><img src="images/gpl-badge-simple.webp" alt="" class="ld-badge"><div><div class="ld-kick">The season final</div><h2 class="ld-title">The Last Draw</h2>' +
+      '<div class="ld-when">📅 ' + esc(ldInfo?.when_text || 'Date to be decided') + '</div>' +
+      '<div class="ld-when">📍 ' + (ldInfo?.venue ? esc(ldInfo.venue) : 'Venue decided halfway through the season') + '</div></div></div>';
+    // Prize pot
+    if (ldInfo) {
+      const places = ldInfo.places || [];
+      html += '<div class="ld-pot"><div class="ld-pot-top"><span class="ld-pot-amt">' + money(ldInfo.pot) + '</span><span class="ld-pot-t"><b>Prize pot</b>' +
+        ldInfo.fees_paid + ' league fee' + (ldInfo.fees_paid === 1 ? '' : 's') + ' so far. Free seats for the ' + n + ' finalists.</span></div>' +
+        (places.length && Number(ldInfo.pot) > 0 ? '<div class="ld-places">' + places.map(p => '<span><b>' + ordinal(p.place) + '</b>' + money(p.amount) + '<small>' + Number(p.pct) + '%</small></span>').join('') + '</div>' : '') + '</div>';
+    }
+    // The table
+    html += '<div class="ld-table-wrap">' + lastDrawTable(finalists, n, chips) + '</div>';
+    // Finalists, in order
+    html += '<div class="card section ld-list"><div class="section-title">The ' + n + ' seats right now</div>' +
+      (finalists.length ? '<ol>' + finalists.map(p => '<li' + (p.player_id === me.id ? ' class="me"' : '') + '><span class="r">' + (p.shared ? '=' : '') + p.rank + '</span>' + avatarHtml(p.player_id, 30) +
+        '<span class="nm">' + esc(p.display_name) + '</span><span class="pt">' + Number(p.league_points).toFixed(2) + ' pts</span><span class="ch">' + chips(p).toLocaleString('en-GB') + '</span></li>').join('') + '</ol>'
+        : '<p class="empty">Nobody has qualified yet. Play ' + ((lastLeague && lastLeague.st && lastLeague.st.min_events) || 2) + '+ events and pay the league fee to get on the table.</p>') +
+      (next.length ? '<div class="ld-next"><b>Next in line</b>' + next.map(p => esc(firstName(p.player_id)) + ' (' + Number(p.league_points).toFixed(2) + ')').join(' · ') + '</div>' : '') +
+      '<p class="hint">Seats go to the top ' + n + ' qualified players: ' + ((lastLeague && lastLeague.st && lastLeague.st.min_events) || 2) + '+ events played and the league fee paid. Chips = league points × ' + per.toLocaleString('en-GB') + '. If a finalist can’t make it, the next in line takes the seat with their own points.</p></div>';
+    // Game details
+    html += '<div class="card section ld-details"><div class="section-title">The game</div>' +
+      (ldInfo && ldInfo.details_shown && ldInfo.details ? '<p class="ld-det">' + esc(ldInfo.details).replace(/\n/g, '<br>') + '</p>'
+        : '<p class="ld-lock">🔒 The format and game details are kept under the hat until Alex and Phil reveal them, closer to the night. Seats are drawn at the venue on the night.</p>' +
+          (me.is_admin && ldInfo && ldInfo.details ? '<p class="ld-admin-note">Admins only: your details are saved but hidden. Reveal them in Admin → Settings → The Last Draw.</p>' : '')) + '</div>';
+    box.innerHTML = html;
+  }
+
+  function lastDrawTable(rows, n, chips) {
+    const th = TABLE_THEMES[tableStyle()];
+    const style = '--felt1:' + th.felt1 + ';--felt2:' + th.felt2 + ';--rail1:' + th.rail1 + ';--rail2:' + th.rail2 + ';--trim:' + th.trim + ';--logo-op:' + th.logo +
+      ';--rail-hi:' + mixHex(th.rail1, '#ffffff', .25) + ';--felt-hi:' + mixHex(th.felt1, '#ffffff', .12) +
+      ';--trim-45:' + hexA(th.trim, .45) + ';--trim-55:' + hexA(th.trim, .55) + ';--trim-70:' + hexA(th.trim, .7);
+    const max = Math.max(1, ...rows.map(chips));
+    let html = '<div class="gtable ld" style="' + style + '" role="img" aria-label="The Last Draw final table">' +
+      '<div class="rail"></div><div class="felt"><img src="images/gpl-badge-simple.webp" alt=""></div>';
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + 2 * Math.PI * i / n;
+      const x = 50 + 41 * Math.cos(a), y = 50 + 42.5 * Math.sin(a);
+      const p = rows[i];
+      if (!p) { html += '<div class="gseat open" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%"><span class="ring"><span class="av open-av">' + (i + 1) + '</span></span><span class="plate"><span class="nm">Seat open</span></span></div>'; continue; }
+      const c = chips(p), discs = Math.max(2, Math.round(10 * c / max));
+      html += '<div class="gseat' + (p.player_id === me.id ? ' me' : '') + '" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%">' +
+        '<span class="ring">' + avatarHtml(p.player_id, 40) + '</span><span class="plate"><span class="n">' + p.rank + '</span><span class="nm">' + esc(p.player_id === me.id ? 'You' : firstName(p.player_id)) + '</span></span></div>';
+      const sx = 50 + 23 * Math.cos(a), sy = 50 + 25 * Math.sin(a);
+      html += '<div class="ld-stack" style="left:' + sx.toFixed(1) + '%;top:' + sy.toFixed(1) + '%"><span class="discs">' +
+        Array.from({ length: discs }, (_, k) => '<i class="c' + (k % 3) + '"></i>').join('') + '</span><span class="cc">' + (c >= 1000 ? Math.round(c / 1000).toLocaleString('en-GB') + 'k' : c) + '</span></div>';
+    }
+    return html + '</div>';
+  }
 
   // ---- After the night: who won what (shows for 3 days after the event) ----
   async function loadPrizeCard() {
@@ -3606,20 +3717,13 @@
   // ---- Final night: top N qualified, chips = points x chips-per-point ----
   function renderFinal(qualified, st) {
     const n = st.final_players, per = st.final_chips_per_point;
-    $('finalHint').textContent = 'The top ' + n + ' qualified players make the final. Starting chips = league points × ' + per.toLocaleString('en-GB') + '.';
-    if (!qualified.length) { $('finalBody').innerHTML = '<p class="empty">Nobody has qualified yet.</p>'; return; }
-    const chips = (p) => Math.round(Number(p.league_points || 0) * per).toLocaleString('en-GB');
-    let html = '<table class="final"><tbody>';
-    qualified.forEach((p, i) => {
-      const inFinal = i < n;
-      if (i === n) html += '<tr class="cut"><td colspan="3" class="empty" style="font-size:12px">Below the cut (outside the top ' + n + ')</td></tr>';
-      html += '<tr' + (inFinal ? '' : ' style="opacity:0.55"') + '>' +
-        '<td class="seat">' + (p.shared ? '=' : '') + p.rank + '</td>' +
-        '<td><div class="pl">' + avatarHtml(p.player_id, 28) + '<span>' + esc(p.display_name) + '</span></div></td>' +
-        '<td class="chips">' + (inFinal ? chips(p) : '–') + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    $('finalBody').innerHTML = html;
+    $('finalHint').textContent = 'The top ' + n + ' qualified players make the season final, with their league points turned into chips (× ' + per.toLocaleString('en-GB') + ').';
+    const top = qualified.slice(0, n);
+    $('finalBody').innerHTML = top.length
+      ? '<div class="ld-mini">' + top.map(p => '<span title="' + esc(p.display_name) + '">' + avatarHtml(p.player_id, 34) + '<i>' + p.rank + '</i></span>').join('') +
+        (top.length < n ? '<span class="open">+' + (n - top.length) + '</span>' : '') + '</div>'
+      : '<p class="empty">Nobody has qualified yet.</p>';
+    $('ldGo').onclick = () => showPanel('lastdraw');
   }
 
   // ---- Profile: name, photo, hosting, chip set ----

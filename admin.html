@@ -372,6 +372,19 @@
 
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
+    <div class="card" id="ldCardAdmin">
+      <h2>The Last Draw</h2>
+      <p class="muted">The season final. Players see the date and venue straight away. The game details stay hidden until you tick “Show the game details to players”.</p>
+      <label for="ldWhen">When</label>
+      <input id="ldWhen" type="text" maxlength="80" placeholder="e.g. 1 to 20 December 2027 (estimated)">
+      <label for="ldVenue">Venue <span class="opt">(blank = “decided halfway through the season”)</span></label>
+      <input id="ldVenue" type="text" maxlength="120" placeholder="e.g. Phil’s place">
+      <label for="ldDetails">Game details <span class="opt">(format, blinds, dress code… hidden until you show them)</span></label>
+      <textarea id="ldDetails" maxlength="1500" placeholder="e.g. Freezeout, 20-minute blinds, cards in the air at 7pm sharp."></textarea>
+      <label class="check"><input id="ldShown" type="checkbox"> Show the game details to players</label>
+      <button id="ldSave" class="btn full" type="button">Save The Last Draw</button>
+      <div id="ldMsg" class="msg"></div>
+    </div>
     <div class="card" id="feeCardAdmin">
       <h2>League fee</h2>
       <p class="muted">Every player pays this once a season. It all goes into The Last Draw prize pot, and a player’s points only count once it’s paid. Changing the season name in League settings starts everyone as unpaid again. Set it to £0 to switch it off.</p>
@@ -514,7 +527,7 @@
     if (!profile || !profile.is_admin || !profile.approved) { $('denied').classList.remove('hidden'); return; }
     $('whoName').textContent = profile.display_name;
     $('app').classList.remove('hidden');
-    await Promise.all([loadPlayers(), loadSettings(), loadEvents(), loadPayouts()]);
+    await Promise.all([loadPlayers(), loadSettings(), loadEvents(), loadPayouts(), loadLastDrawAdmin()]);
     const go = (location.hash.match(/^#results=(\d+)/) || [])[1];         // "Finish the night" from the lobby
     if (go && events.some(e => String(e.id) === go)) {
       $('resEvent').value = go;
@@ -533,6 +546,25 @@
     paintTestPlayers();
     await loadFees();
   }
+
+  // ---- The Last Draw (part 20) ----
+  async function loadLastDrawAdmin() {
+    const { data, error } = await db.from('last_draw').select('*').eq('id', 1).maybeSingle();
+    if (error) { $('ldCardAdmin').classList.add('hidden'); return; }       // part 20 not run yet
+    $('ldWhen').value = data?.when_text || ''; $('ldVenue').value = data?.venue || '';
+    $('ldDetails').value = data?.details || ''; $('ldShown').checked = !!data?.details_shown;
+  }
+  $('ldSave').onclick = async () => {
+    clear('ldMsg');
+    const row = { id: 1, when_text: $('ldWhen').value.trim() || null, venue: $('ldVenue').value.trim() || null,
+      details: $('ldDetails').value.trim() || null, details_shown: $('ldShown').checked, updated_at: new Date().toISOString() };
+    if (row.details_shown && !row.details) return msg('ldMsg', 'Add the game details first, or untick “Show the game details”.');
+    busy($('ldSave'), true, 'Saving…');
+    const { error } = await db.from('last_draw').upsert(row);
+    busy($('ldSave'), false);
+    if (error) return msg('ldMsg', 'Couldn\u2019t save: ' + error.message);
+    msg('ldMsg', '\u2713 Saved. ' + (row.details_shown ? 'Players can now see the game details.' : 'The game details are still hidden from players.'), 'ok');
+  };
 
   // ---- League fee (part 17) ----
   let feeState = null;
@@ -1355,7 +1387,7 @@
   // ================= POINTS & SETTINGS =================
   // ================= BACKUP =================
   const BACKUP_TABLES = ['profiles', 'league_settings', 'points_table', 'payout_tables', 'events', 'attendance', 'event_entries',
-    'seating', 'results', 'league_fees', 'messages', 'memories'];
+    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'messages', 'memories'];
   const BACKUP_LABELS = { profiles: 'players', events: 'events', attendance: 'replies', results: 'results', event_entries: 're-buys/add-ons',
     seating: 'seats', league_fees: 'league fees', messages: 'messages', memories: 'photos listed' };
   function paintBackupDate() {
