@@ -1172,6 +1172,36 @@
   .ptype-foot { font-size: 12px; opacity: .7; text-align: center; margin: 4px 0 0; }
   .ptype-lock { font-size: 14px; }
 
+  /* ---- Season calendar ---- */
+  .cal-next { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .ci { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(120,72,30,.06); border: 1px solid rgba(120,72,30,.12); }
+  .ci .cd { flex: none; width: 46px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #C9561F; font-weight: 700; }
+  .ci .cd b { display: block; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 22px; line-height: 1; color: var(--ink); }
+  .ci .ct { flex: 1; min-width: 0; } .ci .ct b { display: block; font-size: 14.5px; } .ci .ct small { font-size: 12px; opacity: .7; }
+  .ci .cp { flex: none; font: 600 10.5px 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; }
+  .ci.confirmed .cp { background: #E5702F; color: #1E0F07; }
+  .ci.proposed { border-style: dashed; } .ci.proposed .cp { border: 1px dashed #C9561F; color: #C9561F; }
+  .ci.final { background: linear-gradient(135deg, #3A2013, #1E0F07); color: #F6EAD5; } .ci.final .cd b { color: #FBC891; } .ci.final .cp { background: #FBC891; color: #1E0F07; }
+  .ci.played { opacity: .6; } .ci.played .cp { background: rgba(120,72,30,.15); }
+  .cal-card #calToggle { display: block; margin: 10px auto 0; }
+  .cal-month { margin-top: 10px; }
+  .cm-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; } .cm-h b { font-size: 16px; }
+  .cm-h button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(120,72,30,.25); background: #fff; font-size: 20px; cursor: pointer; color: var(--ink); }
+  .cg { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cg-w { text-align: center; font-size: 11px; font-weight: 700; opacity: .55; }
+  .cg-d { aspect-ratio: 1; border-radius: 10px; border: 1px solid rgba(120,72,30,.1); background: rgba(255,255,255,.55); font-size: 14px; color: var(--ink); cursor: pointer; padding: 0; }
+  .cg-d:disabled { cursor: default; opacity: .75; }
+  .cg-d.today { outline: 2px solid #3A2013; }
+  .cg-d.confirmed { background: #E5702F; color: #1E0F07; font-weight: 700; border-color: #E5702F; }
+  .cg-d.proposed { border: 2px dashed #C9561F; font-weight: 700; }
+  .cg-d.played { background: rgba(120,72,30,.18); }
+  .cg-d.final { background: #3A2013; color: #FBC891; font-weight: 700; }
+  .cg-d.sel { box-shadow: 0 0 0 3px rgba(229,112,47,.45); }
+  .cal-key { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 4px; font-size: 11.5px; }
+  .cal-key .k::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  .cal-key .confirmed::before { background: #E5702F; } .cal-key .proposed::before { border: 1.5px dashed #C9561F; } .cal-key .played::before { background: rgba(120,72,30,.25); } .cal-key .final::before { background: #3A2013; }
+  .cal-next.small .ci { padding: 6px 8px; }
+
   /* ---- Polls ---- */
   .poll { padding: 12px 0; border-top: 1px solid rgba(120,72,30,.15); }
   .poll:first-of-type { border-top: 0; }
@@ -1625,8 +1655,8 @@
   <div class="volume-note">🔊 <b>When You Log In:</b> Take Your Phone <b>Off Silent</b> And <b>Turn The Volume Up!</b></div>
 
   <button id="buildBtn" class="build-strip" type="button" aria-haspopup="dialog">
-    <span class="bs-top"><span>🔨 Build progress</span><b>7 of 8 phases done</b></span>
-    <span class="bs-bar"><span style="width:87.5%"></span><i style="left:87.5%;width:12.5%"></i></span>
+    <span class="bs-top"><span>🔨 Build progress</span><b>All 8 phases built</b></span>
+    <span class="bs-bar"><span style="width:100%"></span></span>
     <span class="bs-tap">See what’s ready and what’s next ›</span>
   </button>
 
@@ -1733,6 +1763,7 @@
       <div id="prizeCard" class="card section prize-card hidden"></div>
       <div id="rateCard" class="card section rate-card hidden"></div>
       <div id="pollCard" class="card section poll-card hidden"></div>
+      <div id="calCard" class="card section cal-card hidden"></div>
       <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
@@ -1962,9 +1993,10 @@
       <li>The Last Draw: the season’s final table, prize pot and dealers</li>
       <li>Player ratings and player types</li>
       <li>Polls for dates, venues and formats</li>
+      <li>The season calendar</li>
     </ul>
     <div class="bl-head now">🛠️ Working on now</div>
-    <ul class="bl"><li>Season calendar</li></ul>
+    <ul class="bl"><li>Final testing and polish before the doors open</li></ul>
     <button id="buildClose" class="btn" type="button">Back</button>
   </div>
 </div>
@@ -2944,6 +2976,69 @@
     });
   }
 
+  // ---- Season calendar (phase 8): confirmed games from events, proposed dates from date polls ----
+  let calMonth = null, calOpen = false, calItems = [];
+  const isoDay = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  async function loadCalendar() {
+    const card = $('calCard');
+    const [eR, pR] = await Promise.all([
+      db.from('events').select('id, name, event_date, start_time, venue, status, is_final').neq('status', 'cancelled'),
+      db.from('polls').select('id, kind, title, closes_at, closed_at').eq('kind', 'date')
+    ]);
+    const items = [];
+    (eR.data || []).forEach(e => items.push({ date: e.event_date, kind: e.is_final ? 'final' : e.status === 'completed' ? 'played' : 'confirmed',
+      title: e.name || (e.is_final ? 'The Last Draw' : 'Showdown'), sub: [niceTime(e.start_time), e.venue].filter(Boolean).join(' · ') }));
+    const polls = pR.error ? [] : (pR.data || []).filter(p => !p.closed_at || Date.now() - Date.parse(p.closed_at) < 60 * 864e5);
+    if (polls.length) {
+      const { data: opts } = await db.from('poll_options').select('id, poll_id, label, opt_date').in('poll_id', polls.map(p => p.id));
+      const { data: votes } = await db.from('poll_votes').select('option_id, vote').in('poll_id', polls.map(p => p.id));
+      (opts || []).filter(o => o.opt_date && !items.some(i => i.date === o.opt_date && i.kind !== 'proposed')).forEach(o => {
+        const yays = (votes || []).filter(v => v.option_id === o.id && v.vote === 'yay').length;
+        items.push({ date: o.opt_date, kind: 'proposed', title: 'Proposed date', sub: (polls.find(p => p.id === o.poll_id)?.title || 'Date poll') + ' · ' + yays + ' Yay' });
+      });
+    }
+    calItems = items.sort((a, b) => a.date.localeCompare(b.date));
+    const today = todayStr();
+    const next = calItems.filter(i => i.date >= today && i.kind !== 'played').slice(0, 3);
+    if (!calItems.length) { card.classList.add('hidden'); return; }
+    if (!calMonth) { const d = next[0] ? new Date(next[0].date + 'T12:00:00') : new Date(); calMonth = new Date(d.getFullYear(), d.getMonth(), 1); }
+    const LBL = { confirmed: 'Confirmed', proposed: 'Proposed', final: 'The Last Draw', played: 'Played' };
+    const row = (i) => { const d = new Date(i.date + 'T12:00:00');
+      return '<li class="ci ' + i.kind + '"><span class="cd"><b>' + d.getDate() + '</b>' + d.toLocaleDateString('en-GB', { month: 'short' }) + '</span>' +
+        '<span class="ct"><b>' + esc(i.title) + '</b>' + (i.sub ? '<small>' + esc(i.sub) + '</small>' : '') + '</span><span class="cp">' + LBL[i.kind] + '</span></li>'; };
+    let html = '<div class="section-title">📅 Season calendar</div>' +
+      (next.length ? '<ul class="cal-next">' + next.map(row).join('') + '</ul>' : '<p class="empty">No dates coming up yet.</p>') +
+      '<button type="button" class="textlink" id="calToggle">' + (calOpen ? 'Hide the month view' : 'Show the month view') + '</button>';
+    if (calOpen) {
+      const y = calMonth.getFullYear(), m = calMonth.getMonth(), first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
+      const lead = (first.getDay() + 6) % 7;                                   // weeks start on Monday
+      let grid = '';
+      for (let i = 0; i < lead; i++) grid += '<span class="cg-e"></span>';
+      for (let dd = 1; dd <= days; dd++) {
+        const iso = isoDay(new Date(y, m, dd)), here = calItems.filter(i => i.date === iso);
+        const k = here.find(i => i.kind === 'final') ? 'final' : here.find(i => i.kind === 'confirmed') ? 'confirmed' : here.find(i => i.kind === 'played') ? 'played' : here.length ? 'proposed' : '';
+        grid += '<button type="button" class="cg-d ' + k + (iso === today ? ' today' : '') + '" data-day="' + iso + '"' + (here.length ? '' : ' disabled') + '>' + dd + '</button>';
+      }
+      const monthItems = calItems.filter(i => i.date.startsWith(y + '-' + String(m + 1).padStart(2, '0')));
+      html += '<div class="cal-month"><div class="cm-h"><button type="button" id="calPrev" aria-label="Previous month">‹</button><b>' +
+        first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + '</b><button type="button" id="calNext" aria-label="Next month">›</button></div>' +
+        '<div class="cg">' + ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => '<span class="cg-w">' + d + '</span>').join('') + grid + '</div>' +
+        '<div class="cal-key"><span class="k confirmed">Confirmed</span><span class="k proposed">Proposed</span><span class="k played">Played</span><span class="k final">The Last Draw</span></div>' +
+        (monthItems.length ? '<ul class="cal-next small" id="calList">' + monthItems.map(row).join('') + '</ul>' : '<p class="empty">Nothing this month.</p>') + '</div>';
+    }
+    card.innerHTML = html; card.classList.remove('hidden');
+    $('calToggle').onclick = () => { calOpen = !calOpen; loadCalendar(); };
+    if (calOpen) {
+      $('calPrev').onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1); loadCalendar(); };
+      $('calNext').onclick = () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1); loadCalendar(); };
+      card.querySelectorAll('.cg-d[data-day]').forEach(b => b.onclick = () => {
+        const it = calItems.filter(i => i.date === b.dataset.day);
+        $('calList').innerHTML = it.map(row).join('');
+        card.querySelectorAll('.cg-d').forEach(x => x.classList.toggle('sel', x === b));
+      });
+    }
+  }
+
   // ---- After the night: who won what (shows for 3 days after the event) ----
   async function loadPrizeCard() {
     const card = $('prizeCard');
@@ -2982,6 +3077,7 @@
     loadPrizeCard().catch(() => {});
     loadRateCard().catch(() => {});
     loadPolls().catch(() => {});
+    loadCalendar().catch(() => {});
     const box = $('eventBody');
     const { data: events, error } = await db
       .from('events')
