@@ -356,6 +356,13 @@
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
     <div class="card">
+      <h2>Backup</h2>
+      <p class="muted">Saves all the league’s data to one file on this device: players, events, replies and payments, results, re-buys, seating, settings, payout tables, messages and the photo list. Keep it somewhere safe, like your email or cloud drive. It doesn’t include the photos themselves or the invite code.</p>
+      <button id="bkDownload" class="btn full" type="button">💾 Download a backup</button>
+      <p id="bkLast" class="muted small-note"></p>
+      <div id="bkMsg" class="msg"></div>
+    </div>
+    <div class="card">
       <h2>Test players</h2>
       <p class="muted">Dummy players for trying things out. They can’t log in, and they show with a 🧪 in front of their name. Delete them all before the season starts.</p>
       <div class="row2">
@@ -963,6 +970,51 @@
   };
 
   // ================= POINTS & SETTINGS =================
+  // ================= BACKUP =================
+  const BACKUP_TABLES = ['profiles', 'league_settings', 'points_table', 'payout_tables', 'events', 'attendance', 'event_entries',
+    'seating', 'results', 'messages', 'memories'];
+  const BACKUP_LABELS = { profiles: 'players', events: 'events', attendance: 'replies', results: 'results', event_entries: 're-buys/add-ons',
+    seating: 'seats', messages: 'messages', memories: 'photos listed' };
+  function paintBackupDate() {
+    let last = null; try { last = localStorage.getItem('gpl_last_backup'); } catch (e) {}
+    if (!last) { $('bkLast').textContent = 'No backup downloaded on this device yet.'; return; }
+    const days = Math.floor((Date.now() - Number(last)) / 864e5);
+    $('bkLast').textContent = 'Last backup on this device: ' + new Date(Number(last)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      (days === 0 ? ' (today)' : ' (' + days + ' day' + (days === 1 ? '' : 's') + ' ago)') + '.';
+  }
+  paintBackupDate();
+  $('bkDownload').onclick = async () => {
+    clear('bkMsg'); busy($('bkDownload'), true, 'Gathering…');
+    try {
+      const backup = { app: 'Gunslinger Poker League', made_at: new Date().toISOString(), made_by: $('whoName').textContent || null, tables: {} };
+      const counts = [], skipped = [];
+      for (const t of BACKUP_TABLES) {
+        let rows = [], from = 0, failed = false;
+        while (true) {                                              // 1,000 rows at a time
+          const { data, error } = await db.from(t).select('*').range(from, from + 999);
+          if (error) { failed = true; break; }
+          rows = rows.concat(data || []);
+          if (!data || data.length < 1000) break;
+          from += 1000;
+        }
+        if (failed) { skipped.push(t); continue; }
+        backup.tables[t] = rows;
+        if (BACKUP_LABELS[t]) counts.push(rows.length + ' ' + BACKUP_LABELS[t]);
+      }
+      const d = new Date(), stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const blob = new Blob([JSON.stringify(backup, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'gpl-backup-' + stamp + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      try { localStorage.setItem('gpl_last_backup', String(Date.now())); } catch (e) {}
+      paintBackupDate();
+      msg('bkMsg', '\u2713 Backup saved as ' + a.download + ' (' + counts.join(', ') + ')' +
+        (skipped.length ? '. Not included (not set up yet): ' + skipped.join(', ') : '') + '.', 'ok');
+    } catch (e) { msg('bkMsg', 'Couldn\u2019t make the backup: ' + (e.message || e)); }
+    busy($('bkDownload'), false);
+  };
+
   // ================= TEST PLAYERS =================
   async function callFn(body) {
     const { data: s } = await db.auth.getSession();
