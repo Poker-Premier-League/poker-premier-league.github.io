@@ -1157,6 +1157,21 @@
   .ld-mini .open { width: 34px; height: 34px; border-radius: 50%; border: 2px dashed rgba(120,72,30,.4); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; opacity: .7; }
   .ld-go { width: 100%; }
 
+  /* ---- Player type ---- */
+  .ptype-head { display: flex; gap: 12px; align-items: flex-start; margin: 4px 0 6px; }
+  .ptype-chip { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--tc); border: 3px solid #E0A030; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  .ptype-head b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 24px; line-height: 1.05; text-transform: uppercase; }
+  .ptype-head p { margin: 4px 0 0; font-size: 13.5px; }
+  .ptype-prov { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 6px; vertical-align: middle; background: #3A2013; color: #FBC891; font: 600 10.5px 'Oswald', sans-serif; letter-spacing: 1px; }
+  .radar { display: block; width: 100%; max-width: 380px; margin: 0 auto; }
+  .radar .star { opacity: .1; }
+  .radar .grid polygon, .radar .grid line { fill: none; stroke: rgba(58,32,19,.22); stroke-width: 1; }
+  .radar .shape { fill-opacity: .45; stroke-width: 2.5; }
+  .radar .lbl text { font: 600 13px 'Oswald', sans-serif; fill: #3A2013; letter-spacing: .3px; }
+  .radar .lbl .rv { font: 400 14px 'Anton', Impact, sans-serif; fill: #C9561F; }
+  .ptype-foot { font-size: 12px; opacity: .7; text-align: center; margin: 4px 0 0; }
+  .ptype-lock { font-size: 14px; }
+
   /* ---- Ratings ballot ---- */
   .rate-top { display: flex; align-items: center; gap: 12px; }
   .rate-star { font-size: 30px; }
@@ -1589,8 +1604,8 @@
   <div class="volume-note">🔊 <b>When You Log In:</b> Take Your Phone <b>Off Silent</b> And <b>Turn The Volume Up!</b></div>
 
   <button id="buildBtn" class="build-strip" type="button" aria-haspopup="dialog">
-    <span class="bs-top"><span>🔨 Build progress</span><b>5 of 8 phases done</b></span>
-    <span class="bs-bar"><span style="width:62.5%"></span><i style="left:62.5%;width:12.5%"></i></span>
+    <span class="bs-top"><span>🔨 Build progress</span><b>6 of 8 phases done</b></span>
+    <span class="bs-bar"><span style="width:75%"></span><i style="left:75%;width:12.5%"></i></span>
     <span class="bs-tap">See what’s ready and what’s next ›</span>
   </button>
 
@@ -1923,12 +1938,12 @@
       <li>Game night: random seating, the dealer button and a live tournament table</li>
       <li>League entry, with every fee going into The Last Draw prize pot</li>
       <li>The Last Draw: the season’s final table, prize pot and dealers</li>
+      <li>Player ratings and player types</li>
     </ul>
     <div class="bl-head now">🛠️ Working on now</div>
     <ul class="bl"><li>Polls for dates, venues and formats</li></ul>
     <div class="bl-head next">🔜 Coming next</div>
     <ul class="bl">
-      <li>Player ratings and player types</li>
       <li>Season calendar</li>
     </ul>
     <button id="buildClose" class="btn" type="button">Back</button>
@@ -2448,6 +2463,7 @@
   }
 
   function renderPlayerHistory(id) {
+    setTimeout(() => paintPlayerType(id).catch(() => {}), 0);     // ratings profile (phase 7)
     const p = people[id] || {};
     const lg = hist.league.find(x => x.player_id === id) || {};
     const evById = {}; hist.events.forEach(e => evById[e.id] = e);
@@ -2461,6 +2477,7 @@
         const extra = plural(lg.wins ?? 0, 'win') + ' \u00B7 ' + plural(lg.events_played ?? rs.length, 'event');
         return '<div class="wanted player">' + wantedInner(id, sub, lg.league_points || 0, extra) + '</div>';
       })() : '') +
+      '<div id="ptypeBox" class="ptype-box"></div>' +
       '<div class="card section">' +
         (WEST ? '' : '<div class="ph">' + avatarHtml(id, 64) + '<div><div class="n">' + esc(p.display_name || 'Player') + '</div>' +
           (p.nickname ? '<div class="k">\u201C' + esc(p.nickname) + '\u201D</div>' : '') +
@@ -2780,6 +2797,85 @@
       b.cur = nextId || null; b.draft = nextId ? { ...(b.mine[nextId] || {}) } : {};
       paintBallot(); $('rateBody').scrollTop = 0; document.querySelector('.rate-modal').scrollTop = 0;
     };
+  }
+
+  // ---- Player ratings (phase 7): profiles, radar chart and player types ----
+  const RT_KEYS = ['tf', 'hn', 'st', 'is', 'bh'];
+  const RT_NAMES = { tf: 'Trigger Finger', hn: 'High Noon', st: 'Silver Tongue', is: 'Iron Sheriff', bh: 'Bounty Hunter' };
+  const RT_TIE = ['is', 'bh', 'tf', 'st', 'hn'];                      // Phil's tie-break order
+  const PLAYER_TYPES = {
+    legend:    ['The Legend', '#E0A030', 'Strong across the board. Nobody wants to sit on their left.'],
+    drifter:   ['The Drifter', '#F3E6C8', 'Balanced and unremarkable, wandering from town to town.'],
+    greenhorn: ['The Greenhorn', '#B9C6A3', 'Fresh off the stagecoach. Lots to learn.'],
+    'tf+hn': ['The Gunfighter', '#C8451F', 'Fires with purpose and never wastes the table’s time.'],
+    'tf+st': ['The Charming Outlaw', '#7B2D3A', 'Robs you blind and makes you thank them for it.'],
+    'tf+bh': ['The Deadshot', '#E2712C', 'Fires first, and sniffs out your bluff before you try it.'],
+    'tf+is': ['The Hired Gun', '#3A3A3C', 'Cold, professional aggression. Never tilts.'],
+    'hn+is': ['The Patient Marshal', '#6B4226', 'Calm and measured. Thinks only when it counts.'],
+    'is+bh': ['The Lawman', '#8C9199', 'Folds the junk, calls the liars, keeps the peace.'],
+    'hn+st': ['The Showman', '#5B8199', 'Every decision is a performance, and the table loves it.'],
+    'st+is': ['The Gentleman Gambler', '#1F5C4A', 'Smooth talk, steady hands, and nothing gives the hand away.'],
+    'hn+bh': ['The Tracker', '#7A8450', 'Takes their time and follows the trail to your bluff.'],
+    'st+bh': ['The Mind Reader', '#6A4C7D', 'Gets you talking, then knows exactly what you’re holding.']
+  };
+  function playerType(scores) {
+    if (!scores || RT_KEYS.some(k => scores[k] == null)) return null;          // needs all five
+    const rd = {}; RT_KEYS.forEach(k => rd[k] = Math.floor(Number(scores[k]) + 0.5));   // 0.5 rounds up
+    const total = RT_KEYS.reduce((t, k) => t + rd[k], 0);
+    if (RT_KEYS.every(k => rd[k] >= 4)) return 'legend';
+    if (total <= 10) return 'greenhorn';
+    if (RT_KEYS.every(k => rd[k] <= 3)) return 'drifter';
+    const top = [...RT_KEYS].sort((a, b) => rd[b] - rd[a] || Number(scores[b]) - Number(scores[a]) || RT_TIE.indexOf(a) - RT_TIE.indexOf(b)).slice(0, 2);
+    const order = ['tf', 'hn', 'st', 'is', 'bh'];
+    top.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    return PLAYER_TYPES[top.join('+')] ? top.join('+') : (PLAYER_TYPES[top[1] + '+' + top[0]] ? top[1] + '+' + top[0] : null);
+  }
+  function radarSvg(scores, colour) {
+    const cx = 150, cy = 150, R = 100;
+    const pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return [cx + R * v / 5 * Math.cos(a), cy + R * v / 5 * Math.sin(a)]; };
+    // faint sheriff's star: six points with a ball on each tip
+    let star = '';
+    for (let i = 0; i < 12; i++) { const a = -Math.PI / 2 + i * Math.PI / 6, r = i % 2 ? 62 : 128; star += (i ? ' L' : 'M') + (cx + r * Math.cos(a)).toFixed(1) + ' ' + (cy + r * Math.sin(a)).toFixed(1); }
+    let balls = ''; for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * Math.PI / 3; balls += '<circle cx="' + (cx + 128 * Math.cos(a)).toFixed(1) + '" cy="' + (cy + 128 * Math.sin(a)).toFixed(1) + '" r="9"/>'; }
+    let grid = ''; for (let v = 1; v <= 5; v++) grid += '<polygon points="' + RT_KEYS.map((_, i) => pt(i, v).map(n => n.toFixed(1)).join(',')).join(' ') + '" />';
+    const axes = RT_KEYS.map((_, i) => { const [x, y] = pt(i, 5); return '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '"/>'; }).join('');
+    const shape = RT_KEYS.map((k, i) => pt(i, Math.max(0, Number(scores[k] ?? 0))).map(n => n.toFixed(1)).join(',')).join(' ');
+    const dots = RT_KEYS.map((k, i) => scores[k] == null ? '' : '<circle cx="' + pt(i, Number(scores[k]))[0].toFixed(1) + '" cy="' + pt(i, Number(scores[k]))[1].toFixed(1) + '" r="4"/>').join('');
+    const labels = RT_KEYS.map((k, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5, x = cx + 128 * Math.cos(a), y = cy + 128 * Math.sin(a);
+      const anchor = Math.abs(Math.cos(a)) < .2 ? 'middle' : Math.cos(a) > 0 ? 'start' : 'end';
+      return '<text x="' + x.toFixed(1) + '" y="' + (y + (i === 0 ? -6 : 4)).toFixed(1) + '" text-anchor="' + anchor + '">' + RT_NAMES[k] +
+        '<tspan x="' + x.toFixed(1) + '" dy="15" class="rv">' + (scores[k] == null ? '–' : Number(scores[k]).toFixed(1)) + '</tspan></text>'; }).join('');
+    return '<svg viewBox="-60 -10 420 330" class="radar" role="img" aria-label="Ratings radar chart">' +
+      '<path d="' + star + ' Z" class="star" style="fill:' + colour + '"/><g class="star" style="fill:' + colour + '">' + balls + '</g>' +
+      '<g class="grid">' + grid + axes + '</g>' +
+      '<polygon points="' + shape + '" class="shape" style="fill:' + colour + ';stroke:' + colour + '"/><g style="fill:' + colour + '">' + dots + '</g>' +
+      '<g class="lbl">' + labels + '</g></svg>';
+  }
+  let ratingCache = null, ratingCacheAt = 0;
+  async function paintPlayerType(id) {
+    const box = $('ptypeBox'); if (!box) return;
+    if (!ratingCache || Date.now() - ratingCacheAt > 60000) {
+      const { data, error } = await db.rpc('rating_profiles');
+      if (error) { box.innerHTML = ''; return; }                    // part 23 not set up yet
+      ratingCache = data; ratingCacheAt = Date.now();
+    }
+    if (!$('ptypeBox') || $('histWho').value !== id) return;        // moved on to someone else
+    const mine = id === me.id;
+    if (!ratingCache.can_see_all && !mine) {
+      box.innerHTML = '<div class="card section ptype"><div class="section-title">Player type</div><p class="ptype-lock">🔒 You’ll see everyone’s ratings once you’ve played a night and had your place recorded.</p></div>';
+      return;
+    }
+    const pr = (ratingCache.players || []).find(x => x.player_id === id);
+    if (!pr) { box.innerHTML = '<div class="card section ptype"><div class="section-title">Player type</div><p class="empty">No ratings yet. After each night, players rate each other on five metrics, just for fun.</p></div>'; return; }
+    const key = playerType(pr.scores), t = key ? PLAYER_TYPES[key] : null;
+    const colour = t ? t[1] : '#C9561F', provisional = pr.nights < 2;
+    box.innerHTML = '<div class="card section ptype"><div class="section-title">Player type</div>' +
+      '<div class="ptype-head" style="--tc:' + colour + '"><span class="ptype-chip"></span><div><b>' + (t ? t[0] : 'Type to come') + '</b>' +
+        (provisional ? '<span class="ptype-prov">PROVISIONAL</span>' : '') +
+        '<p>' + (t ? t[2] : 'Needs a score on all five metrics first.') + '</p></div></div>' +
+      radarSvg(pr.scores, colour) +
+      '<p class="ptype-foot">Average of the last ' + Math.min(4, pr.nights) + ' night' + (Math.min(4, pr.nights) === 1 ? '' : 's') + ' of anonymous ratings' +
+        (provisional ? ' · provisional until 2 nights are rated' : '') + '. Just for fun.</p></div>';
   }
 
   // ---- After the night: who won what (shows for 3 days after the event) ----
