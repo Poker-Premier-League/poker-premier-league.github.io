@@ -1108,6 +1108,22 @@
     display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 999px; white-space: nowrap;
     background: #1E0F07; color: #F6EAD5; border: 1px solid #E5702F; box-shadow: 0 6px 20px rgba(0,0,0,.45); font-size: 13px; font-weight: 600; }
   .viewas-bar button { min-height: 34px; padding: 0 12px; border: 0; border-radius: 999px; background: #E5702F; color: #1E0F07; font: 600 13px 'Oswald', sans-serif; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; }
+  /* ---- After the night: prizes ---- */
+  .pz-podium { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .pz-podium li { flex: 1 1 28%; min-width: 92px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px; border-radius: 14px;
+    background: rgba(120,72,30,.07); border: 1px solid rgba(120,72,30,.18); text-align: center; }
+  .pz-podium li.p1 { flex-basis: 100%; background: linear-gradient(135deg, #3A2013, #1E0F07); color: #F6EAD5; border-color: #E5702F; }
+  .pz-podium .pp { font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #C9561F; }
+  .pz-podium li.p1 .pp { color: #FBC891; }
+  .pz-podium .pn { font-weight: 700; font-size: 14px; }
+  .pz-podium li.p1 .pn { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 22px; text-transform: uppercase; }
+  .pz-podium .pw { font-family: 'Anton', Impact, sans-serif; font-size: 20px; color: #2e7d50; }
+  .pz-podium li.p1 .pw { color: #FBC891; font-size: 26px; }
+  .pz-podium .pb { font-size: 11px; opacity: .75; }
+  .pz-ev { margin: -4px 0 6px; font-size: 13px; opacity: .75; }
+  .pz-foot { margin: 10px 0 2px; font-size: 13px; text-align: center; opacity: .8; }
+  .prize-card .textlink { display: block; margin: 4px auto 0; }
+
   /* ---- Game night layout ---- */
   .gn-head { display: flex; flex-direction: column; gap: 2px; margin: 0 0 4px; }
   .gn-name { font-family: 'Anton', Impact, sans-serif; font-size: 22px; text-transform: uppercase; line-height: 1.1; color: var(--ink); }
@@ -1180,6 +1196,16 @@
   .ls-p { margin: 0 0 4px; font-size: 13.5px; } .ls-p.small { font-size: 12px; opacity: .75; margin-top: 8px; }
   .ls-l { display: block; margin: 8px 0 4px; font-size: 12.5px; font-weight: 600; }
   .live-sheet select { width: 100%; min-height: 42px; border-radius: 9px; border: 1px solid rgba(58,32,19,.3); padding: 0 8px; font-size: 15px; background: #fff; }
+  .live.won { background: radial-gradient(120% 80% at 50% 0%, #6B3B22 0%, #3A2013 50%, #170A04 100%); }
+  .live-winner { display: flex; align-items: center; gap: 14px; margin: 12px 0 4px; padding: 12px 14px; border-radius: 14px;
+    background: linear-gradient(135deg, rgba(251,200,145,.22), rgba(229,112,47,.18)); border: 1px solid rgba(251,200,145,.5); }
+  .live-winner .av { border: 3px solid #FBC891; box-shadow: 0 0 18px rgba(251,200,145,.5); }
+  .live-winner b { display: block; font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 26px; line-height: 1.05; text-transform: uppercase; color: #fff; }
+  .live-winner .lw-k { display: block; font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #FBC891; }
+  .live-winner .lw-s { font-size: 12.5px; opacity: .8; }
+  .live-finish { display: block; margin: 8px 0 0; padding: 11px 12px; border-radius: 10px; text-align: center; text-decoration: none; border: 1px solid #FBC891; color: #FBC891;
+    font: 600 14px 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+  .live-finish.go { background: linear-gradient(#F08A4B, #D9611F); border-color: #E5702F; color: #1E0F07; }
   .live-reset { display: block; margin: 12px auto 0; font-size: 12px; opacity: .7; }
 
   /* ---- Game night seating (phase 4) ---- */
@@ -1486,8 +1512,8 @@
   <div class="volume-note">🔊 <b>When You Log In:</b> Take Your Phone <b>Off Silent</b> And <b>Turn The Volume Up!</b></div>
 
   <button id="buildBtn" class="build-strip" type="button" aria-haspopup="dialog">
-    <span class="bs-top"><span>🔨 Build progress</span><b>3 of 8 phases done</b></span>
-    <span class="bs-bar"><span style="width:37.5%"></span><i style="left:37.5%;width:12.5%"></i></span>
+    <span class="bs-top"><span>🔨 Build progress</span><b>4 of 8 phases done</b></span>
+    <span class="bs-bar"><span style="width:50%"></span><i style="left:50%;width:12.5%"></i></span>
     <span class="bs-tap">See what’s ready and what’s next ›</span>
   </button>
 
@@ -1590,6 +1616,7 @@
         <div class="section-title" id="eventTitle" data-t="nextEvent">Next event</div>
         <div id="eventBody"><p class="empty">Loading…</p></div>
       </div>
+      <div id="prizeCard" class="card section prize-card hidden"></div>
       <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
@@ -1624,7 +1651,6 @@
 
     <!-- ===== RESULTS ===== -->
     <section id="panel-results" class="panel hidden" role="tabpanel">
-      <div id="feeCard" class="card section hidden"></div>
       <div class="card section hfilter">
         <div class="hf-title">🤠 Player profiles</div>
         <p class="hf-help">Choose a player to see their <b>WANTED poster</b>, stats and every result.</p>
@@ -1802,12 +1828,13 @@
       <li>Prize pools, payouts, bounties, re-buys and add-ons</li>
       <li>Phone notifications, messages and the Saloon Wall</li>
       <li>Results and every player’s stats and winnings</li>
+      <li>Game night: random seating, the dealer button and a live tournament table</li>
+      <li>League entry, with every fee going into The Last Draw prize pot</li>
     </ul>
     <div class="bl-head now">🛠️ Working on now</div>
-    <ul class="bl"><li>Game night: random seating and a live tournament table</li></ul>
+    <ul class="bl"><li>The Last Draw: the season’s final table</li></ul>
     <div class="bl-head next">🔜 Coming next</div>
     <ul class="bl">
-      <li>The Last Draw: the season’s final table</li>
       <li>Polls for dates, venues and formats</li>
       <li>Player ratings and player types</li>
       <li>Season calendar</li>
@@ -2476,7 +2503,42 @@
   let myReply = null;
   let evMoreOpen = false;     // game night: is 'Event details, replies and payments' open?
 
+  // ---- After the night: who won what (shows for 3 days after the event) ----
+  async function loadPrizeCard() {
+    const card = $('prizeCard');
+    const since = new Date(Date.now() - 3 * 864e5); const iso = since.getFullYear() + '-' + String(since.getMonth() + 1).padStart(2, '0') + '-' + String(since.getDate()).padStart(2, '0');
+    const { data: evs } = await db.from('events').select('*').eq('status', 'completed').gte('event_date', iso).order('event_date', { ascending: false }).limit(1);
+    const ev = evs && evs[0];
+    if (!ev) { card.classList.add('hidden'); return; }
+    const [rr, pr] = await Promise.all([
+      db.from('results').select('player_id, position, knockouts').eq('event_id', ev.id),
+      db.rpc('event_pot', { p_event: ev.id })
+    ]);
+    const rs = rr.data || []; if (!rs.length) { card.classList.add('hidden'); return; }
+    const pot = pr.error ? null : pr.data;
+    const won = winningsFor(ev, rs, pot);
+    const order = [...rs].sort((a, b) => a.position - b.position);
+    const paid = order.filter(r => wonTotal(won[r.player_id]) > 0);
+    const podium = (paid.length ? paid : order.slice(0, 1));
+    const topKo = [...rs].filter(r => r.knockouts).sort((a, b) => b.knockouts - a.knockouts)[0];
+    card.innerHTML = '<div class="section-title">🏆 The winners</div>' +
+      '<p class="pz-ev">' + (ev.name ? esc(ev.name) + ' · ' : '') + niceDate(ev.event_date, true) + '</p>' +
+      '<ol class="pz-podium">' + podium.map(r => {
+        const w = won[r.player_id];
+        return '<li class="p' + r.position + '">' + '<span class="pp">' + (w && w.label ? esc(w.label) : ordinal(r.position)) + '</span>' + avatarHtml(r.player_id, r.position === 1 ? 52 : 40) +
+          '<span class="pn">' + esc(people[r.player_id]?.display_name || 'Player') + '</span>' +
+          (wonTotal(w) ? '<span class="pw">' + moneyH(wonTotal(w)) + '</span>' : '') +
+          (w && w.bounty ? '<span class="pb">incl. ' + moneyH(w.bounty) + ' bounties</span>' : '') + '</li>';
+      }).join('') + '</ol>' +
+      '<p class="pz-foot">' + rs.length + ' players' + (pot && pot.pot ? ' · ' + moneyH(Number(pot.pot) + Number(pot.bounty_pool || 0)) + ' in prizes' : '') +
+        (topKo ? ' · 💥 most knockouts: ' + esc(firstName(topKo.player_id)) + ' (' + topKo.knockouts + ')' : '') + '</p>' +
+      '<button type="button" class="textlink" id="prizeMore">See the full results</button>';
+    card.classList.remove('hidden');
+    $('prizeMore').onclick = () => showPanel('results');
+  }
+
   async function loadEvent() {
+    loadPrizeCard().catch(() => {});
     const box = $('eventBody');
     const { data: events, error } = await db
       .from('events')
@@ -2830,8 +2892,17 @@
     const pend = (pid) => entries.some(e => e.player_id === pid && !e.confirmed);
     const paused = !!ev.clock_paused_at;
     const end = rebuyEndSecs(ev);
-    let html = '<div class="live" id="liveBox"><div class="live-top"><span class="live-dot' + (paused ? ' off' : '') + '"></span><h4>' + (paused ? 'Paused' : 'Live') + '</h4>' +
-      '<span class="live-clock" data-clock-el>' + hms(clockSecs(ev)) + '</span></div>';
+    // One player left = we have a winner: the clock stops at the last knockout
+    const winner = stillIn.length === 1 && finals.length > 0 ? stillIn[0] : null;
+    const endSecs = winner ? Math.max(...finals.map(b => b.clock_secs || 0)) : null;
+    let html = '<div class="live' + (winner ? ' won' : '') + '" id="liveBox"><div class="live-top"><span class="live-dot' + (paused || winner ? ' off' : '') + '"></span><h4>' +
+      (winner ? 'Game over' : paused ? 'Paused' : 'Live') + '</h4>' +
+      '<span class="live-clock"' + (winner ? '' : ' data-clock-el') + '>' + hms(winner ? endSecs : clockSecs(ev)) + '</span></div>';
+    if (winner) {
+      html += '<div class="live-winner">' + avatarHtml(winner, 64) + '<div><span class="lw-k">🏆 Winner</span><b>' + esc(people[winner]?.display_name || 'Player') + '</b>' +
+        '<span class="lw-s">' + (kos[winner] ? kos[winner] + ' knockout' + (kos[winner] === 1 ? '' : 's') + ' · ' : '') + 'last of ' + field.length + ' players</span></div></div>' +
+        (admin ? '' : '<p class="st-sub" style="text-align:center">Prizes show here once Alex or Phil confirm the results.</p>');
+    }
 
     // Re-buy countdown
     if (hasRb) {
@@ -2853,14 +2924,15 @@
 
     // Admin controls
     if (admin) {
-      html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div><div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>';
-      if (hasRb && end != null && (!rebuysTimerOpen(ev) || ev.rebuys_closed))
+      html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div>' + (winner ? '' : '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>');
+      if (!winner && hasRb && end != null && (!rebuysTimerOpen(ev) || ev.rebuys_closed))
         html += '<div class="live-reopen"><span>Reopen re-buys for</span><button type="button" data-reopen="10">10m</button><button type="button" data-reopen="15">15m</button><button type="button" data-reopen="30">30m</button></div>';
+      html += '<a class="live-finish' + (winner ? ' go' : '') + '" href="admin.html#results=' + ev.id + '">🏁 Finish the night' + (winner ? ': check and save the results' : ' early') + '</a>';
       html += '<button type="button" class="textlink light live-reset" data-clock="reset">Reset the clock</button></div>';
     }
 
     // The "I'm out" panel
-    const meIn = stillIn.includes(me.id);
+    const meIn = stillIn.includes(me.id) && !winner;
     if (liveSheet) html += liveSheetHtml(ev, liveSheet, stillIn, busts, entries);
     else if (meIn) html += '<button type="button" class="live-out" data-out="' + me.id + '">💀 I’m out</button>';
 
@@ -2870,7 +2942,7 @@
       '<span class="lb">' + (cnt(id, 'rebuy') ? '<i title="Re-buys">🔁' + (cnt(id, 'rebuy') > 1 ? '×' + cnt(id, 'rebuy') : '') + '</i>' : '') +
       (cnt(id, 'addon') ? '<i title="Add-on">➕</i>' : '') + (pend(id) ? '<i class="pend" title="Waiting for an admin">⏳</i>' : '') +
       (kos[id] ? '<i title="Knockouts">💥' + kos[id] + '</i>' : '') + '</span>' +
-      (admin && id !== me.id ? '<button type="button" class="lo" data-out="' + id + '">Out…</button>' : '') + '</li>').join('') + '</ul>';
+      (admin && id !== me.id && !winner ? '<button type="button" class="lo" data-out="' + id + '">Out…</button>' : '') + '</li>').join('') + '</ul>';
 
     // Out, in order (last out at the top)
     if (finals.length) {
@@ -2975,7 +3047,7 @@
         if (!ev.rebuys_closed && t >= end && !rbRan && box.querySelector('[data-rb-el]')) { rbRan = true; loadEvent(); }   // countdown just ran out
       }
     };
-    if (!ev.clock_paused_at) liveTimer = setInterval(tick, 1000);
+    if (!ev.clock_paused_at && box.querySelector('[data-clock-el]')) liveTimer = setInterval(tick, 1000);
     // Everyone's phone checks for news every 10 seconds while the game is on
     livePoll = setInterval(() => {
       if (document.hidden || liveSheet || refreshing || busyEditing() || currentTab !== 'lobby') return;

@@ -71,6 +71,7 @@
   .loading { text-align: center; color: #cfe3d7; padding: 30px; }
 
   /* Event list */
+  .res-live { margin: 8px 0 12px; padding: 10px 12px; border-radius: 10px; background: #FFF1E3; border: 1px solid #E5702F; font-size: 14px; line-height: 1.45; }
   .fee-sum { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #1E0F07; color: #F6EAD5; font-size: 14px; }
   .fee-sum b { color: #FBC891; font-size: 18px; }
   #feeList li { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center; padding: 8px 0; }
@@ -336,6 +337,7 @@
       <select id="resEvent"></select>
       <p class="muted" style="margin-top:10px">Type each player's finishing position (1 = winner). Leave blank if they didn't play. Enter the <strong>number</strong> of rebuys and add-ons each player took (blank = none). <strong>KOs</strong> = knockouts (bounty games). Points work out automatically.</p>
       <p id="resFormula" class="muted"></p>
+      <p id="resLive" class="res-live hidden"></p>
       <div id="resTable"></div>
       <label class="check"><input type="checkbox" id="resComplete" checked> Mark this event as completed</label>
       <button id="resSave" class="btn full" type="button">Save results</button>
@@ -503,6 +505,12 @@
     $('whoName').textContent = profile.display_name;
     $('app').classList.remove('hidden');
     await Promise.all([loadPlayers(), loadSettings(), loadEvents(), loadPayouts()]);
+    const go = (location.hash.match(/^#results=(\d+)/) || [])[1];         // "Finish the night" from the lobby
+    if (go && events.some(e => String(e.id) === go)) {
+      $('resEvent').value = go;
+      document.querySelector('.tabs button[data-tab="results"]').click();
+      history.replaceState(null, '', location.pathname);
+    }
   })();
 
   async function loadPlayers() {
@@ -928,11 +936,25 @@
     if (!eventId) { $('resTable').innerHTML = '<p class="muted">Create an event first.</p>'; return; }
     $('resTable').innerHTML = '<p class="muted">Loading…</p>';
 
-    const [resR, attR, entR] = await Promise.all([
+    const [resR, attR, entR, bustR] = await Promise.all([
       db.from('results').select('player_id, position, rebuys, addons, knockouts').eq('event_id', eventId),
-      db.from('attendance').select('player_id, reply').eq('event_id', eventId),
-      db.from('event_entries').select('player_id, kind').eq('event_id', eventId).eq('confirmed', true)
+      db.from('attendance').select('player_id, reply, paid').eq('event_id', eventId),
+      db.from('event_entries').select('player_id, kind').eq('event_id', eventId).eq('confirmed', true),
+      db.from('busts').select('player_id, by_player, final, created_at').eq('event_id', eventId).order('created_at')   // part 18
     ]);
+    // Finishing places and knockouts from the live table (only until results are saved)
+    const live = {}; let liveNote = '';
+    const busts = bustR.error ? [] : (bustR.data || []);
+    if (busts.length && !(resR.data || []).length) {
+      const field = (attR.data || []).filter(a => a.reply === 'in' && a.paid !== false).map(a => a.player_id);
+      const finals = busts.filter(b => b.final);
+      finals.forEach((b, i) => { (live[b.player_id] = live[b.player_id] || {}).position = field.length - i; });
+      const left = field.filter(id => !finals.some(b => b.player_id === id));
+      if (left.length === 1) (live[left[0]] = live[left[0]] || {}).position = 1;
+      busts.forEach(b => { if (b.by_player) { const k = (live[b.by_player] = live[b.by_player] || {}); k.knockouts = (k.knockouts || 0) + 1; } });
+      liveNote = '🎯 <b>Filled in from the live table:</b> places from the order players went out, knockouts from the knockout list, and the confirmed re-buys and add-ons. Check them, fix anything, then Save.' +
+        (left.length > 1 ? ' <b>' + left.length + ' players were still in</b>, so their places are blank: fill them in.' : '');
+    }
     // Re-buys / add-ons confirmed on the night fill in the boxes (until results are saved)
     const night = {}; (entR.data || []).forEach(e => { night[e.player_id] = night[e.player_id] || { rebuys: 0, addons: 0 }; night[e.player_id][e.kind + 's']++; });
     if (resR.error || attR.error) { $('resTable').innerHTML = '<p class="muted">Couldn’t load: ' + esc((resR.error || attR.error).message) + '</p>'; return; }
@@ -944,7 +966,7 @@
 
     // Order: already-placed by position, then those who said "In", then everyone else
     const list = [...players].sort((a, b) => {
-      const pa = existing[a.id]?.position ?? 999, pb = existing[b.id]?.position ?? 999;
+      const pa = existing[a.id]?.position ?? live[a.id]?.position ?? 999, pb = existing[b.id]?.position ?? live[b.id]?.position ?? 999;
       if (pa !== pb) return pa - pb;
       const ia = saidIn.has(a.id) ? 0 : 1, ib = saidIn.has(b.id) ? 0 : 1;
       return ia - ib || a.display_name.localeCompare(b.display_name);
@@ -959,7 +981,7 @@
     $('resTable').innerHTML =
       '<table class="res"><thead><tr><th>Player</th><th>Pos</th><th>Rebuys</th><th>Add-ons</th><th>KOs</th><th style="text-align:right">Pts</th></tr></thead><tbody>' +
       list.map(p => {
-        const r = existing[p.id] || (night[p.id] ? { position: '', ...night[p.id] } : null);
+        const r = existing[p.id] || ((night[p.id] || live[p.id]) ? { position: '', ...(night[p.id] || {}), ...(live[p.id] || {}) } : null);
         return '<tr data-id="' + p.id + '">' +
           '<td class="name">' + esc(p.display_name) + (saidIn.has(p.id) ? ' <span class="tag-in">IN</span>' : '') +
             (p.nickname ? '<small>“' + esc(p.nickname) + '”</small>' : '') + '</td>' +
@@ -971,6 +993,7 @@
       }).join('') + '</tbody></table>' +
       (players.length ? '' : '<p class="muted">No players have signed up yet.</p>');
 
+    $('resLive').innerHTML = liveNote; $('resLive').classList.toggle('hidden', !liveNote);
     $('resTable').querySelectorAll('input').forEach(i => i.oninput = updatePreview);
     updatePreview();
   }
@@ -992,7 +1015,10 @@
       const ev = events.find(e => e.id === Number($('resEvent').value));
       const b = ev && ev.buy_in != null ? Number(ev.buy_in) : 0;
       const n = rowsNow.filter(x => x.position).length;
-      r.tr.querySelector('.ptsc').textContent = scoreFor(n, b, spentFor(ev, r), r.position, r.knockouts).toFixed(2);
+      const last = Math.max(...rowsNow.filter(x => x.position).map(x => x.position));
+      const pts = (n > 1 && r.position === last) ? r.knockouts * Number(settings.ko_points || 0)     // last place: knockouts only (Phil's rule)
+        : scoreFor(n, b, spentFor(ev, r), r.position, r.knockouts);
+      r.tr.querySelector('.ptsc').textContent = pts.toFixed(2);
     });
   }
 
@@ -1066,7 +1092,8 @@
     await loadEvents();
     $('resEvent').value = eventId;
     await renderResults();
-    msg('resMsg', '✓ Results saved for ' + played.length + ' player' + (played.length === 1 ? '' : 's') + '. The league table is updated.', 'ok');
+    msg('resMsg', '✓ Results saved for ' + played.length + ' player' + (played.length === 1 ? '' : 's') + '. The league table is updated' +
+      ($('resComplete').checked ? ', and everyone has been sent the results. The lobby now shows the prizes.' : '.'), 'ok');
   };
 
   // ================= POINTS & SETTINGS =================
