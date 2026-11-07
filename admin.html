@@ -341,6 +341,7 @@
       <div id="resTable"></div>
       <label class="check"><input type="checkbox" id="resComplete" checked> Mark this event as completed</label>
       <button id="resSave" class="btn full" type="button">Save results</button>
+      <button id="resReport" class="btn secondary full" type="button" style="margin-top:8px">📊 Download night report (Excel)</button>
       <button id="resClear" class="btn danger full" type="button">Clear all results for this event</button>
       <div id="resMsg" class="msg"></div>
     </div>
@@ -382,6 +383,15 @@
       <ul id="feeList" class="evlist"></ul>
       <button id="feeChase" class="btn full" type="button" style="margin-top:10px">🏆 Chase league fee</button>
       <div id="feeMsg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>Season report</h2>
+      <p class="muted">An Excel file of the year to keep on file: the league table, every result, every event, each player’s totals (spent, won, up or down) and league fees. Night reports for single events are on the Results tab.</p>
+      <div class="row2">
+        <div><label for="repYear">Year</label><select id="repYear"></select></div>
+        <div style="display:flex;align-items:flex-end"><button id="repDownload" class="btn full" type="button">📊 Download</button></div>
+      </div>
+      <div id="repMsg" class="msg"></div>
     </div>
     <div class="card">
       <h2>Backup</h2>
@@ -649,6 +659,7 @@
       loadEvents();
     });
     fillResultsDropdown();
+    fillReportYears();
     paintTestPlayers();
   }
 
@@ -1106,6 +1117,239 @@
     await renderResults();
     msg('resMsg', '✓ Results saved for ' + played.length + ' player' + (played.length === 1 ? '' : 's') + '. The league table is updated' +
       ($('resComplete').checked ? ', and everyone has been sent the results. The lobby now shows the prizes.' : '.'), 'ok');
+  };
+
+  // ================= EXCEL REPORTS =================
+  // A tiny .xlsx builder (no outside library): an Excel file is a zip of XML files.
+  // sheets: [{ name, cols: [{ h: 'Header', w: 16, t: 'text'|'num'|'dp2'|'money' }], rows: [[...], ...], title? }]
+  const Xlsx = (() => {
+    const enc = new TextEncoder();
+    const x = (v) => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+    const colName = (i) => { let s = ''; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+    const STYLE = { text: 0, num: 0, dp2: 3, money: 2, head: 1, title: 4 };
+    function sheetXml(sh) {
+      const rows = [];
+      let r = 1;
+      if (sh.title) {
+        rows.push('<row r="' + r + '"><c r="A' + r + '" t="inlineStr" s="4"><is><t>' + x(sh.title) + '</t></is></c></row>'); r++;
+        if (sh.subtitle) { rows.push('<row r="' + r + '"><c r="A' + r + '" t="inlineStr"><is><t>' + x(sh.subtitle) + '</t></is></c></row>'); r++; }
+        r++;
+      }
+      const headRow = r;
+      rows.push('<row r="' + r + '">' + sh.cols.map((c, i) => '<c r="' + colName(i) + r + '" t="inlineStr" s="1"><is><t>' + x(c.h) + '</t></is></c>').join('') + '</row>'); r++;
+      for (const row of sh.rows) {
+        rows.push('<row r="' + r + '">' + row.map((v, i) => {
+          if (v === null || v === undefined || v === '') return '';
+          const ref = colName(i) + r, t = (sh.cols[i] || {}).t || 'text';
+          if (typeof v === 'number' && isFinite(v)) return '<c r="' + ref + '" s="' + (STYLE[t] || 0) + '"><v>' + v + '</v></c>';
+          return '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + x(v) + '</t></is></c>';
+        }).join('') + '</row>'); r++;
+      }
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        '<sheetViews><sheetView workbookViewId="0"><pane ySplit="' + headRow + '" topLeftCell="A' + (headRow + 1) + '" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+        '<cols>' + sh.cols.map((c, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + (c.w || 14) + '" customWidth="1"/>').join('') + '</cols>' +
+        '<sheetData>' + rows.join('') + '</sheetData></worksheet>';
+    }
+    const STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="2"><numFmt numFmtId="164" formatCode="&quot;£&quot;#,##0.00"/><numFmt numFmtId="165" formatCode="0.00"/></numFmts>' +
+      '<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
+      '<font><b/><sz val="14"/><color rgb="FF3A2013"/><name val="Calibri"/></font></fonts>' +
+      '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FF3A2013"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+      '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+      '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+      '<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+      '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    // CRC-32 and a plain (stored, uncompressed) zip
+    const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+    const crc32 = (b) => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+    function zip(files) {
+      const parts = [], central = []; let offset = 0;
+      const u16 = (v) => [v & 255, (v >>> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+      for (const f of files) {
+        const name = enc.encode(f.name), data = enc.encode(f.data), crc = crc32(data);
+        const head = [...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0)];
+        parts.push(new Uint8Array(head), name, data);
+        central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length),
+          ...u16(name.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset)]), name);
+        offset += head.length + name.length + data.length;
+      }
+      const cdSize = central.reduce((t, p) => t + p.length, 0);
+      const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cdSize), ...u32(offset), ...u16(0)]);
+      return new Blob([...parts, ...central, end], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+    function build(sheets) {
+      const safe = sheets.map((s, i) => ({ ...s, name: (s.name || 'Sheet' + (i + 1)).replace(/[\\\/\?\*\[\]:]/g, ' ').slice(0, 31) }));
+      const files = [
+        { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+          '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+          '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+          '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+          safe.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '</Types>' },
+        { name: '_rels/.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+        { name: 'xl/workbook.xml', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+          safe.map((s, i) => '<sheet name="' + x(s.name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets></workbook>' },
+        { name: 'xl/_rels/workbook.xml.rels', data: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          safe.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') +
+          '<Relationship Id="rId' + (safe.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+        { name: 'xl/styles.xml', data: STYLES },
+        ...safe.map((s, i) => ({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: sheetXml(s) }))
+      ];
+      return zip(files);
+    }
+    function download(sheets, filename) {
+      const blob = build(sheets), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    }
+    return { build, download };
+  })();
+
+  // ---- What goes in the reports ----
+  const gbp = (v) => '£' + (Number(v) % 1 ? Number(v).toFixed(2) : Number(v));
+  const pname = (id) => (players.find(p => p.id === id)?.display_name) || 'Former player';
+  const clockText = (t) => { t = Math.max(0, Math.round(t || 0)); return Math.floor(t / 3600) + ':' + String(Math.floor(t % 3600 / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+  const fileDate = (iso) => iso || new Date().toISOString().slice(0, 10);
+  const fileSafe = (s) => String(s || '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40);
+  function winnings(ev, rs, pot) {            // same rules as the app: places paid from the payout table, bounties per knockout
+    const won = {};
+    if (!pot || !rs.length) return won;
+    const order = [...rs].sort((a, b) => a.position - b.position);
+    (pot.places || []).forEach((p, i) => { const r = order[i]; if (r && Number(p.amount) > 0) (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).prize += Number(p.amount); });
+    const bv = Number(pot.bounty_value || 0);
+    if (ev.format === 'knockout' && bv > 0) {
+      let out = 0;
+      rs.forEach(r => { if (r.knockouts) { (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).bounty += r.knockouts * bv; out += r.knockouts * bv; } });
+      const left = Number(pot.bounty_pool || 0) - out;
+      if (left > 0.001 && order[0]) (won[order[0].player_id] = won[order[0].player_id] || { prize: 0, bounty: 0 }).bounty += left;
+    }
+    return won;
+  }
+
+  async function nightReport(eventId) {
+    const ev = events.find(e => e.id === eventId); if (!ev) throw new Error('Pick an event first.');
+    const [res, pr, att, ent, bu, se, pot] = await Promise.all([
+      db.from('results').select('*').eq('event_id', eventId),
+      db.from('player_results').select('player_id, points').eq('event_id', eventId),
+      db.from('attendance').select('*').eq('event_id', eventId),
+      db.from('event_entries').select('player_id, kind, confirmed').eq('event_id', eventId),
+      db.from('busts').select('player_id, by_player, final, clock_secs, created_at').eq('event_id', eventId).order('created_at'),
+      db.from('seating').select('player_id, table_no, seat_no, is_dealer').eq('event_id', eventId),
+      db.rpc('event_pot', { p_event: eventId })
+    ]);
+    const rs = res.data || [], pts = {}; (pr.data || []).forEach(r => pts[r.player_id] = Number(r.points));
+    const potD = pot.error ? null : pot.data, won = winnings(ev, rs, potD);
+    const busts = bu.error ? [] : (bu.data || []), seats = se.error ? [] : (se.data || []);
+    const entries = ent.data || [];
+    const cnt = (pid, kind) => entries.filter(e => e.player_id === pid && e.kind === kind && e.confirmed).length;
+    const order = [...rs].sort((a, b) => a.position - b.position);
+    const winner = order[0] ? pname(order[0].player_id) : '';
+    const rbP = ev.rebuy_price ?? ev.buy_in, adP = ev.addon_price ?? ev.buy_in;
+    const title = (ev.name ? ev.name + ' · ' : '') + niceDate(ev.event_date);
+    const sheets = [
+      { name: 'Summary', title: 'Gunslinger Poker League · night report', subtitle: title, cols: [{ h: 'Item', w: 22 }, { h: 'Detail', w: 44 }], rows: [
+        ['Event', ev.name || ''], ['Date', ev.event_date], ['Venue', ev.venue || ''], ['Host', ev.host || ''], ['Address', ev.address || ''],
+        ['Format', FMT_NAME[ev.format] || ev.format || ''], ['Buy-in', ev.buy_in != null ? gbp(ev.buy_in) : ''],
+        ...(ev.format === 'rebuy' || ev.format === 'knockout' ? [['Re-buy price', rbP != null ? gbp(rbP) : ''], ['Add-on price', adP != null ? gbp(adP) : '']] : []),
+        ['Players', String(rs.length || (att.data || []).filter(a => a.reply === 'in' && a.paid).length)],
+        ['Re-buys / add-ons', potD ? potD.rebuys + ' / ' + potD.addons : ''],
+        ['Prize pool', potD ? gbp(potD.pot) : ''], ...(ev.format === 'knockout' && potD ? [['Bounty pool', gbp(potD.bounty_pool)]] : []),
+        ['Tournament time', busts.length ? clockText(Math.max(...busts.map(b => b.clock_secs || 0))) : ''],
+        ['Winner', winner], ['Status', ev.status], ['Report made', new Date().toLocaleString('en-GB')]
+      ] },
+      { name: 'Results', title, cols: [{ h: 'Place', w: 7, t: 'num' }, { h: 'Player', w: 20 }, { h: 'League points', w: 13, t: 'dp2' }, { h: 'Knockouts', w: 11, t: 'num' },
+        { h: 'Re-buys', w: 9, t: 'num' }, { h: 'Add-ons', w: 9, t: 'num' }, { h: 'Spent', w: 10, t: 'money' }, { h: 'Prize', w: 10, t: 'money' }, { h: 'Bounties', w: 10, t: 'money' }, { h: 'Total won', w: 11, t: 'money' }],
+        rows: order.map(r => { const w = won[r.player_id] || { prize: 0, bounty: 0 };
+          return [r.position, pname(r.player_id), pts[r.player_id] ?? null, r.knockouts || 0, r.rebuys || 0, r.addons || 0,
+            Number(ev.buy_in || 0) + (r.rebuys || 0) * Number(rbP || 0) + (r.addons || 0) * Number(adP || 0), w.prize || 0, w.bounty || 0, (w.prize || 0) + (w.bounty || 0)]; }) }
+    ];
+    if (busts.length) sheets.push({ name: 'Knockouts', title, cols: [{ h: 'Time', w: 10 }, { h: 'Player out', w: 20 }, { h: 'Knocked out by', w: 20 }, { h: 'What happened', w: 16 }],
+      rows: busts.map(b => [b.clock_secs != null ? clockText(b.clock_secs) : '', pname(b.player_id), b.by_player ? pname(b.by_player) : '', b.final ? 'Out' : 'Re-bought']) });
+    if (seats.length) sheets.push({ name: 'Seating', title, cols: [{ h: ev.format === 'headsup' ? 'Match' : 'Table', w: 8, t: 'num' }, { h: 'Seat', w: 7, t: 'num' }, { h: 'Player', w: 20 }, { h: 'Dealer', w: 8 }],
+      rows: [...seats].sort((a, b) => a.table_no - b.table_no || a.seat_no - b.seat_no).map(s => [s.table_no, s.seat_no, pname(s.player_id), s.is_dealer ? 'Yes' : '']) });
+    sheets.push({ name: 'Replies and payments', title, cols: [{ h: 'Player', w: 20 }, { h: 'Reply', w: 9 }, { h: 'Buy-in paid', w: 11 }, { h: 'Re-buys', w: 9, t: 'num' }, { h: 'Add-ons', w: 9, t: 'num' }, { h: 'Note', w: 34 }],
+      rows: (att.data || []).sort((a, b) => ({ in: 0, maybe: 1, out: 2 }[a.reply] - { in: 0, maybe: 1, out: 2 }[b.reply]) || pname(a.player_id).localeCompare(pname(b.player_id)))
+        .map(a => [pname(a.player_id), { in: 'In', maybe: 'Maybe', out: 'Out' }[a.reply] || a.reply, a.reply === 'in' ? (a.paid ? 'Yes' : 'No') : '', cnt(a.player_id, 'rebuy'), cnt(a.player_id, 'addon'), a.comment || '']) });
+    Xlsx.download(sheets, 'GPL-night-' + fileDate(ev.event_date) + (ev.name ? '-' + fileSafe(ev.name) : '') + '.xlsx');
+  }
+
+  async function seasonReport(year) {
+    const evs = events.filter(e => e.status !== 'cancelled' && e.event_date.startsWith(String(year))).sort((a, b) => a.event_date.localeCompare(b.event_date));
+    const ids = evs.map(e => e.id);
+    const [lt, pr, res, st] = await Promise.all([
+      db.from('league_table').select('*'),
+      ids.length ? db.from('player_results').select('*').in('event_id', ids) : Promise.resolve({ data: [] }),
+      ids.length ? db.from('results').select('*').in('event_id', ids) : Promise.resolve({ data: [] }),
+      db.from('league_settings').select('season_name, league_fee').maybeSingle()
+    ]);
+    const fees = st.data && st.data.league_fee != null ? await db.from('league_fees').select('*') : { data: [] };
+    const pots = {}; await Promise.all(evs.filter(e => e.status === 'completed').map(async e => { const r = await db.rpc('event_pot', { p_event: e.id }); pots[e.id] = r.error ? null : r.data; }));
+    const resBy = {}; (res.data || []).forEach(r => (resBy[r.event_id] ||= []).push(r));
+    const wonBy = {}; evs.forEach(e => { wonBy[e.id] = winnings(e, resBy[e.id] || [], pots[e.id]); });
+    const wonTotal = (pid) => evs.reduce((t, e) => { const w = wonBy[e.id][pid]; return t + (w ? w.prize + w.bounty : 0); }, 0);
+    const evName = (id) => { const e = evs.find(x => x.id === id); return e ? (e.name || niceDate(e.event_date)) : ''; };
+    // League table in Phil's order
+    const n = (v) => Number(v || 0), avg = (p) => p.avg_finish == null ? 999 : Number(p.avg_finish);
+    const table = [...(lt.data || [])].sort((a, b) => (b.qualified - a.qualified) || n(b.league_points) - n(a.league_points) || b.wins - a.wins ||
+      a.last_places - b.last_places || avg(a) - avg(b) || a.rebuys - b.rebuys || a.display_name.localeCompare(b.display_name));
+    let q = 0;
+    const season = st.data?.season_name || '';
+    const sheets = [
+      { name: 'League table', title: 'Gunslinger Poker League · ' + season, subtitle: 'League table as it stands on ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+        cols: [{ h: 'Pos', w: 6 }, { h: 'Player', w: 20 }, { h: 'Points', w: 9, t: 'dp2' }, { h: 'Played', w: 8, t: 'num' }, { h: 'Wins', w: 7, t: 'num' }, { h: 'Last places', w: 11, t: 'num' },
+          { h: 'Avg finish', w: 10, t: 'dp2' }, { h: 'Best', w: 7, t: 'num' }, { h: 'Knockouts', w: 10, t: 'num' }, { h: 'Re-buys', w: 9, t: 'num' }, { h: 'Add-ons', w: 9, t: 'num' },
+          { h: 'Spent', w: 10, t: 'money' }, { h: 'Won (' + year + ')', w: 11, t: 'money' }, { h: 'Qualified', w: 10 }, { h: 'League fee', w: 11 }],
+        rows: table.map(p => [p.qualified ? ++q : '–', p.display_name, n(p.league_points), p.events_played, p.wins, p.last_places, p.avg_finish != null ? Number(p.avg_finish) : null,
+          p.best_finish, p.knockouts, p.rebuys, p.addons, n(p.total_spent), wonTotal(p.player_id), p.qualified ? 'Yes' : 'No', p.fee_paid === false ? 'Due' : (p.fee_paid ? 'Paid' : '')]) },
+      { name: 'Every result', title: 'Every result · ' + year, cols: [{ h: 'Date', w: 11 }, { h: 'Event', w: 24 }, { h: 'Place', w: 7, t: 'num' }, { h: 'Player', w: 20 }, { h: 'Field', w: 7, t: 'num' },
+          { h: 'Points', w: 9, t: 'dp2' }, { h: 'Counts', w: 8 }, { h: 'Knockouts', w: 10, t: 'num' }, { h: 'Re-buys', w: 9, t: 'num' }, { h: 'Add-ons', w: 9, t: 'num' }, { h: 'Spent', w: 10, t: 'money' }, { h: 'Won', w: 10, t: 'money' }],
+        rows: (pr.data || []).sort((a, b) => a.event_date.localeCompare(b.event_date) || a.position - b.position).map(r => { const w = (wonBy[r.event_id] || {})[r.player_id];
+          return [r.event_date, evName(r.event_id), r.position, pname(r.player_id), r.field_size, Number(r.points), r.counts ? 'Yes' : '', r.knockouts, r.rebuys, r.addons, Number(r.spent), w ? w.prize + w.bounty : 0]; }) },
+      { name: 'Events', title: 'Events · ' + year, cols: [{ h: 'Date', w: 11 }, { h: 'Event', w: 24 }, { h: 'Venue', w: 18 }, { h: 'Host', w: 14 }, { h: 'Format', w: 11 }, { h: 'Buy-in', w: 9, t: 'money' },
+          { h: 'Status', w: 11 }, { h: 'Players', w: 8, t: 'num' }, { h: 'Prize pool', w: 11, t: 'money' }, { h: 'Bounties', w: 10, t: 'money' }, { h: 'Winner', w: 18 }],
+        rows: evs.map(e => { const rs = resBy[e.id] || [], w = [...rs].sort((a, b) => a.position - b.position)[0], p = pots[e.id];
+          return [e.event_date, e.name || '', e.venue || '', e.host || '', FMT_NAME[e.format] || e.format || '', e.buy_in != null ? Number(e.buy_in) : null, e.status, rs.length || null,
+            p ? Number(p.pot) : null, p && e.format === 'knockout' ? Number(p.bounty_pool) : null, w ? pname(w.player_id) : '']; }) },
+      { name: 'Player totals', title: 'Player totals · ' + year, cols: [{ h: 'Player', w: 20 }, { h: 'Events', w: 8, t: 'num' }, { h: 'Wins', w: 7, t: 'num' }, { h: 'Top 3', w: 7, t: 'num' },
+          { h: 'Knockouts', w: 10, t: 'num' }, { h: 'Spent', w: 10, t: 'money' }, { h: 'Won', w: 10, t: 'money' }, { h: 'Up / down', w: 11, t: 'money' }],
+        rows: [...new Set((pr.data || []).map(r => r.player_id))].map(pid => { const mine = (pr.data || []).filter(r => r.player_id === pid);
+          const spent = mine.reduce((t, r) => t + Number(r.spent || 0), 0), won = wonTotal(pid);
+          return [pname(pid), mine.length, mine.filter(r => r.position === 1).length, mine.filter(r => r.position <= 3).length, mine.reduce((t, r) => t + (r.knockouts || 0), 0), spent, won, won - spent]; })
+          .sort((a, b) => b[7] - a[7]) }
+    ];
+    if ((fees.data || []).length || st.data?.league_fee) sheets.push({ name: 'League fees', title: 'League fees', cols: [{ h: 'Player', w: 20 }, { h: 'Season', w: 14 }, { h: 'Amount', w: 10, t: 'money' }, { h: 'Paid on', w: 12 }],
+      rows: (fees.data || []).sort((a, b) => a.season.localeCompare(b.season) || pname(a.player_id).localeCompare(pname(b.player_id)))
+        .map(f => [pname(f.player_id), f.season, Number(f.amount), (f.paid_at || '').slice(0, 10)]) });
+    Xlsx.download(sheets, 'GPL-season-report-' + year + '.xlsx');
+  }
+
+  $('resReport').onclick = async () => {
+    clear('resMsg'); busy($('resReport'), true, 'Making the report…');
+    try { await nightReport(Number($('resEvent').value)); msg('resMsg', '✓ Night report downloaded. It opens in Excel, Google Sheets or Numbers.', 'ok'); }
+    catch (e) { msg('resMsg', 'Couldn’t make the report: ' + (e.message || e)); }
+    busy($('resReport'), false);
+  };
+  function fillReportYears() {
+    const years = [...new Set(events.map(e => e.event_date.slice(0, 4)))].sort().reverse();
+    const now = String(new Date().getFullYear()); if (!years.includes(now)) years.unshift(now);
+    const keep = $('repYear').value;
+    $('repYear').innerHTML = years.map(y => '<option>' + y + '</option>').join('');
+    if (keep && years.includes(keep)) $('repYear').value = keep;
+  }
+  $('repDownload').onclick = async () => {
+    clear('repMsg'); busy($('repDownload'), true, 'Making the report…');
+    try { await seasonReport($('repYear').value); msg('repMsg', '✓ Season report for ' + $('repYear').value + ' downloaded.', 'ok'); }
+    catch (e) { msg('repMsg', 'Couldn’t make the report: ' + (e.message || e)); }
+    busy($('repDownload'), false);
   };
 
   // ================= POINTS & SETTINGS =================
