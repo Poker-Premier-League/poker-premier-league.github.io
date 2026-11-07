@@ -2846,7 +2846,7 @@
       const { error } = await db.rpc(fn, args);
       if (error) { alert('Couldn’t do that: ' + error.message); if (btn) btn.disabled = false; return false; }
       if (after) after();
-      await renderEvent(); return true;
+      await loadEvent(); return true;          // re-read the event too, so the clock state is fresh
     };
     box.querySelectorAll('[data-clock]').forEach(b => b.onclick = () => {
       const a = b.dataset.clock;
@@ -2886,14 +2886,14 @@
       if (end != null) {
         document.querySelectorAll('[data-rb-el]').forEach(el => el.textContent = hms(end - t));
         document.querySelectorAll('[data-rb-bar]').forEach(el => el.style.width = Math.min(100, t / end * 100).toFixed(1) + '%');
-        if (!ev.rebuys_closed && t >= end && !rbRan && box.querySelector('[data-rb-el]')) { rbRan = true; renderEvent(); }   // countdown just ran out
+        if (!ev.rebuys_closed && t >= end && !rbRan && box.querySelector('[data-rb-el]')) { rbRan = true; loadEvent(); }   // countdown just ran out
       }
     };
     if (!ev.clock_paused_at) liveTimer = setInterval(tick, 1000);
     // Everyone's phone checks for news every 10 seconds while the game is on
     livePoll = setInterval(() => {
       if (document.hidden || liveSheet || refreshing || busyEditing() || currentTab !== 'lobby') return;
-      renderEvent();
+      loadEvent();
     }, 10000);
   }
 
