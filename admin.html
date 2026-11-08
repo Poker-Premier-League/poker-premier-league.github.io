@@ -106,6 +106,8 @@
   .seg button { flex: 1 1 22%; min-width: 64px; padding: 11px 6px; border-radius: 10px; border: 1px solid #D9C2A3; background: #FFFBF3;
     font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); cursor: pointer; }
   .seg.small button { padding: 8px 4px; font-size: 13px; }
+  .seg button:disabled { opacity: .4; cursor: not-allowed; }
+  .pchips button { flex: 0 1 auto; padding-left: 14px; padding-right: 14px; }
   .seg button.on { background: linear-gradient(180deg, #EF8443, #D2591D); border-color: #C9561F; color: #fff; box-shadow: 0 3px 10px rgba(210,89,29,0.35); }
   .fmt-desc { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
   .opts { margin-top: 10px; padding: 4px 12px 12px; border-radius: 12px; background: rgba(229,112,47,0.07); border: 1px dashed rgba(229,112,47,0.45); }
@@ -270,25 +272,26 @@
         <p class="fmt-desc" id="evFormatDesc"></p>
 
         <div id="evRebuyOpts" class="opts hidden">
-          <label>Re-buys allowed per player</label>
-          <div class="seg small" id="evRebuyLimit">
-            <button type="button" data-v="1">1</button><button type="button" data-v="2">2</button>
-            <button type="button" data-v="3">3</button><button type="button" data-v="" class="on">Unlimited</button>
+          <div id="evKoRbWrap">
+            <label>Knockout type</label>
+            <div class="seg small" id="evKoRebuys">
+              <button type="button" data-v="1" class="on">With re-buys</button><button type="button" data-v="0">Freeze-out (no re-buys)</button>
+            </div>
           </div>
-          <label>Re-buy period</label>
-          <div class="seg small" id="evRebuyHours">
-            <button type="button" data-v="1">1 hr</button><button type="button" data-v="1.5">1.5 hrs</button>
-            <button type="button" data-v="2" class="on">2 hrs</button><button type="button" data-v="2.5">2.5 hrs</button>
-            <button type="button" data-v="other">Other</button>
+          <div id="evRbWrap">
+            <label>Re-buys allowed per player</label>
+            <div class="seg small" id="evRebuyLimit">
+              <button type="button" data-v="1">1</button><button type="button" data-v="2">2</button>
+              <button type="button" data-v="3">3</button><button type="button" data-v="" class="on">Unlimited</button>
+            </div>
+            <label for="evRbLevel">Re-buy period open till blind level <span class="opt">(optional)</span></label>
+            <input id="evRbLevel" type="text" maxlength="40" placeholder="e.g. 6">
+            <p class="muted small-note">An admin closes re-buys by hand on the night, from the live table.</p>
           </div>
-          <div id="evRbOther" class="row2 hidden" style="margin-top:8px">
-            <div><label for="evRbH">Hours</label>
-              <select id="evRbH"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
-            <div><label for="evRbM">Minutes</label>
-              <select id="evRbM"><option>0</option><option>15</option><option>30</option><option>45</option></select></div>
+          <label>Add-ons</label>
+          <div class="seg small" id="evAddonSeg">
+            <button type="button" data-v="1" class="on">Allowed</button><button type="button" data-v="0">Not allowed</button>
           </div>
-          <p class="muted small-note">Re-buys close by themselves when this runs out on the tournament clock. Admins can reopen them for a few minutes on the night.</p>
-          <label class="check"><input id="evAddonOn" type="checkbox" checked> Add-on when the re-buy period ends</label>
           <p class="muted small-note" id="evKoNote"></p>
         </div>
 
@@ -608,19 +611,20 @@
       $('pdAdd').onclick = () => add();
     } else if (k === 'venue') {
       const hosts = players.filter(p => p.can_host && !p.is_test);
-      box.innerHTML = '<label>Venues to choose from <span class="opt">(players who said they can host)</span></label><div class="pchecks">' +
-        (hosts.length ? hosts.map(p => '<label><input type="checkbox" data-host="' + p.id + '" checked> ' + esc(p.display_name) + (p.host_capacity ? ' (up to ' + p.host_capacity + ')' : '') + '</label>').join('') : '<span class="muted">Nobody has said they can host yet.</span>') +
-        '</div><label for="pvOther">Another venue <span class="opt">(optional)</span></label><input id="pvOther" type="text" maxlength="80" placeholder="e.g. The Red Lion back room">';
+      box.innerHTML = '<label>Venues to choose from <span class="opt">(players who said they can host)</span></label>' +
+        (hosts.length ? '<div class="seg small pchips">' + hosts.map(p => '<button type="button" class="on" data-host="' + p.id + '">' + esc(p.display_name) + (p.host_capacity ? ' (up to ' + p.host_capacity + ')' : '') + '</button>').join('') + '</div>' : '<p class="muted">Nobody has said they can host yet.</p>') +
+        '<p class="muted small-note">Tap to take a venue in or out of the poll.</p><label for="pvOther">Another venue <span class="opt">(optional)</span></label><input id="pvOther" type="text" maxlength="80" placeholder="e.g. The Red Lion back room">';
     } else {
       const lastDate = pollData.polls.find(p => p.kind === 'date');
       let yays = null;
       if (lastDate) { const os = pollData.opts.filter(o => o.poll_id === lastDate.id);
         const counts = os.map(o => pollData.votes.filter(v => v.option_id === o.id && v.vote === 'yay').length); yays = counts.length ? Math.max(...counts) : null; }
       const huOk = [4, 8, 16, 32].includes(yays);
-      box.innerHTML = '<label>Formats to choose from</label><div class="pchecks">' +
-        ['freezeout', 'rebuy', 'knockout', 'headsup'].map(f => '<label><input type="checkbox" data-format="' + f + '"' + (f === 'headsup' ? (huOk ? '' : ' disabled') : ' checked') + '> ' + FORMAT_LABELS[f] + '</label>').join('') + '</div>' +
+      box.innerHTML = '<label>Formats to choose from <span class="opt">(tap to pick)</span></label><div class="seg small pchips">' +
+        ['freezeout', 'rebuy', 'knockout', 'headsup'].map(f => '<button type="button" data-format="' + f + '"' + (f === 'headsup' ? (huOk ? '' : ' disabled') : ' class="on"') + '>' + FORMAT_LABELS[f] + '</button>').join('') + '</div>' +
         '<p class="muted small-note">Heads Up can only be offered when exactly 4, 8, 16 or 32 players have said Yay' + (yays != null ? ' (the top date in your last date poll has ' + yays + ')' : '') + '.</p>';
     }
+    box.querySelectorAll('.pchips button').forEach(b => b.onclick = () => b.classList.toggle('on'));
   }
   $('pollKind').querySelectorAll('button').forEach(b => b.onclick = () => { setSeg('pollKind', b.dataset.v); delete $('pollTitle').dataset.touched; paintPollOpts(); });
   $('pollTitle').oninput = () => { $('pollTitle').dataset.touched = '1'; };
@@ -633,11 +637,11 @@
       options = [...document.querySelectorAll('#pdates .pdate-row')].map(r => ({ d: r.children[0].value, t: r.children[1].value })).filter(x => x.d)
         .map((x, i) => ({ label: new Date(x.d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + (x.t ? ' · ' + x.t : ''), opt_date: x.d, opt_time: x.t || null, sort: i }));
     } else if (k === 'venue') {
-      options = [...document.querySelectorAll('[data-host]:checked')].map((c, i) => { const p = players.find(x => x.id === c.dataset.host);
+      options = [...document.querySelectorAll('#pollOpts [data-host].on')].map((c, i) => { const p = players.find(x => x.id === c.dataset.host);
         return { label: (p?.display_name || 'Host') + '’s place', host_id: c.dataset.host, sort: i }; });
       if ($('pvOther').value.trim()) options.push({ label: $('pvOther').value.trim(), sort: options.length });
     } else {
-      options = [...document.querySelectorAll('[data-format]:checked')].map((c, i) => ({ label: FORMAT_LABELS[c.dataset.format], format: c.dataset.format, sort: i }));
+      options = [...document.querySelectorAll('#pollOpts [data-format].on')].map((c, i) => ({ label: FORMAT_LABELS[c.dataset.format], format: c.dataset.format, sort: i }));
     }
     if (options.length < 2) return msg('pollMsg', 'Add at least two options to choose from.');
     if (!confirm('Send "' + title + '" to everyone with ' + options.length + ' options? It opens straight away.')) return;
@@ -919,23 +923,11 @@
     16: ['Round 1', 'Quarter-finals', 'Semi-finals', 'Final'], 32: ['Round 1', 'Round 2', 'Quarter-finals', 'Semi-finals', 'Final'] };
   const segVal = (id) => { const b = $(id).querySelector('button.on'); return b ? b.dataset.v : ''; };
   function setSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v ?? ''))); }
-  ['evFormat', 'evRebuyLimit', 'evRebuyHours'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
-    setSeg(id, b.dataset.v); if (id === 'evFormat') paintFormat();
-    if (id === 'evRebuyHours') $('evRbOther').classList.toggle('hidden', b.dataset.v !== 'other');
+  ['evFormat', 'evRebuyLimit', 'evKoRebuys', 'evAddonSeg'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    setSeg(id, b.dataset.v); if (id !== 'evRebuyLimit') paintFormat();
   }));
-  // Re-buy period: a quick button, or "Other" with hours and minutes typed in (part 18)
-  const QUICK_HOURS = ['1', '1.5', '2', '2.5'];
-  function setRebuyHours(h) {
-    const v = h == null ? '2' : String(Number(h));
-    const quick = QUICK_HOURS.includes(v);
-    setSeg('evRebuyHours', quick ? v : 'other');
-    $('evRbOther').classList.toggle('hidden', quick);
-    if (!quick) { $('evRbH').value = String(Math.floor(Number(v))); $('evRbM').value = String(Math.round((Number(v) % 1) * 60 / 15) * 15); }
-  }
-  function rebuyHoursVal() {
-    const v = segVal('evRebuyHours');
-    return v === 'other' ? Number($('evRbH').value) + Number($('evRbM').value) / 60 : Number(v);
-  }
+  const addonOn = () => segVal('evAddonSeg') === '1';
+  const rebuysOn = () => segVal('evFormat') === 'rebuy' || (segVal('evFormat') === 'knockout' && segVal('evKoRebuys') === '1');
   function paintHuStacks(values) {
     const n = Number($('evHuPlayers').value), rounds = HU_ROUNDS[n];
     const old = values || [...$('evHuStacks').querySelectorAll('input')].map(i => Number(i.value) || 50);
@@ -955,7 +947,11 @@
     $('evFormatDesc').textContent = FORMATS[f];
     const re = f === 'rebuy' || f === 'knockout', hu = f === 'headsup';
     $('evRebuyOpts').classList.toggle('hidden', !re);
-    $('evPrices').classList.toggle('hidden', !re);
+    $('evKoRbWrap').classList.toggle('hidden', f !== 'knockout');
+    $('evRbWrap').classList.toggle('hidden', !rebuysOn());
+    $('evPrices').classList.toggle('hidden', !re || (!rebuysOn() && !addonOn()));
+    $('evRebuy').parentNode.classList.toggle('hidden', !rebuysOn());
+    $('evAddon').parentNode.classList.toggle('hidden', !addonOn());
     $('evHuOpts').classList.toggle('hidden', !hu);
     $('evMaxWrap').classList.toggle('hidden', hu);
     if (hu && !$('evHuStacks').children.length) paintHuStacks();
@@ -987,7 +983,7 @@
 
   function resetEventForm() {
     $('evForm').reset();
-    setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setRebuyHours(2);
+    setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setSeg('evKoRebuys', '1'); setSeg('evAddonSeg', '1'); $('evRbLevel').value = '';
     $('evHuStacks').innerHTML = '';
     $('evHostPick').value = ''; showHostInfo(null);
     paintFormat();
@@ -1016,8 +1012,9 @@
     $('evClosed').checked = !!ev.registration_closed;
     setSeg('evFormat', ev.format || 'freezeout');
     setSeg('evRebuyLimit', ev.rebuy_limit ?? '');
-    setRebuyHours(ev.rebuy_hours);
-    $('evAddonOn').checked = ev.addon_allowed !== false;
+    setSeg('evKoRebuys', ev.ko_rebuys === false ? '0' : '1');
+    setSeg('evAddonSeg', ev.addon_allowed === false ? '0' : '1');
+    $('evRbLevel').value = ev.rebuy_level || '';
     if (ev.format === 'headsup') {
       $('evHuPlayers').value = String([4, 8, 16, 32].includes(ev.max_players) ? ev.max_players : 8);
       paintHuStacks(ev.hu_stacks || []);
@@ -1061,14 +1058,15 @@
     }
     const maxP = hu ? Number($('evHuPlayers').value) : ($('evMax').value === '' ? null : Number($('evMax').value));
     if (maxP != null && !(maxP >= 2 && maxP <= 40)) return msg('evMsg', 'The player limit should be between 2 and 40.');
-    if (re && !(rebuyHoursVal() >= 0.25 && rebuyHoursVal() <= 8)) return msg('evMsg', 'The re-buy period should be between 15 minutes and 8 hours.');
     const row = {
       name: $('evName').value.trim() || null,
       address: $('evAddress').value.trim() || null,
       format: fmt,
-      rebuy_limit: re && segVal('evRebuyLimit') !== '' ? Number(segVal('evRebuyLimit')) : null,
-      rebuy_hours: re ? rebuyHoursVal() : null,
-      addon_allowed: re ? $('evAddonOn').checked : false,
+      rebuy_limit: rebuysOn() && segVal('evRebuyLimit') !== '' ? Number(segVal('evRebuyLimit')) : null,
+      rebuy_hours: null,
+      rebuy_level: rebuysOn() ? ($('evRbLevel').value.trim() || null) : null,
+      ko_rebuys: fmt !== 'knockout' || segVal('evKoRebuys') === '1',
+      addon_allowed: re ? addonOn() : false,
       hu_stacks: stacks,
       hu_final_bo3: hu ? $('evHuBo3').checked : false,
       max_players: maxP,
@@ -1079,8 +1077,8 @@
       venue: $('evVenue').value.trim() || null,
       host: $('evHost').value.trim() || null,
       buy_in: buyIn,
-      rebuy_price: !re || $('evRebuy').value === '' ? null : Number($('evRebuy').value),
-      addon_price: !re || !$('evAddonOn').checked ? null
+      rebuy_price: !rebuysOn() || $('evRebuy').value === '' ? null : Number($('evRebuy').value),
+      addon_price: !re || !addonOn() ? null
         : ($('evAddon').value === '' ? (buyIn != null ? Math.round(buyIn * 50) / 100 : null) : Number($('evAddon').value)),
       notes: $('evNotes').value.trim() || null,
       pay_link: $('evPay').value.trim() || null

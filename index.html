@@ -1295,6 +1295,14 @@
   .live-rb { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.3); font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
   .live-rb b { font-variant-numeric: tabular-nums; color: #FBC891; }
   .live-rb.closed { color: rgba(246,234,213,.7); }
+  .approvals { margin: 4px 0 10px; padding: 10px; border-radius: 12px; background: rgba(229,112,47,.16); border: 1.5px solid #E5702F; }
+  .ap-h { font: 600 14px 'Oswald', sans-serif; letter-spacing: .04em; text-transform: uppercase; color: #FBC891; margin-bottom: 6px; }
+  .ap-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid rgba(246,234,213,.12); }
+  .ap-row:first-of-type { border-top: 0; }
+  .ap-n { flex: 1; min-width: 0; font-size: 14px; line-height: 1.25; color: #F6EAD5; overflow-wrap: anywhere; }
+  .ap-ok { flex: none; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #E5702F; color: #1E0F07; font: 600 14px 'Oswald', sans-serif; cursor: pointer; }
+  .ap-no { flex: none; width: 40px; min-height: 40px; border-radius: 10px; border: 1px solid rgba(246,234,213,.35); background: transparent; color: #F6EAD5; font-size: 15px; cursor: pointer; }
+  .ap-note { margin: 6px 0 0; font-size: 12px; color: rgba(246,234,213,.7); }
   .live-bar { display: block; height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
   .live-bar span { display: block; height: 100%; background: linear-gradient(90deg, #FBC891, #E5702F); border-radius: 3px; transition: width 1s linear; }
   .live-tiles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 10px 0 0; }
@@ -2744,6 +2752,21 @@
     });
   }
 
+  // Phil's seat order: 1 at the top, then 2/3, 4/5, 6/7 down the left and right, 8/9 at the bottom
+  //          1
+  //     2         3
+  //  4               5
+  //     6         7
+  //        8   9
+  const LD_ANGLES = [-90, -150, -30, 180, 0, 150, 30, 110, 70];
+  function ldSeatAngle(i, n) {
+    if (n === 9) return LD_ANGLES[i];
+    if (i === 0) return -90;
+    const pairs = Math.floor((n - 1) / 2);
+    if (n % 2 === 0 && i === n - 1) return 90;              // an even table: the last seat sits at the bottom
+    const j = Math.ceil(i / 2), t = j * 180 / (pairs + (n % 2 === 0 ? 1 : 0.6));
+    return i % 2 ? -90 - t : -90 + t;                         // odd seats down the left, even down the right
+  }
   function lastDrawTable(rows, n, chips) {
     const th = TABLE_THEMES[tableStyle()];
     const style = '--felt1:' + th.felt1 + ';--felt2:' + th.felt2 + ';--rail1:' + th.rail1 + ';--rail2:' + th.rail2 + ';--trim:' + th.trim + ';--logo-op:' + th.logo +
@@ -2753,7 +2776,7 @@
     let html = '<div class="gtable ld" style="' + style + '" role="img" aria-label="The Last Draw final table">' +
       '<div class="rail"></div><div class="felt"><img src="images/gpl-badge-simple.webp" alt=""></div>';
     for (let i = 0; i < n; i++) {
-      const a = -Math.PI / 2 + 2 * Math.PI * i / n;
+      const a = ldSeatAngle(i, n) * Math.PI / 180;
       const x = 50 + 41 * Math.cos(a), y = 50 + 42.5 * Math.sin(a);
       const p = rows[i];
       if (!p) { html += '<div class="gseat open" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%"><span class="ring"><span class="av open-av">' + (i + 1) + '</span></span><span class="plate"><span class="nm">Seat open</span></span></div>'; continue; }
@@ -3111,7 +3134,7 @@
     }
     const { data: pay } = await db.from('league_settings').select('default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
     // Money (part 12): prize pool + re-buys/add-ons. Quietly skipped if not set up yet.
-    const hasRebuys = ev.format === 'rebuy' || ev.format === 'knockout';
+    const hasRebuys = hasEntries(ev);
     const [potRes, entRes, seatRes] = await Promise.all([
       db.rpc('event_pot', { p_event: ev.id }),
       hasRebuys ? db.from('event_entries').select('id, player_id, kind, confirmed').eq('event_id', ev.id).order('created_at') : Promise.resolve({ data: [] }),
@@ -3404,10 +3427,20 @@
   // ---- Live tournament table (phase 4, step 2) ----
   const clockSecs = (ev) => !ev.clock_started_at ? null : Math.max(0,
     ((ev.clock_paused_at ? Date.parse(ev.clock_paused_at) : Date.now()) - Date.parse(ev.clock_started_at)) / 1000 - (ev.clock_paused_secs || 0));
-  const rebuyEndSecs = (ev) => ev.rebuy_hours == null ? null : (Number(ev.rebuy_hours) * 60 + (ev.rebuy_extra_min || 0)) * 60;
-  function rebuysTimerOpen(ev) {                    // before the clock starts, or with no period set, it's down to the admins
-    if (!ev.clock_started_at || rebuyEndSecs(ev) == null) return true;
-    return clockSecs(ev) < rebuyEndSecs(ev);
+  // Re-buys (part 25): open till a blind level, closed by hand by an admin. A Knockout can be a freeze-out.
+  const canRebuy = (ev) => ev.format === 'rebuy' || (ev.format === 'knockout' && ev.ko_rebuys !== false);
+  const hasEntries = (ev) => canRebuy(ev) || (ev.format === 'knockout' && ev.addon_allowed !== false);
+  const rebuysOpen = (ev) => canRebuy(ev) && !ev.rebuys_closed && !ev.rebuys_stopped;
+  const levelText = (ev) => ev.rebuy_level ? (/^\d+$/.test(ev.rebuy_level.trim()) ? 'blind level ' + ev.rebuy_level.trim() : ev.rebuy_level.trim()) : '';
+  function approvalsBlock(ev, entries) {       // admins: re-buys and add-ons waiting for the money to land
+    const pend = entries.filter(e => !e.confirmed);
+    if (!pend.length) return '';
+    const price = (k) => k === 'addon' ? (ev.addon_price ?? ev.buy_in) : (ev.rebuy_price ?? ev.buy_in);
+    return '<div class="approvals"><div class="ap-h">⏳ ' + pend.length + ' waiting for approval</div>' +
+      pend.map(e => '<div class="ap-row">' + avatarHtml(e.player_id, 30) + '<span class="ap-n"><b>' + esc(firstName(e.player_id)) + '</b> ' +
+        (e.kind === 'addon' ? 'add-on' : 're-buy') + (price(e.kind) != null ? ' · ' + money(price(e.kind)) : '') + '</span>' +
+        '<button type="button" class="ap-ok" data-ok="' + e.id + '">✓ Approve</button><button type="button" class="ap-no" data-no="' + e.id + '" aria-label="Turn down">✕</button></div>').join('') +
+      '<p class="ap-note">Approve once the money has landed.</p></div>';
   }
   const hms = (t) => { t = Math.max(0, Math.floor(t)); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = t % 60;
     return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
@@ -3421,10 +3454,10 @@
     if (!ev.clock_started_at) {
       if (!admin || field.length < 2) return '';
       return '<div class="live" id="liveBox"><div class="live-top"><span class="live-dot off"></span><h4>Tournament clock</h4></div>' +
-        '<p class="st-sub">' + field.length + ' paid players. Start the clock when the cards are in the air. Re-buys close by themselves when the period runs out.</p>' +
+        '<p class="st-sub">' + field.length + ' paid players. Start the clock when the cards are in the air.' + (canRebuy(ev) ? ' Close re-buys from here when the time comes.' : '') + '</p>' +
         '<div class="admin-zone"><div class="az-l">🛠 Admin only</div><div class="seat-admin"><button type="button" class="go" data-clock="start">⏱ Start the clock</button></div></div></div>';
     }
-    const hasRb = ev.format === 'rebuy' || ev.format === 'knockout';
+    const hasRb = hasEntries(ev);
     const finals = busts.filter(b => b.final);
     const outIds = new Set(finals.map(b => b.player_id));
     const stillIn = field.filter(id => !outIds.has(id)).sort((a, b) => firstName(a).localeCompare(firstName(b)));
@@ -3432,7 +3465,6 @@
     const cnt = (pid, kind) => entries.filter(e => e.player_id === pid && e.kind === kind && e.confirmed).length;
     const pend = (pid) => entries.some(e => e.player_id === pid && !e.confirmed);
     const paused = !!ev.clock_paused_at;
-    const end = rebuyEndSecs(ev);
     // One player left = we have a winner: the clock stops at the last knockout
     const winner = stillIn.length === 1 && finals.length > 0 ? stillIn[0] : null;
     const endSecs = winner ? Math.max(...finals.map(b => b.clock_secs || 0)) : null;
@@ -3445,15 +3477,13 @@
         (admin ? '' : '<p class="st-sub" style="text-align:center">Prizes show here once Alex or Phil confirm the results.</p>');
     }
 
-    // Re-buy countdown
+    // Re-buy status
     if (hasRb) {
-      if (ev.rebuys_closed) html += '<div class="live-rb closed">Re-buys and add-ons are closed</div>';
-      else if (end == null) html += '<div class="live-rb">Re-buys open until an admin closes them</div>';
-      else if (rebuysTimerOpen(ev)) {
-        const pct = Math.min(100, clockSecs(ev) / end * 100);
-        html += '<div class="live-rb"><span>Re-buys close in <b data-rb-el>' + hms(end - clockSecs(ev)) + '</b></span>' +
-          '<span class="live-bar"><span data-rb-bar style="width:' + pct.toFixed(1) + '%"></span></span></div>';
-      } else html += '<div class="live-rb closed">Re-buy period over' + (ev.addon_allowed !== false ? ' · add-ons still open' : '') + '</div>';
+      const addons = ev.addon_allowed !== false;
+      if (ev.rebuys_closed) html += '<div class="live-rb closed">' + (canRebuy(ev) ? 'Re-buys' + (addons ? ' and add-ons' : '') : 'Add-ons') + ' are closed</div>';
+      else if (rebuysOpen(ev)) html += '<div class="live-rb"><span>🔁 Re-buys open' + (levelText(ev) ? ' till <b>' + esc(levelText(ev)) + '</b>' : ' until an admin closes them') + (addons ? ' · add-ons too' : '') + '</span></div>';
+      else if (canRebuy(ev)) html += '<div class="live-rb closed">Re-buys are closed' + (addons ? ' · add-ons still open' : '') + '</div>';
+      else html += '<div class="live-rb">Freeze-out: no re-buys' + (addons ? ' · add-ons open' : '') + '</div>';
     }
 
     // Tiles
@@ -3466,8 +3496,10 @@
     // Admin controls
     if (admin) {
       html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div>' + (winner ? '' : '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>');
-      if (!winner && hasRb && end != null && (!rebuysTimerOpen(ev) || ev.rebuys_closed))
-        html += '<div class="live-reopen"><span>Reopen re-buys for</span><button type="button" data-reopen="10">10m</button><button type="button" data-reopen="15">15m</button><button type="button" data-reopen="30">30m</button></div>';
+      if (hasRb) html += approvalsBlock(ev, entries);
+      if (!winner && canRebuy(ev) && !ev.rebuys_closed)
+        html += '<div class="seat-admin">' + (rebuysOpen(ev) ? '<button type="button" data-rbstop="1">🔒 Close re-buys' + (ev.addon_allowed !== false ? ' (add-ons stay open)' : '') + '</button>'
+          : '<button type="button" data-rbstop="0">🔓 Reopen re-buys</button>') + '</div>';
       html += '<a class="live-finish' + (winner ? ' go' : '') + '" href="admin.html#results=' + ev.id + '">🏁 Finish the night' + (winner ? ': check and save the results' : ' early') + '</a>';
       html += '<button type="button" class="textlink light live-reset" data-clock="reset">Reset the clock</button></div>';
     }
@@ -3527,10 +3559,10 @@
     }
     // step 'rebuy': re-buy or out for good
     const rb = entries.filter(e => e.player_id === sh.pid && e.kind === 'rebuy').length;
-    const canRb = (ev.format === 'rebuy' || ev.format === 'knockout') && !ev.rebuys_closed && rebuysTimerOpen(ev) && !(ev.rebuy_limit != null && rb >= ev.rebuy_limit);
+    const canRb = rebuysOpen(ev) && !(ev.rebuy_limit != null && rb >= ev.rebuy_limit);
     const price = ev.rebuy_price ?? ev.buy_in;
     return '<div class="live-sheet"><div class="ls-title">' + (sh.by ? 'Knocked out by ' + esc(sh.by === me.id ? 'you' : firstName(sh.by)) : 'Went out') + '</div>' +
-      (canRb ? '<p class="ls-p">Re-buys are still open' + (rebuyEndSecs(ev) != null ? ' for <b data-rb-el>' + hms(rebuyEndSecs(ev) - clockSecs(ev)) + '</b>' : '') + '.</p>' : '') +
+      (canRb ? '<p class="ls-p">Re-buys are still open' + (levelText(ev) ? ' till ' + esc(levelText(ev)) : '') + '.</p>' : '') +
       '<div class="ls-btns">' + (canRb ? '<button type="button" class="go" data-ls="rebuy">🔁 Re-buy' + (price != null ? ' ' + money(price) : '') + '</button>' : '') +
       '<button type="button" class="' + (canRb ? '' : 'go') + '" data-ls="final">' + (sh.pid === me.id ? 'I’m out for good' : 'Out for good') + '</button>' +
       '<button type="button" data-ls="back">Back</button></div>' +
@@ -3553,8 +3585,13 @@
       if (a === 'start' && !confirm('Start the tournament clock now?')) return;
       rpcRun(b, 'clock_control', { p_event: ev.id, p_action: a }, () => { if (a === 'start') Sound.chips(); });
     });
-    box.querySelectorAll('[data-reopen]').forEach(b => b.onclick = () => {
-      if (confirm('Reopen re-buys for ' + b.dataset.reopen + ' minutes?')) rpcRun(b, 'clock_control', { p_event: ev.id, p_action: 'reopen', p_minutes: Number(b.dataset.reopen) });
+    box.querySelectorAll('[data-rbstop]').forEach(b => b.onclick = async () => {
+      const stop = b.dataset.rbstop === '1';
+      if (!confirm(stop ? 'Close re-buys now?' + (ev.addon_allowed !== false ? ' Add-ons stay open until you close them on the prize pool card.' : '') : 'Reopen re-buys?')) return;
+      b.disabled = true;
+      const { error } = await db.from('events').update({ rebuys_stopped: stop }).eq('id', ev.id);
+      if (error) { alert('Couldn’t do that: ' + error.message); b.disabled = false; return; }
+      await loadEvent();
     });
     box.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { liveSheet = { pid: b.dataset.out, step: 'who', by: null }; renderEvent(); });
     box.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { liveSheet = { step: 'edit', bustId: Number(b.dataset.edit) }; renderEvent(); });
@@ -3578,15 +3615,9 @@
     });
     if (!ev.clock_started_at) return;
     // Tick the clocks every second without redrawing the card
-    let rbRan = false;
     const tick = () => {
-      const t = clockSecs(ev), end = rebuyEndSecs(ev);
+      const t = clockSecs(ev);
       document.querySelectorAll('[data-clock-el]').forEach(el => el.textContent = hms(t));
-      if (end != null) {
-        document.querySelectorAll('[data-rb-el]').forEach(el => el.textContent = hms(end - t));
-        document.querySelectorAll('[data-rb-bar]').forEach(el => el.style.width = Math.min(100, t / end * 100).toFixed(1) + '%');
-        if (!ev.rebuys_closed && t >= end && !rbRan && box.querySelector('[data-rb-el]')) { rbRan = true; loadEvent(); }   // countdown just ran out
-      }
     };
     if (!ev.clock_paused_at && box.querySelector('[data-clock-el]')) liveTimer = setInterval(tick, 1000);
     // Everyone's phone checks for news every 10 seconds while the game is on
@@ -3615,10 +3646,11 @@
     const bits = [];
     if (f === 'rebuy' || f === 'knockout') {
       const hrs = ev.rebuy_hours != null ? Number(ev.rebuy_hours) : null;
-      bits.push((ev.rebuy_limit ? 'Up to ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit > 1 ? 's' : '') : 'Unlimited re-buys') +
-        (hrs ? ' in the first ' + hrsText(hrs) : '') +
+      if (!canRebuy(ev)) bits.push('Freeze-out Knockout: no re-buys');
+      else bits.push((ev.rebuy_limit ? 'Up to ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit > 1 ? 's' : '') : 'Unlimited re-buys') +
+        (levelText(ev) ? ' till ' + levelText(ev) : hrs ? ' in the first ' + hrsText(hrs) : '') +
         (ev.rebuy_price != null && ev.buy_in != null && Number(ev.rebuy_price) !== Number(ev.buy_in) ? ' (' + money(ev.rebuy_price) + ' each)' : ''));
-      if (ev.addon_allowed !== false) bits.push('Add-on' + (ev.addon_price != null ? ' ' + money(ev.addon_price) : '') + ' when re-buys close');
+      bits.push(ev.addon_allowed !== false ? 'Add-on' + (ev.addon_price != null ? ' ' + money(ev.addon_price) : '') + (canRebuy(ev) ? ' when re-buys close' : ' allowed') : 'No add-ons');
       if (f === 'knockout' && ev.buy_in != null) bits.push(money(Math.round(ev.buy_in * 25) / 100) + ' bounty on every entry');
     } else if (f === 'headsup') {
       const names = HU_ROUND_NAMES[ev.max_players] || [];
@@ -3636,7 +3668,7 @@
   const placeName = (p) => p.label ? p.label + ' (' + ordinal(p.place) + ')' : ordinal(p.place);
   function prizeBox(ev, pot) {
     if (!pot || (!pot.buyins && !me.is_admin)) return '';
-    const hasRebuys = ev.format === 'rebuy' || ev.format === 'knockout';
+    const hasRebuys = hasEntries(ev);
     const bits = [pot.buyins + ' buy-in' + (pot.buyins === 1 ? '' : 's')];
     if (pot.rebuys) bits.push(pot.rebuys + ' re-buy' + (pot.rebuys === 1 ? '' : 's'));
     if (pot.addons) bits.push(pot.addons + ' add-on' + (pot.addons === 1 ? '' : 's'));
@@ -3650,11 +3682,11 @@
       const why = [];
       if (pot.unpaid) why.push(pot.unpaid + ' buy-in' + (pot.unpaid === 1 ? '' : 's') + ' still to confirm');
       if (pot.pending) why.push(pot.pending + ' re-buy/add-on request' + (pot.pending === 1 ? '' : 's') + ' to approve');
-      if (hasRebuys && !ev.rebuys_closed) why.push('re-buys still open');
+      if (hasRebuys && !ev.rebuys_closed) why.push(rebuysOpen(ev) ? 're-buys still open' : 'add-ons still open');
       html += '<p class="pz-wait">Payouts appear once all the money is in' + (why.length ? ': ' + why.join(', ') : '') + '.</p>';
     }
     if (me.is_admin && hasRebuys) {
-      html += '<button id="toggleRebuys" type="button" class="btn secondary small">' + (ev.rebuys_closed ? '🔓 Reopen re-buys' : '🔒 Close re-buys and add-ons') + '</button>';
+      html += '<button id="toggleRebuys" type="button" class="btn secondary small">' + (ev.rebuys_closed ? '🔓 Reopen ' + (canRebuy(ev) ? 're-buys' : 'add-ons') : '🔒 Close ' + (canRebuy(ev) ? 're-buys' + (ev.addon_allowed !== false ? ' and add-ons' : '') : 'add-ons')) + '</button>';
       if (pot.rebuys || pot.addons || pot.pending) html += '<button id="clearEntries" type="button" class="textlink pz-clear">Clear all re-buys and add-ons</button>';
     }
     return html + '</div>';
@@ -3672,7 +3704,7 @@
     return '<span class="ent-admin">' +
       pend.map(e => '<button type="button" class="ent-ok" data-ok="' + e.id + '" title="Money landed: approve">✓ Approve ' + (e.kind === 'addon' ? 'add-on' : 're-buy') + '</button>' +
         '<button type="button" class="ent-no" data-no="' + e.id + '" aria-label="Turn down this request">✕</button>').join('') +
-      '<button type="button" class="ent-add" data-add="rebuy" data-pid="' + pid + '" title="Add a re-buy (already paid)">+🔁</button>' +
+      (canRebuy(ev) ? '<button type="button" class="ent-add" data-add="rebuy" data-pid="' + pid + '" title="Add a re-buy (already paid)">+🔁</button>' : '') +
       (ev.addon_allowed !== false ? '<button type="button" class="ent-add" data-add="addon" data-pid="' + pid + '" title="Add an add-on (already paid)">+➕</button>' : '') +
       (lastOf('rebuy') ? '<button type="button" class="ent-del" data-del="' + lastOf('rebuy').id + '" data-what="re-buy" data-pid="' + pid + '" title="Remove a re-buy">−🔁</button>' : '') +
       (lastOf('addon') ? '<button type="button" class="ent-del" data-del="' + lastOf('addon').id + '" data-what="add-on" data-pid="' + pid + '" title="Remove the add-on">−➕</button>' : '') +
@@ -3694,7 +3726,8 @@
     let html = '<div class="rebuy-box"><div class="rb-head">🔁 Re-buys and add-ons</div>';
     if (status.length) html += '<div class="rb-mine">You\u2019ve had: ' + status.join(' + ') + '</div>';
     if (ev.rebuys_closed) return html + '<p class="pz-wait">Re-buys and add-ons are closed.</p></div>';
-    const rbTimeUp = !rebuysTimerOpen(ev);           // the re-buy period has run out on the clock (add-ons still open)
+    const rbTimeUp = canRebuy(ev) && !rebuysOpen(ev);   // an admin has closed re-buys (add-ons may still be open)
+    const noRb = !canRebuy(ev);                          // freeze-out Knockout: add-on only
     const link = ev.pay_link || pay?.default_pay_link || '';
     if (pending) {
       const price = pending.kind === 'addon' ? adPrice : rbPrice;
@@ -3703,16 +3736,17 @@
         (link ? '<a class="btn pay-monzo" target="_blank" rel="noopener" href="' + esc(monzoFor(link, price)) + '">Pay ' + (price != null ? money(price) + ' ' : '') + 'with Monzo</a>' : '') +
         '<button type="button" class="textlink" id="rbCancel" data-id="' + pending.id + '">Cancel the request</button></div>';
     }
-    const atLimit = (ev.rebuy_limit != null && rb.length >= ev.rebuy_limit) || rbTimeUp;
+    const atLimit = noRb || (ev.rebuy_limit != null && rb.length >= ev.rebuy_limit) || rbTimeUp;
     const canAddon = ev.addon_allowed !== false && !ad.length;
     const live = !!ev.clock_started_at && busts != null;     // during the game, re-buys go through "I'm out"
+    if (noRb && ev.addon_allowed === false) return html + '</div>';
     if (live && ev.addon_allowed === false) return html + '<p class="pz-wait">Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy.</p></div>';
     html += '<div class="rb-btns">' +
-      (live ? '' : '<button type="button" class="btn secondary small" data-ask="rebuy"' + (atLimit ? ' disabled' : '') + '>🔁 Request re-buy' + (rbPrice != null ? ' ' + money(rbPrice) : '') + '</button>') +
+      (live || noRb ? '' : '<button type="button" class="btn secondary small" data-ask="rebuy"' + (atLimit ? ' disabled' : '') + '>🔁 Request re-buy' + (rbPrice != null ? ' ' + money(rbPrice) : '') + '</button>') +
       (ev.addon_allowed !== false ? '<button type="button" class="btn secondary small" data-ask="addon"' + (canAddon ? '' : ' disabled') + '>➕ Request add-on' + (adPrice != null ? ' ' + money(adPrice) : '') + '</button>' : '') +
-      '</div>' + (rbTimeUp ? '<p class="pz-wait">The re-buy period has ended. Add-ons are still open.</p>'
+      '</div>' + (noRb ? '' : rbTimeUp ? '<p class="pz-wait">Re-buys are closed.' + (ev.addon_allowed !== false ? ' Add-ons are still open.' : '') + '</p>'
         : atLimit ? '<p class="pz-wait">You\u2019ve used all ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit === 1 ? '' : 's') + '.</p>' : '');
-    html += '<p class="pz-wait">' + (live ? 'Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy. ' : '') + 'Tap to send a request to Alex and Phil, then pay. It counts once they approve it.</p>';
+    html += '<p class="pz-wait">' + (live && !noRb && !rbTimeUp ? 'Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy. ' : '') + 'Tap to send a request to Alex and Phil, then pay. It counts once they approve it.</p>';
     html += '<div id="rbMsg" class="saved"></div></div>';
     return html;
   }
