@@ -275,7 +275,7 @@
           <div><label for="evTime">Play starts</label><input id="evTime" type="time" value="19:30"></div>
         </div>
         <label for="evVenue">Venue</label>
-        <input id="evVenue" type="text" placeholder="e.g. Phil's house">
+        <input id="evVenue" type="text" placeholder="e.g. Phill's house">
         <label for="evAddress">Address <span class="opt">(optional: players get a map link)</span></label>
         <input id="evAddress" type="text" maxlength="200" placeholder="e.g. 12 High Street, Stanmore HA7 1AA">
 
@@ -427,7 +427,7 @@
       <label for="mTitle">Title</label>
       <input id="mTitle" type="text" maxlength="80" placeholder="e.g. Final date confirmed">
       <label for="mBody">Message</label>
-      <textarea id="mBody" maxlength="1000" placeholder="e.g. The final is on Saturday 12 December at Phil’s. Dress code: cowboy 🤠"></textarea>
+      <textarea id="mBody" maxlength="1000" placeholder="e.g. The final is on Saturday 12 December at Phill’s. Dress code: cowboy 🤠"></textarea>
       <div class="muted" id="mCount" style="text-align:right;font-size:12px">0 / 1000</div>
       <button id="mSend" class="btn full" type="button">📣 Send to everyone</button>
       <div id="mMsg" class="msg"></div>
@@ -446,7 +446,7 @@
   <section id="tab-points" class="hidden">
     <div class="card" id="testModeCard">
       <h2>🧪 Test mode</h2>
-      <p class="muted">Turn this on while you try things out. Every alert then goes to admins only (you and Phil), and players get nothing: new events, ride-ins, seats, results, polls and the daily reminders. For anything players shouldn’t <b>see</b> either, tick “Test event” when you create the event.</p>
+      <p class="muted">Turn this on while you try things out. Every alert then goes to admins only (you and Phill), and players get nothing: new events, ride-ins, seats, results, polls and the daily reminders. For anything players shouldn’t <b>see</b> either, tick “Test event” when you create the event.</p>
       <div class="seg" id="testModeSeg">
         <button type="button" data-v="0" class="on">Off</button><button type="button" data-v="1">On: alerts to admins only</button>
       </div>
@@ -458,7 +458,7 @@
       <label for="ldWhen">When</label>
       <input id="ldWhen" type="text" maxlength="80" placeholder="e.g. 1 to 20 December 2027 (estimated)">
       <label for="ldVenue">Venue <span class="opt">(blank = “decided halfway through the season”)</span></label>
-      <input id="ldVenue" type="text" maxlength="120" placeholder="e.g. Phil’s place">
+      <input id="ldVenue" type="text" maxlength="120" placeholder="e.g. Phill’s place">
       <label for="ldDetails">Game details <span class="opt">(format, blinds, dress code… hidden until you show them)</span></label>
       <textarea id="ldDetails" maxlength="1500" placeholder="e.g. Freezeout, 20-minute blinds, cards in the air at 7pm sharp."></textarea>
       <label class="check"><input id="ldShown" type="checkbox"> Show the game details to players</label>
@@ -559,7 +559,7 @@
       </div>
       <p class="muted" style="margin:4px 0 12px">Only logged-in members of the league can see these.</p>
       <label class="check"><input type="checkbox" id="setOpen"> Site open to everyone</label>
-      <p class="muted" style="margin:4px 0 0">Untick for <strong>Coming soon</strong> mode: only you and Phil can see the site, and sign-up is hidden. Tick it on reveal night.</p>
+      <p class="muted" style="margin:4px 0 0">Untick for <strong>Coming soon</strong> mode: only you and Phill can see the site, and sign-up is hidden. Tick it on reveal night.</p>
       <label class="check"><input type="checkbox" id="setReview"> Season review on the home page</label>
       <p class="muted" style="margin:4px 0 0">Turn this on after the last event before the final. Everyone then sees the year’s rankings and awards (Big Money Spender, Wooden Spoon, Rebuy King…) on the home page.</p>
       <button id="setSave" class="btn full" type="button">Save settings</button>
@@ -1232,7 +1232,7 @@
   }
   $('resEvent').onchange = renderResults;
 
-  // Phil's formula: sqrt(n x b^2 / e) / (f + 1) + knockouts x KO points
+  // Phill's formula: sqrt(n x b^2 / e) / (f + 1) + knockouts x KO points
   function spentFor(ev, r) {
     const b = Number(ev?.buy_in || 0);
     const rp = ev?.rebuy_price != null ? Number(ev.rebuy_price) : b;
@@ -1335,7 +1335,7 @@
       const b = ev && ev.buy_in != null ? Number(ev.buy_in) : 0;
       const n = rowsNow.filter(x => x.position).length;
       const last = Math.max(...rowsNow.filter(x => x.position).map(x => x.position));
-      const pts = (n > 1 && r.position === last) ? r.knockouts * Number(settings.ko_points || 0)     // last place: knockouts only (Phil's rule)
+      const pts = (n > 1 && r.position === last) ? r.knockouts * Number(settings.ko_points || 0)     // last place: knockouts only (Phill's rule)
         : scoreFor(n, b, spentFor(ev, r), r.position, r.knockouts);
       r.tr.querySelector('.ptsc').textContent = pts.toFixed(2);
     });
@@ -1605,7 +1605,7 @@
     const wonBy = {}; evs.forEach(e => { wonBy[e.id] = winnings(e, resBy[e.id] || [], pots[e.id]); });
     const wonTotal = (pid) => evs.reduce((t, e) => { const w = wonBy[e.id][pid]; return t + (w ? w.prize + w.bounty : 0); }, 0);
     const evName = (id) => { const e = evs.find(x => x.id === id); return e ? (e.name || niceDate(e.event_date)) : ''; };
-    // League table in Phil's order
+    // League table in Phill's order
     const n = (v) => Number(v || 0), avg = (p) => p.avg_finish == null ? 999 : Number(p.avg_finish);
     const table = [...(lt.data || [])].sort((a, b) => (b.qualified - a.qualified) || n(b.league_points) - n(a.league_points) || b.wins - a.wins ||
       a.last_places - b.last_places || avg(a) - avg(b) || a.rebuys - b.rebuys || a.display_name.localeCompare(b.display_name));

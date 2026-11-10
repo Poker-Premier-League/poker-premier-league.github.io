@@ -2048,7 +2048,7 @@
     <h3>Add a memory</h3>
     <img id="memAddPreview" class="mem-add-preview" alt="">
     <label for="memCaption">Caption <span class="opt">(optional)</span></label>
-    <input id="memCaption" type="text" maxlength="140" placeholder="e.g. Cowboy night at Phil's">
+    <input id="memCaption" type="text" maxlength="140" placeholder="e.g. Cowboy night at Phill's">
     <label for="memDate">Date taken <span class="opt">(optional)</span></label>
     <input id="memDate" type="date">
     <div class="btnrow">
@@ -2064,7 +2064,7 @@
 <div id="profileModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pfTitle">
   <div class="modal-card profile-card">
     <h3 id="pfTitle">Your profile</h3>
-    <p id="pfIntro" class="pf-intro hidden">Answer a few quick questions so Alex and Phil know who can host and who has chips. You can change these any time by tapping your photo.</p>
+    <p id="pfIntro" class="pf-intro hidden">Answer a few quick questions so Alex and Phill know who can host and who has chips. You can change these any time by tapping your photo.</p>
 
     <div class="pf-photo">
       <span id="pfAvatar"></span>
@@ -2151,13 +2151,13 @@
 <div id="buildModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="buildTitle">
   <div class="modal-card build-card">
     <h3 id="buildTitle">🔨 How the build is going</h3>
-    <p class="muted">Alex and Phil are building the best poker app this side of the Mississippi. Here’s where we’re at.</p>
+    <p class="muted">Alex and Phill are building the best poker app this side of the Mississippi. Here’s where we’re at.</p>
     <div class="bl-head done">✅ Ready to ride</div>
     <ul class="bl">
       <li>Invite-only sign-up, profiles and WANTED posters</li>
-      <li>League table with Phil’s scoring and tie-breaks</li>
+      <li>League table with Phill’s scoring and tie-breaks</li>
       <li>Showdowns: Freezeout, Re-buy, Knockout and Heads Up, with seat limits</li>
-      <li>Monzo and bank payments, confirmed by Alex and Phil</li>
+      <li>Monzo and bank payments, confirmed by Alex and Phill</li>
       <li>Prize pools, payouts, bounties, re-buys and add-ons</li>
       <li>Phone notifications, messages and the Saloon Wall</li>
       <li>Results and every player’s stats and winnings</li>
@@ -2268,7 +2268,7 @@
     if (t.includes('invalid login')) return 'Email or password is wrong. Try again.';
     if (t.includes('already registered') || t.includes('already been registered')) return 'That email already has an account. Use Log in instead.';
     if (t.includes('password') && t.includes('6')) return 'Password must be at least 6 characters.';
-    if (t.includes('invalid invite') || t.includes('database error saving new user')) return "That invite code isn't right. Check with Alex or Phil.";
+    if (t.includes('invalid invite') || t.includes('database error saving new user')) return "That invite code isn't right. Check with Alex or Phill.";
     if (t.includes('email') && t.includes('invalid')) return 'That email address doesn’t look right.';
     if (t.includes('rate limit') || t.includes('too many')) return 'Too many tries. Wait a minute and try again.';
     if (t.includes('failed to fetch') || t.includes('network')) return 'Can’t connect. Check your internet and try again.';
@@ -2342,7 +2342,7 @@
     if (error || !profile || !profile.approved) {
       await db.auth.signOut();
       showScreen('auth');
-      showMsg(error ? friendlyError(error) : 'Your account isn’t active. Speak to Alex or Phil.');
+      showMsg(error ? friendlyError(error) : 'Your account isn’t active. Speak to Alex or Phill.');
       return;
     }
     if (!siteOpen && !profile.is_admin) { showComingSoon(true); return; }
@@ -2939,7 +2939,7 @@
     // Game details
     html += '<div class="card section ld-details"><div class="section-title">The game</div>' +
       (ldInfo && ldInfo.details_shown && ldInfo.details ? '<p class="ld-det">' + esc(ldInfo.details).replace(/\n/g, '<br>') + '</p>'
-        : '<p class="ld-lock">🔒 The format and game details are kept under the hat until Alex and Phil reveal them, closer to the night. Seats are drawn at the venue on the night.</p>' +
+        : '<p class="ld-lock">🔒 The format and game details are kept under the hat until Alex and Phill reveal them, closer to the night. Seats are drawn at the venue on the night.</p>' +
           (me.is_admin && ldInfo && ldInfo.details ? '<p class="ld-admin-note">Admins only: your details are saved but hidden. Reveal them in Admin → Settings → The Last Draw.</p>' : '')) + '</div>';
     box.innerHTML = html;
     box.querySelectorAll('[data-ld]').forEach(b => b.onclick = async () => {
@@ -2962,7 +2962,7 @@
     });
   }
 
-  // Phil's seat order: 1 at the top, then 2/3, 4/5, 6/7 down the left and right, 8/9 at the bottom
+  // Phill's seat order: 1 at the top, then 2/3, 4/5, 6/7 down the left and right, 8/9 at the bottom
   //          1
   //     2         3
   //  4               5
@@ -3088,7 +3088,7 @@
   // ---- Player ratings (phase 7): profiles, radar chart and player types ----
   const RT_KEYS = ['tf', 'hn', 'st', 'is', 'bh'];
   const RT_NAMES = { tf: 'Trigger Finger', hn: 'High Noon', st: 'Silver Tongue', is: 'Iron Sheriff', bh: 'Bounty Hunter' };
-  const RT_TIE = ['is', 'bh', 'tf', 'st', 'hn'];                      // Phil's tie-break order
+  const RT_TIE = ['is', 'bh', 'tf', 'st', 'hn'];                      // Phill's tie-break order
   const PLAYER_TYPES = {
     legend:    ['The Legend', '#E0A030', 'Strong across the board. Nobody wants to sit on their left.'],
     drifter:   ['The Drifter', '#F3E6C8', 'Balanced and unremarkable, wandering from town to town.'],
@@ -3455,7 +3455,7 @@
     if (myReply === 'in') {
       mySeat = '<div class="my-seat' + (myPaid ? ' ok' : '') + '">' + (myPaid
         ? '🤠 <b>Your seat is confirmed.</b> See you at the table.'
-        : '⏳ <b>Seat held.</b> Pay your buy-in to confirm it. Alex or Phil will tick you off once it lands.') + '</div>';
+        : '⏳ <b>Seat held.</b> Pay your buy-in to confirm it. Alex or Phill will tick you off once it lands.') + '</div>';
     } else if (full && !closed) {
       mySeat = '<div class="my-seat">All seats are taken. Tap <b>' + T.maybe + '</b> and you\u2019ll hear if one opens up.</div>';
     }
@@ -3471,7 +3471,7 @@
       (ev.is_test ? '<div class="test-ev">🧪 <b>Test event.</b> Only admins can see it, alerts only go to admins, and results won’t count in the league.</div>' : '') +
       (ev.host_id && ev.host_id === me.id && ev.status === 'upcoming' ? '<div class="host-edit"><span>🏠 You’re hosting this one.</span><button type="button" id="hostEdit">✏️ Edit the details</button></div>' : '') +
       placeLine +
-      (closed ? '<div class="closed-banner">' + (ev.is_final ? '🏆 The Last Draw: seats are reserved for the finalists. Can\u2019t make it? Tell Alex or Phil.' : '🚫 Registration is closed. You can still pull out if you need to.') + '</div>' : '') +
+      (closed ? '<div class="closed-banner">' + (ev.is_final ? '🏆 The Last Draw: seats are reserved for the finalists. Can\u2019t make it? Tell Alex or Phill.' : '🚫 Registration is closed. You can still pull out if you need to.') + '</div>' : '') +
       '<div class="replies">' +
         '<button type="button" data-r="in"' + ((closed || full) && myReply !== 'in' ? ' disabled' : '') + '>' + (full && myReply !== 'in' ? 'Full' : T.in) + '</button>' +
         '<button type="button" data-r="maybe"' + (closed && myReply !== 'maybe' ? ' disabled' : '') + '>' + T.maybe + '</button>' +
@@ -3931,7 +3931,7 @@
     if (winner) {
       html += '<div class="live-winner">' + avatarHtml(winner, 64) + '<div><span class="lw-k">🏆 Winner</span><b>' + esc(people[winner]?.display_name || 'Player') + '</b>' +
         '<span class="lw-s">' + (kos[winner] ? kos[winner] + ' knockout' + (kos[winner] === 1 ? '' : 's') + ' · ' : '') + 'last of ' + field.length + ' players</span></div></div>' +
-        (admin ? '' : '<p class="st-sub" style="text-align:center">Prizes show here once Alex or Phil confirm the results.</p>');
+        (admin ? '' : '<p class="st-sub" style="text-align:center">Prizes show here once Alex or Phill confirm the results.</p>');
     }
 
     // Re-buy status
@@ -4025,7 +4025,7 @@
       '<div class="ls-btns">' + (canRb ? '<button type="button" class="go" data-ls="rebuy">🔁 Re-buy' + (price != null ? ' ' + money(price) : '') + '</button>' : '') +
       '<button type="button" class="' + (canRb ? '' : 'go') + '" data-ls="final">' + (sh.pid === me.id ? 'I’m out for good' : 'Out for good') + '</button>' +
       '<button type="button" data-ls="back">Back</button></div>' +
-      (canRb ? '<p class="ls-p small">A re-buy is sent to Alex and Phil. Pay it, and it counts once they approve it.</p>' : '') + '</div>';
+      (canRb ? '<p class="ls-p small">A re-buy is sent to Alex and Phill. Pay it, and it counts once they approve it.</p>' : '') + '</div>';
   }
 
   // ---- Big clock: the clock filling the screen, for a phone or iPad propped up on the table ----
@@ -4235,7 +4235,7 @@
     if (pending) {
       const price = pending.kind === 'addon' ? adPrice : rbPrice;
       return html + '<div class="rb-pending">⏳ <b>' + (pending.kind === 'addon' ? 'Add-on' : 'Re-buy') + ' requested.</b> Pay ' +
-        (price != null ? money(price) : 'it') + ' now. Alex or Phil approve it once the money lands.</div>' +
+        (price != null ? money(price) : 'it') + ' now. Alex or Phill approve it once the money lands.</div>' +
         (link ? '<a class="btn pay-monzo" target="_blank" rel="noopener" href="' + esc(monzoFor(link, price)) + '">Pay ' + (price != null ? money(price) + ' ' : '') + 'with Monzo</a>' : '') +
         '<button type="button" class="textlink" id="rbCancel" data-id="' + pending.id + '">Cancel the request</button></div>';
     }
@@ -4249,7 +4249,7 @@
       (ev.addon_allowed !== false ? '<button type="button" class="btn secondary small" data-ask="addon"' + (canAddon ? '' : ' disabled') + '>➕ Request add-on' + (adPrice != null ? ' ' + money(adPrice) : '') + '</button>' : '') +
       '</div>' + (noRb ? '' : rbTimeUp ? '<p class="pz-wait">Re-buys are closed.' + (ev.addon_allowed !== false ? ' Add-ons are still open.' : '') + '</p>'
         : atLimit ? '<p class="pz-wait">You\u2019ve used all ' + ev.rebuy_limit + ' re-buy' + (ev.rebuy_limit === 1 ? '' : 's') + '.</p>' : '');
-    html += '<p class="pz-wait">' + (live && !noRb && !rbTimeUp ? 'Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy. ' : '') + 'Tap to send a request to Alex and Phil, then pay. It counts once they approve it.</p>';
+    html += '<p class="pz-wait">' + (live && !noRb && !rbTimeUp ? 'Busted? Tap <b>💀 I\u2019m out</b> on the live table to re-buy. ' : '') + 'Tap to send a request to Alex and Phill, then pay. It counts once they approve it.</p>';
     html += '<div id="rbMsg" class="saved"></div></div>';
     return html;
   }
@@ -4265,7 +4265,7 @@
     document.querySelectorAll('[data-ask]').forEach(b => b.onclick = async () => {
       const kind = b.dataset.ask;
       const price = kind === 'addon' ? (ev.addon_price ?? ev.buy_in) : (ev.rebuy_price ?? ev.buy_in);
-      if (!confirm('Request ' + (kind === 'addon' ? 'an add-on' : 'a re-buy') + (price != null ? ' for ' + money(price) : '') + '? Alex and Phil will be told, and it counts once they approve it.')) return;
+      if (!confirm('Request ' + (kind === 'addon' ? 'an add-on' : 'a re-buy') + (price != null ? ' for ' + money(price) : '') + '? Alex and Phill will be told, and it counts once they approve it.')) return;
       b.disabled = true;
       const { error } = await db.from('event_entries').insert({ event_id: ev.id, player_id: me.id, kind });
       if (error) { $('rbMsg').textContent = 'Couldn\u2019t send: ' + error.message; $('rbMsg').className = 'saved err'; b.disabled = false; return; }
@@ -4324,7 +4324,7 @@
     const paid = mine && mine.paid;
     return '<div class="paybox' + (paid ? ' is-paid' : '') + '">' +
       '<div class="pay-head">💷 ' + (amount ? 'Buy-in ' + amount : 'Pay your buy-in') + '</div>' +
-      '<div class="pay-status">' + (paid ? '✓ <b>Paid</b>, thanks partner!' : 'Not marked as paid yet. Alex or Phil will tick you off once it lands.') + '</div>' +
+      '<div class="pay-status">' + (paid ? '✓ <b>Paid</b>, thanks partner!' : 'Not marked as paid yet. Alex or Phill will tick you off once it lands.') + '</div>' +
       (paid ? '' :
         (link ? '<a class="btn pay-monzo" href="' + esc(link) + '" target="_blank" rel="noopener">Pay with Monzo</a>' : '') +
         (hasBank ? '<button id="bankToggle" class="textlink" type="button">' + (link ? 'Can\u2019t use Monzo? Pay by bank transfer' : 'Show bank details') + '</button>' +
@@ -4411,7 +4411,7 @@
       '<button type="button" class="copy" data-copy="' + esc(val) + '">Copy</button></div>' : '';
     card.innerHTML = '<p class="fee-head">🏆 League fee due</p>' +
       '<p class="fee-text">It\u2019s <b>' + money(feeInfo.fee) + '</b> for ' + esc(feeInfo.season) + ', and every penny goes into the prize pot for <b>The Last Draw</b>. ' +
-      'Your league points only count once it\u2019s paid. Alex or Phil will tick you off when it lands.</p>' +
+      'Your league points only count once it\u2019s paid. Alex or Phill will tick you off when it lands.</p>' +
       (link ? '<a class="btn pay-monzo" href="' + esc(link) + '" target="_blank" rel="noopener">Pay ' + money(feeInfo.fee) + ' with Monzo</a>' : '') +
       (hasBank ? '<button id="feeBankToggle" class="textlink" type="button">' + (link ? 'Can\u2019t use Monzo? Pay by bank transfer' : 'Show bank details') + '</button>' +
         '<div id="feeBankBox" class="bank' + (link ? ' hidden' : '') + '">' +
@@ -4441,7 +4441,7 @@
     $('minEv').textContent = st.min_events;
 
     const pts = (v) => Number(v || 0);
-    // Ranking (Phil's rules): qualified first, then points, most wins, fewest last places,
+    // Ranking (Phill's rules): qualified first, then points, most wins, fewest last places,
     // best (lowest) average finish, fewest rebuys. Still level = shared place.
     const avg = (p) => p.avg_finish == null ? 999 : Number(p.avg_finish);
     const tieKey = (p) => [pts(p.league_points).toFixed(2), p.wins, p.last_places, avg(p).toFixed(2), p.rebuys].join('|');
@@ -4573,7 +4573,7 @@
     setBusy(e.target, true, 'Checking code…');
     const { data: codeOk, error: codeErr } = await db.rpc('check_invite_code', { code_to_check: code });
     if (codeErr) { setBusy(e.target, false); return showMsg(friendlyError(codeErr)); }
-    if (!codeOk) { setBusy(e.target, false); return showMsg("That invite code isn't right. Check with Alex or Phil."); }
+    if (!codeOk) { setBusy(e.target, false); return showMsg("That invite code isn't right. Check with Alex or Phill."); }
 
     setBusy(e.target, true, 'Creating account…');
     const { data, error } = await db.auth.signUp({
@@ -5343,7 +5343,7 @@
       '<div class="mb">' + esc(m.body) + '</div><div class="mm">' +
       new Date(m.created_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) +
       (m.sent_by && people[m.sent_by] ? ' \u00B7 from ' + esc(people[m.sent_by].display_name) : '') + '</div></div>').join('')
-      : '<p class="empty">No messages yet. Announcements from Alex and Phil will appear here.</p>';
+      : '<p class="empty">No messages yet. Announcements from Alex and Phill will appear here.</p>';
   }
   async function openMessages() {
     nmsg('');
