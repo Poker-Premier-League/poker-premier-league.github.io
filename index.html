@@ -236,7 +236,7 @@
   .linkbtn.icon { padding: 5px 10px; }
 
   /* Tabs */
-  .tabbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: 560px; margin: 0 auto 14px; display: flex; gap: 4px;
+  .tabbar { position: -webkit-sticky; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px); z-index: 20; max-width: 560px; margin: 0 auto 14px; display: flex; gap: 4px;
     background: rgba(10,42,29,0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     padding: 6px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.15); }
   .tabbar button { flex: 1; border: 0; background: transparent; color: #cfe3d7; font-size: 15px; font-weight: 700;
@@ -1628,6 +1628,11 @@
   .theme-gpl .soon-big { margin: 0.2svh 0 0.4svh; }
   /* Full-screen app: a solid strip behind the phone's status bar so nothing scrolls underneath the clock */
   body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #1E0F07; z-index: 45; pointer-events: none; }
+  /* Once the tab bar is pinned, a solid band sits behind it so the page never shows above or around it */
+  .tabband { position: fixed; top: 0; left: 0; right: 0; z-index: 19; pointer-events: none; opacity: 0; transition: opacity .15s ease;
+    height: calc(env(safe-area-inset-top, 0px) + 8px + var(--tbh, 54px) + 16px);
+    background: linear-gradient(to bottom, #1E0F07 0, #1E0F07 calc(100% - 16px), rgba(30,15,7,0) 100%); }
+  .tabband.on { opacity: 1; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -2276,6 +2281,21 @@
     if (!opts.noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => showPanel(b.dataset.tab));
+  // The band behind the pinned tab bar: shown only once the bar has stuck to the top
+  (() => {
+    const bar = document.querySelector('.tabbar'); if (!bar) return;
+    const band = document.createElement('div'); band.className = 'tabband'; bar.parentNode.insertBefore(band, bar);   // same layer as the bar, just behind it
+    let ticking = false;
+    const check = () => {
+      ticking = false;
+      if (!bar.offsetParent) { band.classList.remove('on'); return; }          // tab bar hidden (sign-in, coming soon)
+      document.documentElement.style.setProperty('--tbh', bar.offsetHeight + 'px');
+      const stuckAt = parseFloat(getComputedStyle(bar).top) || 0;
+      band.classList.toggle('on', window.scrollY > 0 && bar.getBoundingClientRect().top <= stuckAt + 0.5);
+    };
+    const ask = () => { if (!ticking) { ticking = true; requestAnimationFrame(check); } };
+    window.addEventListener('scroll', ask, { passive: true }); window.addEventListener('resize', ask); setTimeout(check, 500);
+  })();
 
   // Swipe left/right on the page to move between tabs (phones)
   let touchStart = null;
