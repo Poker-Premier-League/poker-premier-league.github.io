@@ -875,7 +875,7 @@
   .theme-gpl .linkbtn:hover { box-shadow: 0 0 0 2px rgba(244,154,92,0.35); }
   .theme-gpl .badge { background: linear-gradient(180deg, #F7AE79, #E5702F); color: #2A160C; box-shadow: 0 0 10px rgba(229,112,47,0.45); }
   .theme-gpl .av-btn .av { box-shadow: 0 0 0 2px var(--apricot), 0 0 12px rgba(244,154,92,0.5); }
-  .theme-gpl .tabbar { background: rgba(30,15,7,0.9); border-color: rgba(244,154,92,0.3); }
+  .theme-gpl .tabbar { background: #1E0F07; border-color: rgba(244,154,92,0.3); backdrop-filter: none; -webkit-backdrop-filter: none; }   /* solid: nothing blurry shows through */
   .theme-gpl .tabbar button { color: #F3DFC4; text-transform: uppercase; letter-spacing: 1.2px; font-size: 14px; }
   .theme-gpl .tabbar button.active { background: linear-gradient(180deg, #EF8443, #D2591D); color: #fff;
     box-shadow: 0 0 0 1px rgba(255,210,170,0.5) inset, 0 0 16px rgba(229,112,47,0.55); }
@@ -2291,7 +2291,7 @@
       if (!bar.offsetParent) { band.classList.remove('on'); return; }          // tab bar hidden (sign-in, coming soon)
       document.documentElement.style.setProperty('--tbh', bar.offsetHeight + 'px');
       const stuckAt = parseFloat(getComputedStyle(bar).top) || 0;
-      band.classList.toggle('on', window.scrollY > 0 && bar.getBoundingClientRect().top <= stuckAt + 0.5);
+      band.classList.toggle('on', window.scrollY > 0 && bar.getBoundingClientRect().top <= stuckAt + 2);
     };
     const ask = () => { if (!ticking) { ticking = true; requestAnimationFrame(check); } };
     window.addEventListener('scroll', ask, { passive: true }); window.addEventListener('resize', ask); setTimeout(check, 500);
