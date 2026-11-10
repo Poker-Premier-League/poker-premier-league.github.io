@@ -309,6 +309,18 @@
           <div><label for="evHost">Host name <span class="opt">(or type one)</span></label><input id="evHost" type="text"></div>
           <div id="evMaxWrap"><label for="evMax">Player limit <span class="opt">(blank = no limit)</span></label><input id="evMax" type="number" inputmode="numeric" min="2" max="40" step="1" placeholder="e.g. 9"></div>
         </div>
+        <div id="evMultiWrap">
+          <label>Tables</label>
+          <div class="seg small" id="evMulti">
+            <button type="button" data-v="0" class="on">One table</button><button type="button" data-v="1">Multi-table</button>
+          </div>
+          <p class="muted small-note" id="evMultiNote">For 10 or more players. A table seats 10 at most, so 11+ paid players are always split.</p>
+          <div id="evFinalWrap" class="hidden">
+            <label for="evFinalAt">Final table when this many players are left</label>
+            <input id="evFinalAt" type="number" inputmode="numeric" min="2" max="10" step="1" value="9">
+            <p class="muted small-note">When it’s reached, admins get a pop-up to draw the final table with random seats and dealer.</p>
+          </div>
+        </div>
         <div class="row2">
           <div><label for="evBuyin">Buy-in £</label><input id="evBuyin" type="number" inputmode="decimal" min="0" step="0.01" placeholder="20"></div>
           <div></div>
@@ -923,7 +935,7 @@
     16: ['Round 1', 'Quarter-finals', 'Semi-finals', 'Final'], 32: ['Round 1', 'Round 2', 'Quarter-finals', 'Semi-finals', 'Final'] };
   const segVal = (id) => { const b = $(id).querySelector('button.on'); return b ? b.dataset.v : ''; };
   function setSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v ?? ''))); }
-  ['evFormat', 'evRebuyLimit', 'evKoRebuys', 'evAddonSeg'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+  ['evFormat', 'evRebuyLimit', 'evKoRebuys', 'evAddonSeg', 'evMulti'].forEach(id => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
     setSeg(id, b.dataset.v); if (id !== 'evRebuyLimit') paintFormat();
   }));
   const addonOn = () => segVal('evAddonSeg') === '1';
@@ -954,6 +966,8 @@
     $('evAddon').parentNode.classList.toggle('hidden', !addonOn());
     $('evHuOpts').classList.toggle('hidden', !hu);
     $('evMaxWrap').classList.toggle('hidden', hu);
+    $('evMultiWrap').classList.toggle('hidden', hu);
+    $('evFinalWrap').classList.toggle('hidden', hu || segVal('evMulti') !== '1');
     if (hu && !$('evHuStacks').children.length) paintHuStacks();
     paintKoNote();
   }
@@ -983,7 +997,7 @@
 
   function resetEventForm() {
     $('evForm').reset();
-    setSeg('evFormat', 'freezeout'); setSeg('evRebuyLimit', ''); setSeg('evKoRebuys', '1'); setSeg('evAddonSeg', '1'); $('evRbLevel').value = '';
+    setSeg('evFormat', 'freezeout'); setSeg('evMulti', '0'); $('evFinalAt').value = 9; setSeg('evRebuyLimit', ''); setSeg('evKoRebuys', '1'); setSeg('evAddonSeg', '1'); $('evRbLevel').value = '';
     $('evHuStacks').innerHTML = '';
     $('evHostPick').value = ''; showHostInfo(null);
     paintFormat();
@@ -1011,6 +1025,7 @@
     $('evMax').value = ev.max_players ?? '';
     $('evClosed').checked = !!ev.registration_closed;
     setSeg('evFormat', ev.format || 'freezeout');
+    setSeg('evMulti', ev.multi_table ? '1' : '0'); $('evFinalAt').value = ev.final_table_size ?? 9;
     setSeg('evRebuyLimit', ev.rebuy_limit ?? '');
     setSeg('evKoRebuys', ev.ko_rebuys === false ? '0' : '1');
     setSeg('evAddonSeg', ev.addon_allowed === false ? '0' : '1');
@@ -1070,6 +1085,8 @@
       hu_stacks: stacks,
       hu_final_bo3: hu ? $('evHuBo3').checked : false,
       max_players: maxP,
+      multi_table: !hu && segVal('evMulti') === '1',
+      final_table_size: !hu && segVal('evMulti') === '1' ? Math.min(10, Math.max(2, Number($('evFinalAt').value) || 9)) : null,
       registration_closed: $('evClosed').checked,
       event_date: $('evDate').value,
       start_time: $('evTime').value || null,

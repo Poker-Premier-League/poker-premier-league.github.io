@@ -1303,6 +1303,19 @@
   .ap-ok { flex: none; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #E5702F; color: #1E0F07; font: 600 14px 'Oswald', sans-serif; cursor: pointer; }
   .ap-no { flex: none; width: 40px; min-height: 40px; border-radius: 10px; border: 1px solid rgba(246,234,213,.35); background: transparent; color: #F6EAD5; font-size: 15px; cursor: pointer; }
   .ap-note { margin: 6px 0 0; font-size: 12px; color: rgba(246,234,213,.7); }
+  .tb-ctl { margin: 4px 0 10px; }
+  .tb-sizes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .tb-sizes span { padding: 5px 10px; border-radius: 999px; background: rgba(246,234,213,.08); border: 1px solid rgba(246,234,213,.18); font-size: 13px; color: rgba(246,234,213,.85); }
+  .tb-sizes b { color: #FBC891; margin-left: 2px; }
+  .ft-ready { margin: 6px 0; padding: 10px; border-radius: 12px; background: rgba(251,200,145,.14); border: 1.5px solid #FBC891; color: #F6EAD5; font-size: 14px; }
+  .ltab { font-size: 11px; color: #FBC891; margin-left: 4px; letter-spacing: .03em; }
+  .ft-pop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(0,0,0,.72); display: flex; align-items: center; justify-content: center; padding: 18px; }
+  .ft-card { width: 100%; max-width: 360px; padding: 22px 18px 16px; border-radius: 18px; background: #2A150B; border: 1.5px solid #E5702F; text-align: center; color: #F6EAD5; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+  .ft-ic { font-size: 40px; line-height: 1; }
+  .ft-card h3 { margin: 8px 0 6px; font: 400 28px 'Anton', sans-serif; letter-spacing: .02em; text-transform: uppercase; color: #FBC891; }
+  .ft-card p { margin: 0 0 14px; font-size: 14px; line-height: 1.45; color: rgba(246,234,213,.85); }
+  .ft-go { width: 100%; min-height: 48px; font-size: 16px; }
+  .ft-later { display: block; width: 100%; margin-top: 8px; min-height: 42px; border: 0; background: transparent; color: rgba(246,234,213,.75); font: 500 14px 'Inter', sans-serif; text-decoration: underline; cursor: pointer; }
   .live-bar { display: block; height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
   .live-bar span { display: block; height: 100%; background: linear-gradient(90deg, #FBC891, #E5702F); border-radius: 3px; transition: width 1s linear; }
   .live-tiles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 10px 0 0; }
@@ -3228,7 +3241,7 @@
       '<div id="replySaved" class="saved"></div>' +
       (ev.is_final ? '' : payBox(ev, pay, mine)) +
       '<div class="who">' + (whoHtml || '<p class="empty">' + T.noReplies + '</p>') + '</div>';
-    const seatHtml = seatingBox(ev, seats, replies || [], busts), liveHtml = liveBox(ev, busts, replies || [], entries, pot);
+    const seatHtml = seatingBox(ev, seats, replies || [], busts), liveHtml = liveBox(ev, busts, replies || [], entries, pot, seats);
 
     if (gameNight) {
       $('eventBody').innerHTML =
@@ -3391,8 +3404,9 @@
       }
     } else if (seats.length) line = seats.length + ' players' + (tables.length > 1 ? ' over ' + tables.length + ' tables' : '');
     else line = 'Not drawn yet';
-    const open = seatOpen != null ? seatOpen : !ev.clock_started_at;
-    return '<details class="seating" id="seatingBox"' + (open ? ' open' : '') + '><summary><h4>' + (hu ? '🤠 The draw' : '🪑 Seating') + '</h4>' +
+    const freshFinal = ev.final_drawn_at && Date.now() - Date.parse(ev.final_drawn_at) < 15 * 60e3;   // just drawn: show it
+    const open = seatOpen != null ? seatOpen : (!ev.clock_started_at || freshFinal);
+    return '<details class="seating" id="seatingBox"' + (open ? ' open' : '') + '><summary><h4>' + (hu ? '🤠 The draw' : ev.final_drawn_at ? '🏆 Final table' : '🪑 Seating') + '</h4>' +
       '<span class="st-line">' + line + '</span></summary>' + html + '</details>';
   }
 
@@ -3447,7 +3461,39 @@
   let liveSheet = null;          // { pid, step: 'who' | 'rebuy' | 'edit', by, bustId }
   let liveTimer = null, livePoll = null, liveEv = null;
 
-  function liveBox(ev, busts, replies, entries, pot) {
+  // Multi-table (part 26): table sizes, Balance tables and the final table draw
+  function tablesInfo(ev, seats, outIds) {
+    if (ev.format === 'headsup' || !seats || !seats.length) return null;
+    const act = seats.filter(s => !outIds.has(s.player_id));
+    const counts = {}; act.forEach(s => counts[s.table_no] = (counts[s.table_no] || 0) + 1);
+    const tables = Object.keys(counts).map(Number).sort((a, b) => a - b);
+    const sizes = tables.map(t => counts[t]);
+    return { act: act.length, tables, counts, tableOf: Object.fromEntries(act.map(s => [s.player_id, s.table_no])),
+      uneven: tables.length > 1 && Math.max(...sizes) - Math.min(...sizes) >= 2,
+      canBreak: tables.length > 1 && Math.ceil(act.length / 10) < tables.length && act.length > 10 };
+  }
+  function tableControls(ev, ti) {
+    if (!ti || ti.tables.length < 2) return '';
+    const ftAt = ev.final_table_size, reached = ftAt && ti.act <= ftAt;
+    let html = '<div class="tb-ctl"><div class="tb-sizes">' + ti.tables.map(t => '<span>Table ' + t + ' <b>' + ti.counts[t] + '</b></span>').join('') + '</div>';
+    if (reached) html += '<div class="ft-ready">🏆 <b>' + ti.act + ' players left.</b> Time for the final table.</div>' +
+      '<div class="seat-admin"><button type="button" class="go" data-final="1">🏆 Draw the final table</button></div>';
+    html += '<div class="seat-admin"><button type="button"' + (!reached && (ti.uneven || ti.canBreak) ? ' class="go"' : '') + ' data-balance="1">⚖️ Balance tables</button>' +
+      (!reached && ti.act <= 10 ? '<button type="button" data-final="1">🏆 Final table now</button>' : '') + '</div>';
+    if (!reached && (ti.uneven || ti.canBreak)) html += '<p class="ap-note">' + (ti.canBreak ? 'Everyone left fits on fewer tables: balancing breaks one up.' : 'The tables are out of balance.') + '</p>';
+    else if (ftAt && !reached) html += '<p class="ap-note">The final table is drawn at ' + ftAt + ' players.</p>';
+    return html + '</div>';
+  }
+  const ftKey = (ev) => 'gpl_ft_' + ev.id;
+  function finalPopup(ev, ti) {
+    if (!ti || ti.tables.length < 2 || !ev.final_table_size || ti.act > ev.final_table_size) return '';
+    try { if (sessionStorage.getItem(ftKey(ev))) return ''; } catch (e) {}
+    return '<div class="ft-pop" role="dialog" aria-modal="true" aria-label="Final table"><div class="ft-card"><div class="ft-ic">🏆</div>' +
+      '<h3>Final table time</h3><p><b>' + ti.act + ' players</b> are left over ' + ti.tables.length + ' tables. Draw the final table now? Everyone gets a random seat, a new dealer is picked, and they all get an alert.</p>' +
+      '<button type="button" class="ap-ok ft-go" data-final="1">🏆 Draw the final table</button><button type="button" class="ft-later" data-ftlater="1">Not yet</button></div></div>';
+  }
+
+  function liveBox(ev, busts, replies, entries, pot, seats) {
     if (busts === null) return '';                                       // part 18 not run yet
     const admin = me.is_admin && ev.status === 'upcoming';
     const field = replies.filter(r => r.reply === 'in' && r.paid).map(r => r.player_id);
@@ -3460,7 +3506,8 @@
     const hasRb = hasEntries(ev);
     const finals = busts.filter(b => b.final);
     const outIds = new Set(finals.map(b => b.player_id));
-    const stillIn = field.filter(id => !outIds.has(id)).sort((a, b) => firstName(a).localeCompare(firstName(b)));
+    const ti = tablesInfo(ev, seats, outIds), multi = ti && ti.tables.length > 1;
+    const stillIn = field.filter(id => !outIds.has(id)).sort((a, b) => (multi ? (ti.tableOf[a] || 99) - (ti.tableOf[b] || 99) : 0) || firstName(a).localeCompare(firstName(b)));
     const kos = {}; busts.forEach(b => { if (b.by_player) kos[b.by_player] = (kos[b.by_player] || 0) + 1; });
     const cnt = (pid, kind) => entries.filter(e => e.player_id === pid && e.kind === kind && e.confirmed).length;
     const pend = (pid) => entries.some(e => e.player_id === pid && !e.confirmed);
@@ -3497,11 +3544,13 @@
     if (admin) {
       html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div>' + (winner ? '' : '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>');
       if (hasRb) html += approvalsBlock(ev, entries);
+      if (!winner) html += tableControls(ev, ti);
       if (!winner && canRebuy(ev) && !ev.rebuys_closed)
         html += '<div class="seat-admin">' + (rebuysOpen(ev) ? '<button type="button" data-rbstop="1">🔒 Close re-buys' + (ev.addon_allowed !== false ? ' (add-ons stay open)' : '') + '</button>'
           : '<button type="button" data-rbstop="0">🔓 Reopen re-buys</button>') + '</div>';
       html += '<a class="live-finish' + (winner ? ' go' : '') + '" href="admin.html#results=' + ev.id + '">🏁 Finish the night' + (winner ? ': check and save the results' : ' early') + '</a>';
       html += '<button type="button" class="textlink light live-reset" data-clock="reset">Reset the clock</button></div>';
+      if (!winner) html += finalPopup(ev, ti);
     }
 
     // The "I'm out" panel
@@ -3511,7 +3560,7 @@
 
     // Still in
     html += '<div class="live-h">Still in (' + stillIn.length + ')</div><ul class="live-list">' + stillIn.map(id =>
-      '<li' + (id === me.id ? ' class="me"' : '') + '>' + avatarHtml(id, 30) + '<span class="ln">' + esc(id === me.id ? 'You' : firstName(id)) + '</span>' +
+      '<li' + (id === me.id ? ' class="me"' : '') + '>' + avatarHtml(id, 30) + '<span class="ln">' + esc(id === me.id ? 'You' : firstName(id)) + (multi && ti.tableOf[id] ? ' <small class="ltab">T' + ti.tableOf[id] + '</small>' : '') + '</span>' +
       '<span class="lb">' + (cnt(id, 'rebuy') ? '<i title="Re-buys">🔁' + (cnt(id, 'rebuy') > 1 ? '×' + cnt(id, 'rebuy') : '') + '</i>' : '') +
       (cnt(id, 'addon') ? '<i title="Add-on">➕</i>' : '') + (pend(id) ? '<i class="pend" title="Waiting for an admin">⏳</i>' : '') +
       (kos[id] ? '<i title="Knockouts">💥' + kos[id] + '</i>' : '') + '</span>' +
@@ -3584,6 +3633,25 @@
       if (a === 'reset' && !confirm('Reset the clock to zero? Knockouts already recorded stay as they are.')) return;
       if (a === 'start' && !confirm('Start the tournament clock now?')) return;
       rpcRun(b, 'clock_control', { p_event: ev.id, p_action: a }, () => { if (a === 'start') Sound.chips(); });
+    });
+    box.querySelectorAll('[data-balance]').forEach(b => b.onclick = async () => {
+      if (!confirm('Balance the tables? Anyone who moves gets an alert with their new seat.')) return;
+      b.disabled = true;
+      const { data, error } = await db.rpc('balance_tables', { p_event: ev.id });
+      if (error) { alert('Couldn’t do that: ' + error.message); b.disabled = false; return; }
+      const moves = Array.isArray(data) ? data : [];
+      alert(moves.length ? 'Moved:\n' + moves.map(m => firstName(m.player_id) + ': Table ' + m.from + ' to Table ' + m.to + ', seat ' + m.seat).join('\n') : 'The tables were already balanced.');
+      Sound.chips(); await loadEvent();
+    });
+    box.querySelectorAll('[data-final]').forEach(b => b.onclick = async () => {
+      if (!b.classList.contains('ft-go') && !confirm('Draw the final table? Everyone still in gets a random seat and a new dealer is picked.')) return;
+      try { sessionStorage.setItem(ftKey(ev), '1'); } catch (e) {}
+      seatOpen = true;                                         // show everyone the new table
+      if (await rpcRun(b, 'draw_final_table', { p_event: ev.id })) Sound.chips();
+    });
+    box.querySelectorAll('[data-ftlater]').forEach(b => b.onclick = () => {
+      try { sessionStorage.setItem(ftKey(ev), '1'); } catch (e) {}
+      b.closest('.ft-pop').remove();
     });
     box.querySelectorAll('[data-rbstop]').forEach(b => b.onclick = async () => {
       const stop = b.dataset.rbstop === '1';
