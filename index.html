@@ -1303,6 +1303,37 @@
   .ap-ok { flex: none; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #E5702F; color: #1E0F07; font: 600 14px 'Oswald', sans-serif; cursor: pointer; }
   .ap-no { flex: none; width: 40px; min-height: 40px; border-radius: 10px; border: 1px solid rgba(246,234,213,.35); background: transparent; color: #F6EAD5; font-size: 15px; cursor: pointer; }
   .ap-note { margin: 6px 0 0; font-size: 12px; color: rgba(246,234,213,.7); }
+  .hb-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .hb-tabs::-webkit-scrollbar { display: none; }
+  .hb-tabs button { flex: 1 0 auto; min-height: 36px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(246,234,213,.25); background: rgba(246,234,213,.06);
+    color: rgba(246,234,213,.8); font: 500 12px 'Oswald', sans-serif; letter-spacing: .02em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+  .hb-tabs button.now { border-color: #F49A5C; }
+  .hb-tabs button.on { background: #E5702F; border-color: #E5702F; color: #1E0F07; }
+  .hb-track { display: flex; align-items: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .hb-track::-webkit-scrollbar { display: none; }
+  .hb-round { flex: 0 0 100%; width: 100%; min-width: 0; scroll-snap-align: start; padding: 0 1px; box-sizing: border-box; }
+  .hb-meta { margin: 0 0 8px; font-size: 12px; color: #FBC891; letter-spacing: .03em; }
+  .hb-wait { margin: 0 0 8px; font-size: 13px; color: rgba(246,234,213,.7); }
+  .hb-m { margin: 0 0 10px; padding: 8px; border-radius: 14px; background: rgba(246,234,213,.05); border: 1px solid rgba(246,234,213,.14); }
+  .hb-m.mine { border-color: #F49A5C; }
+  .hb-no { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 6px; font: 500 11px 'Oswald', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: rgba(246,234,213,.6); }
+  .hb-undo { border: 0; background: transparent; color: #FBC891; font: 500 12px 'Inter', sans-serif; text-decoration: underline; cursor: pointer; padding: 4px; }
+  .hb-p { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(246,234,213,.18);
+    background: rgba(30,15,7,.55); color: #F6EAD5; font: 500 15px 'Inter', sans-serif; text-align: left; cursor: pointer; box-sizing: border-box; }
+  .hb-p:disabled { cursor: default; }
+  .hb-p.me .hb-n { color: #FBC891; }
+  .hb-p.win { background: rgba(229,112,47,.22); border-color: #E5702F; }
+  .hb-p.lose { opacity: .45; }
+  .hb-p.tbd { justify-content: center; color: rgba(246,234,213,.45); font-size: 13px; border-style: dashed; cursor: default; }
+  .hb-n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .hb-w { flex: none; font: 600 12px 'Oswald', sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #FBC891; }
+  .hb-l { flex: none; font-size: 12px; color: rgba(246,234,213,.7); }
+  .hb-t { flex: none; font-size: 12px; color: #F49A5C; }
+  .hb-vs { margin: 3px 0; text-align: center; font: 500 11px 'Oswald', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: rgba(246,234,213,.5); }
+  .hb-byen { margin: 6px 2px 0; font-size: 12px; color: rgba(246,234,213,.65); }
+  .hb-champ { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; padding: 12px; border-radius: 14px; background: rgba(251,200,145,.14); border: 1.5px solid #FBC891; }
+  .hb-champ .hb-ck { display: block; font: 500 12px 'Oswald', sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #FBC891; }
+  .hb-champ .hb-cn { display: block; font: 400 24px 'Anton', sans-serif; letter-spacing: .02em; color: #F6EAD5; }
   .tb-ctl { margin: 4px 0 10px; }
   .tb-sizes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
   .tb-sizes span { padding: 5px 10px; border-radius: 999px; background: rgba(246,234,213,.08); border: 1px solid rgba(246,234,213,.18); font-size: 13px; color: rgba(246,234,213,.85); }
@@ -3148,11 +3179,13 @@
     const { data: pay } = await db.from('league_settings').select('default_pay_link, bank_name, bank_sort_code, bank_account').maybeSingle();
     // Money (part 12): prize pool + re-buys/add-ons. Quietly skipped if not set up yet.
     const hasRebuys = hasEntries(ev);
-    const [potRes, entRes, seatRes] = await Promise.all([
+    const [potRes, entRes, seatRes, huRes] = await Promise.all([
       db.rpc('event_pot', { p_event: ev.id }),
       hasRebuys ? db.from('event_entries').select('id, player_id, kind, confirmed').eq('event_id', ev.id).order('created_at') : Promise.resolve({ data: [] }),
       db.from('seating').select('player_id, table_no, seat_no, is_dealer').eq('event_id', ev.id),    // part 15; skipped if not set up
+      ev.format === 'headsup' ? db.from('hu_matches').select('*').eq('event_id', ev.id) : Promise.resolve({ data: [] }),   // part 27
     ]);
+    const huMatches = huRes.error ? [] : (huRes.data || []);
     const seats = seatRes.error ? null : (seatRes.data || []);
     let busts = null;                                                                                // part 18; skipped if not set up
     if ('clock_started_at' in ev) {
@@ -3241,7 +3274,7 @@
       '<div id="replySaved" class="saved"></div>' +
       (ev.is_final ? '' : payBox(ev, pay, mine)) +
       '<div class="who">' + (whoHtml || '<p class="empty">' + T.noReplies + '</p>') + '</div>';
-    const seatHtml = seatingBox(ev, seats, replies || [], busts), liveHtml = liveBox(ev, busts, replies || [], entries, pot, seats);
+    const seatHtml = seatingBox(ev, seats, replies || [], busts, huMatches), liveHtml = liveBox(ev, busts, replies || [], entries, pot, seats);
 
     if (gameNight) {
       $('eventBody').innerHTML =
@@ -3278,7 +3311,7 @@
     });
     document.querySelectorAll('.replies button').forEach(b => b.onclick = () => saveReply(b.dataset.r));
     bindMoney(ev);
-    bindSeating(ev, seats, replies || []);
+    bindSeating(ev, seats, replies || [], huMatches);
     bindLive(ev, busts, replies || [], entries);
     $('saveComment').onclick = () => {
       if (!myReply) { flash('Tap In, Maybe or Out first.', true); return; }
@@ -3328,7 +3361,58 @@
     return html + '</div>';
   }
 
-  function seatingBox(ev, seats, replies, busts) {
+  // ---- Heads Up bracket (part 27): a tab per round, swipe between them, tap the winner ----
+  let huTab = null;                       // the round being looked at
+  const huName = (matches) => matches <= 1 ? 'Final' : matches === 2 ? 'Semi-finals' : matches <= 4 ? 'Quarter-finals' : matches <= 8 ? 'Round of 16' : 'Round of 32';
+  function huRounds(matches) {
+    const r1 = matches.filter(m => m.round === 1);
+    const n1 = r1.reduce((a, m) => a + (m.p2 ? 2 : 1), 0);
+    const R = Math.max(1, Math.ceil(Math.log2(Math.max(2, n1))));
+    const out = []; let size = r1.length;
+    for (let r = 1; r <= R; r++) {
+      const ms = matches.filter(m => m.round === r).sort((a, b) => a.match_no - b.match_no);
+      const n = ms.length || size; out.push({ r, ms, n }); size = Math.ceil(n / 2);
+    }
+    return out;
+  }
+  function huBracket(ev, matches) {
+    const rounds = huRounds(matches), R = rounds.length;
+    const cur = (rounds.find(x => x.ms.some(m => m.p2 && !m.winner)) || [...rounds].reverse().find(x => x.ms.length) || rounds[0]).r;
+    if (huTab == null || huTab > R) huTab = cur;
+    const fin = rounds[R - 1].ms[0], champ = fin && fin.p2 && fin.winner;
+    const later = (r) => matches.some(m => m.round > r && m.p2 && m.winner);
+    const canTap = (m) => ev.status === 'upcoming' && m.p2 && !m.winner && (me.is_admin || m.p1 === me.id || m.p2 === me.id);
+    const pl = (m, pid) => {
+      const w = m.winner === pid && m.p2, l = m.winner && m.winner !== pid;
+      return '<button type="button" class="hb-p' + (w ? ' win' : '') + (l ? ' lose' : '') + (pid === me.id ? ' me' : '') + '"' +
+        (canTap(m) ? ' data-hw="' + m.round + '|' + m.match_no + '|' + pid + '"' : ' disabled') + '>' + avatarHtml(pid, 30) +
+        '<span class="hb-n">' + esc(pid === me.id ? 'You' : firstName(pid)) + '</span>' +
+        (w ? '<span class="hb-w">✓ Through</span>' : l ? '<span class="hb-l">Out</span>' : canTap(m) ? '<span class="hb-t">Tap if won</span>' : '') + '</button>';
+    };
+    const myOpen = matches.find(m => m.p2 && !m.winner && (m.p1 === me.id || m.p2 === me.id));
+    let html = champ ? '<div class="hb-champ">' + avatarHtml(champ, 44) + '<div><span class="hb-ck">🏆 Heads Up champion</span><b class="hb-cn">' + esc(people[champ]?.display_name || 'Player') + '</b></div></div>'
+      : '<p class="st-sub">' + (me.is_admin ? 'Tap the winner of each match. When every match in a round is done, the next round is drawn at random.'
+        : myOpen ? 'When your match is done, tap the winner.' : 'Swipe or tap a round to follow the bracket.') + '</p>';
+    html += '<div class="hb-tabs">' + rounds.map(x => '<button type="button" data-hbtab="' + x.r + '" class="' + (x.r === huTab ? 'on' : '') + (x.r === cur && !champ ? ' now' : '') + '">' + huName(x.n) + '</button>').join('') + '</div>';
+    html += '<div class="hb-track" id="hbTrack">' + rounds.map((x, i) => {
+      const stack = Array.isArray(ev.hu_stacks) && ev.hu_stacks[i] ? ev.hu_stacks[i] + ' BB stacks' : '';
+      const meta = [stack, x.r === R && ev.hu_final_bo3 ? 'Best of 3' : ''].filter(Boolean).join(' · ');
+      let body = '';
+      if (!x.ms.length) body = '<p class="hb-wait">Drawn at random once the ' + huName(rounds[i - 1].n) + ' are done.</p>' +
+        Array.from({ length: x.n }, (_, k) => '<div class="hb-m tbd"><div class="hb-no">Match ' + (k + 1) + '</div><div class="hb-p tbd">To be drawn</div><div class="hb-vs">vs</div><div class="hb-p tbd">To be drawn</div></div>').join('');
+      else body = x.ms.map(m => {
+        const mine = m.p1 === me.id || m.p2 === me.id;
+        if (!m.p2) return '<div class="hb-m bye' + (mine ? ' mine' : '') + '"><div class="hb-no">Match ' + m.match_no + '</div>' + pl(m, m.p1) + '<div class="hb-byen">Bye: straight through</div></div>';
+        return '<div class="hb-m' + (m.winner ? ' done' : '') + (mine ? ' mine' : '') + '"><div class="hb-no">Match ' + m.match_no +
+          (me.is_admin && m.winner && ev.status === 'upcoming' && !later(m.round) ? '<button type="button" class="hb-undo" data-hundo="' + m.round + '|' + m.match_no + '">Undo</button>' : '') + '</div>' +
+          pl(m, m.p1) + '<div class="hb-vs">vs</div>' + pl(m, m.p2) + '</div>';
+      }).join('');
+      return '<section class="hb-round" data-r="' + x.r + '">' + (meta ? '<div class="hb-meta">' + esc(meta) + '</div>' : '') + body + '</section>';
+    }).join('') + '</div>';
+    return html;
+  }
+
+  function seatingBox(ev, seats, replies, busts, huMatches) {
     const outIds = new Set((busts || []).filter(b => b.final).map(b => b.player_id));
     if (seats === null) return '';                                  // part 15 not run yet
     const paid = replies.filter(r => r.reply === 'in' && r.paid);
@@ -3342,6 +3426,8 @@
     if (!seats.length) {
       html += '<p class="st-sub">' + paid.length + ' paid player' + (paid.length === 1 ? '' : 's') + ' ready. ' +
         (hu ? 'Drawing makes random first-round matches.' : 'Drawing seats everyone at random, up to 10 a table.') + '</p>';
+    } else if (hu && huMatches && huMatches.length) {
+      html += huBracket(ev, huMatches);
     } else if (hu) {
       html += '<p class="st-sub">Round 1, drawn at random.</p><ul class="hu-draw">' + tables.map(t => {
         const pair = seats.filter(s => s.table_no === t).sort((a, b) => a.seat_no - b.seat_no);
@@ -3359,7 +3445,8 @@
       html += tableDrawing(seats.filter(s => s.table_no === seatTab), outIds);
     }
 
-    if (mine) {
+    const played = hu && (huMatches || []).some(m => m.p2 && m.winner);
+    if (mine && !(hu && huMatches && huMatches.length)) {
       const dealer = seats.find(s => s.is_dealer && s.table_no === mine.table_no);
       if (hu) {
         const opp = seats.find(s => s.table_no === mine.table_no && s.player_id !== me.id);
@@ -3373,9 +3460,9 @@
 
     if (admin) {
       html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div><div class="seat-admin">' +
-        '<button type="button" class="go" id="seatDraw">' + (seats.length ? 'Re-draw' : (hu ? 'Draw matches' : 'Draw seats')) + '</button>' +
+        (played ? '' : '<button type="button" class="go" id="seatDraw">' + (seats.length ? 'Re-draw' : (hu ? 'Draw matches' : 'Draw seats')) + '</button>') +
         (seats.length && !hu ? '<button type="button" id="seatDealer">' + (seats.some(s => s.is_dealer) ? 'Re-pick dealer' : 'Pick dealer') + '</button>' : '') +
-        (seats.length ? '<button type="button" id="seatClear">Clear</button>' : '') + '</div>';
+        (seats.length && !played ? '<button type="button" id="seatClear">Clear</button>' : '') + '</div>';
       if (seats.length && !hu) {
         const seatOf = {}; seats.forEach(s => seatOf[s.player_id] = s);
         const offer = Math.min(4, Math.max(2, tables.length + (seats.length >= 10 ? 1 : 0), ...tables));
@@ -3397,7 +3484,8 @@
       const d = seats.find(x => x.is_dealer && x.table_no === mine.table_no);
       if (hu) {
         const opp = seats.find(x => x.table_no === mine.table_no && x.player_id !== me.id);
-        line = opp ? 'Match ' + mine.table_no + ' vs ' + esc(firstName(opp.player_id)) : 'You\u2019ve got a bye';
+        const nm = huMatches && huMatches.length ? huName(new Set(seats.map(x => x.table_no)).size) + ' \u00B7 ' : '';
+        line = nm + (opp ? 'Match ' + mine.table_no + ' vs ' + esc(firstName(opp.player_id)) : 'You\u2019ve got a bye');
       } else {
         line = (tables.length > 1 ? 'Table ' + mine.table_no + ', seat ' : 'You\u2019re in seat ') + mine.seat_no +
           (d ? ' \u00B7 ' + (d.player_id === me.id ? 'you have the button' : esc(firstName(d.player_id)) + ' has the button') : '');
@@ -3405,13 +3493,50 @@
     } else if (seats.length) line = seats.length + ' players' + (tables.length > 1 ? ' over ' + tables.length + ' tables' : '');
     else line = 'Not drawn yet';
     const freshFinal = ev.final_drawn_at && Date.now() - Date.parse(ev.final_drawn_at) < 15 * 60e3;   // just drawn: show it
-    const open = seatOpen != null ? seatOpen : (!ev.clock_started_at || freshFinal);
+    const open = seatOpen != null ? seatOpen : (!ev.clock_started_at || freshFinal || hu);   // Heads Up: the bracket stays open
     return '<details class="seating" id="seatingBox"' + (open ? ' open' : '') + '><summary><h4>' + (hu ? '🤠 The draw' : ev.final_drawn_at ? '🏆 Final table' : '🪑 Seating') + '</h4>' +
       '<span class="st-line">' + line + '</span></summary>' + html + '</details>';
   }
 
-  function bindSeating(ev, seats, replies) {
+  function bindSeating(ev, seats, replies, huMatches) {
     const box = $('seatingBox'); if (!box) return;
+    const track = $('hbTrack');
+    if (track) {
+      const tabs = box.querySelectorAll('[data-hbtab]');
+      const paintTabs = () => tabs.forEach(t => { const on = Number(t.dataset.hbtab) === huTab; t.classList.toggle('on', on);
+        if (on && t.parentNode.scrollWidth > t.parentNode.clientWidth) t.parentNode.scrollLeft = t.offsetLeft - t.parentNode.offsetLeft - 20; });
+      const place = () => { if (track.clientWidth) track.scrollLeft = (huTab - 1) * track.clientWidth; };
+      place(); paintTabs(); box.addEventListener('toggle', place); window.addEventListener('resize', place);
+      let st;
+      track.onscroll = () => { clearTimeout(st); st = setTimeout(() => {
+        if (!track.clientWidth) return;
+        const r = Math.round(track.scrollLeft / track.clientWidth) + 1;
+        if (r !== huTab) { huTab = r; paintTabs(); }
+      }, 80); };
+      tabs.forEach(t => t.onclick = () => { huTab = Number(t.dataset.hbtab); paintTabs();
+        track.scrollTo({ left: (huTab - 1) * track.clientWidth, behavior: 'smooth' }); });
+      box.querySelectorAll('[data-hw]').forEach(b => b.onclick = async () => {
+        const [r, m, pid] = b.dataset.hw.split('|');
+        const mt = huMatches.find(x => x.round === Number(r) && x.match_no === Number(m));
+        const other = mt && (mt.p1 === pid ? mt.p2 : mt.p1);
+        const nm = (id) => id === me.id ? 'You' : (people[id]?.display_name || 'Player');
+        if (!confirm(nm(pid) + ' beat' + (pid === me.id ? '' : 's') + ' ' + (other === me.id ? 'you' : nm(other)) + '?\n' + nm(pid) + ' go' + (pid === me.id ? '' : 'es') + ' through and get' + (pid === me.id ? '' : 's') + ' the knockout.')) return;
+        box.querySelectorAll('[data-hw]').forEach(x => x.disabled = true);
+        const { data, error } = await db.rpc('hu_win', { p_event: ev.id, p_round: Number(r), p_match: Number(m), p_winner: pid });
+        if (error) { alert('Couldn’t do that: ' + error.message); await renderEvent(); return; }
+        Sound.chips();
+        if (data && data.next_round) huTab = data.next_round;      // jump to the new round
+        await renderEvent();
+      });
+      box.querySelectorAll('[data-hundo]').forEach(b => b.onclick = async () => {
+        const [r, m] = b.dataset.hundo.split('|');
+        if (!confirm('Undo the result of Match ' + m + '? The loser is back in' + (huMatches.some(x => x.round > Number(r)) ? ' and the next round’s draw is cleared' : '') + '.')) return;
+        b.disabled = true;
+        const { error } = await db.rpc('hu_undo', { p_event: ev.id, p_round: Number(r), p_match: Number(m) });
+        if (error) { alert('Couldn’t do that: ' + error.message); b.disabled = false; return; }
+        huTab = Number(r); await renderEvent();
+      });
+    }
     box.querySelector('summary').onclick = () => { seatOpen = !box.open; };     // only a real tap counts, not the page redrawing
     box.querySelectorAll('.seat-tabs button').forEach(b => b.onclick = () => { seatTab = Number(b.dataset.tab); renderEvent(); });
     const run = async (btn, fn, args, after) => {
@@ -3554,7 +3679,7 @@
     }
 
     // The "I'm out" panel
-    const meIn = stillIn.includes(me.id) && !winner;
+    const meIn = stillIn.includes(me.id) && !winner && ev.format !== 'headsup';   // Heads Up: tap the winner in the bracket
     if (liveSheet) html += liveSheetHtml(ev, liveSheet, stillIn, busts, entries);
     else if (meIn) html += '<button type="button" class="live-out" data-out="' + me.id + '">💀 I’m out</button>';
 
@@ -3564,7 +3689,7 @@
       '<span class="lb">' + (cnt(id, 'rebuy') ? '<i title="Re-buys">🔁' + (cnt(id, 'rebuy') > 1 ? '×' + cnt(id, 'rebuy') : '') + '</i>' : '') +
       (cnt(id, 'addon') ? '<i title="Add-on">➕</i>' : '') + (pend(id) ? '<i class="pend" title="Waiting for an admin">⏳</i>' : '') +
       (kos[id] ? '<i title="Knockouts">💥' + kos[id] + '</i>' : '') + '</span>' +
-      (admin && id !== me.id && !winner ? '<button type="button" class="lo" data-out="' + id + '">Out…</button>' : '') + '</li>').join('') + '</ul>';
+      (admin && id !== me.id && !winner && ev.format !== 'headsup' ? '<button type="button" class="lo" data-out="' + id + '">Out…</button>' : '') + '</li>').join('') + '</ul>';
 
     // Out, in order (last out at the top)
     if (finals.length) {
@@ -3702,8 +3827,8 @@
     knockout: ['Knockout', 'Everyone has a bounty on their head; knock a player out and you collect it. Each entry is split 75% to the prize pot and 25% to the bounty, and every re-buy pays for a new bounty. Add-ons go to the pot only.'],
     headsup: ['Heads Up', 'A one-on-one knockout bracket. Win your match to move to the next round, until two players meet in the final.']
   };
-  const HU_ROUND_NAMES = { 4: ['Semis', 'Final'], 8: ['Quarters', 'Semis', 'Final'], 16: ['Round 1', 'Quarters', 'Semis', 'Final'],
-    32: ['Round 1', 'Round 2', 'Quarters', 'Semis', 'Final'] };
+  const HU_ROUND_NAMES = { 4: ['Semi-finals', 'Final'], 8: ['Quarter-finals', 'Semi-finals', 'Final'], 16: ['Round of 16', 'Quarter-finals', 'Semi-finals', 'Final'],
+    32: ['Round of 32', 'Round of 16', 'Quarter-finals', 'Semi-finals', 'Final'] };
   function hrsText(h) {                       // 1.75 -> "1 hr 45 mins"
     const t = Math.round(Number(h) * 60), hh = Math.floor(t / 60), mm = t % 60;
     return [hh ? hh + ' hr' + (hh === 1 ? '' : 's') : '', mm ? mm + ' mins' : ''].filter(Boolean).join(' ');
