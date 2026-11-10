@@ -90,6 +90,12 @@
     background: #fff;
   }
   input:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  input, select, textarea { box-sizing: border-box; max-width: 100%; }
+  input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; min-height: 46px; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+  textarea { width: 100%; padding: 12px; font: 16px 'Inter', sans-serif; border: 1px solid var(--line); border-radius: 10px; resize: vertical; }
+  .row2 { display: flex; gap: 10px; }
+  .row2 > div { flex: 1 1 0; min-width: 0; }
 
   .btn {
     display: block;
@@ -199,7 +205,7 @@
   .fin small { opacity: 0.8; margin-left: 3px; }
   .legend { font-size: 12px; color: var(--muted); margin-top: 8px; }
   /* Welcome screen */
-  .splash { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  .splash { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at center, #1a5c3e 0%, var(--felt) 50%, #051a11 100%); overflow: hidden;
     transition: opacity 0.6s ease, transform 0.6s ease; }
   .splash.leaving { opacity: 0; transform: scale(1.06); pointer-events: none; }
@@ -344,8 +350,13 @@
   .photo-actions .btn { width: auto; margin: 0; padding: 8px 12px; font-size: 14px; }
 
   /* ---- Modal + cropper ---- */
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50;
-    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.7); z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+  .modal-x { position: -webkit-sticky; position: sticky; top: 0; float: right; z-index: 3; width: 38px; height: 38px; margin: -8px -8px 0 8px; padding: 0;
+    border-radius: 50%; border: 1px solid rgba(120,72,30,.25); background: rgba(255,251,243,.92); color: #3A2013; font-size: 17px; line-height: 1; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+  .card, .section, details { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 72px); }
   .modal-card { background: var(--card); width: 100%; max-width: 380px; border-radius: var(--radius);
     padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-height: 100%; overflow: auto; }
   .modal-card h3 { margin: 0 0 12px; font-size: 18px; text-align: center; }
@@ -357,7 +368,7 @@
     background: #222; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
   .crop-stage:active { cursor: grabbing; }
   .crop-stage canvas { width: 100%; height: 100%; display: block; }
-  .crop-ring { position: absolute; inset: 0; pointer-events: none;
+  .crop-ring { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none;
     background: radial-gradient(circle at center, transparent 0 calc(43.3% - 1px), rgba(255,255,255,0.9) calc(43.3% - 1px) 43.3%, rgba(0,0,0,0.55) 43.3%); }
   .zoom-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-weight: 800; color: var(--muted); }
   .zoom-row input { flex: 1; padding: 0; border: 0; background: none; accent-color: var(--felt); }
@@ -543,7 +554,7 @@
   .theme-west .splash.leaving { opacity: 1; transform: none; transition: opacity 0.5s 0.75s; }
   .theme-west .splash.leaving { opacity: 0; }
   .theme-west .splash.leaving .splash-inner { opacity: 0; }
-  .doors { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .doors { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 2; pointer-events: none; }
   .door { position: absolute; top: 18%; bottom: 18%; width: 50%;
     background:
       repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 26px, rgba(0,0,0,0.45) 26px 29px),
@@ -557,7 +568,7 @@
 
   /* Floating background items */
   .floaters { display: none; }
-  .theme-west .floaters { display: block; position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .theme-west .floaters { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; pointer-events: none; overflow: hidden; }
   .floater { position: absolute; bottom: -90px; will-change: transform; animation: floatUp linear infinite; }
   .floater .sway { display: block; animation: sway ease-in-out infinite alternate; }
   .floater svg { display: block; width: 100%; height: 100%; animation: turn linear infinite; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
@@ -580,7 +591,7 @@
   @keyframes riseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
   .badge-stage { width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
-  .rays { position: absolute; inset: -60px; border-radius: 50%;
+  .rays { position: absolute; top: -60px; right: -60px; bottom: -60px; left: -60px; border-radius: 50%;
     background: repeating-conic-gradient(from 0deg, rgba(255,214,140,0.22) 0deg 6deg, rgba(255,214,140,0) 6deg 18deg);
     -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
     animation: spinRays 26s linear infinite; }
@@ -643,7 +654,7 @@
   @keyframes sweepL { from { transform: rotate(-18deg); } to { transform: rotate(14deg); } }
   @keyframes sweepR { from { transform: rotate(18deg); } to { transform: rotate(-14deg); } }
 
-  .embers { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .embers { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 1; pointer-events: none; }
   .embers i { position: absolute; bottom: -10px; width: 5px; height: 5px; border-radius: 50%; background: #ffd27a;
     box-shadow: 0 0 8px 2px rgba(255,190,90,0.8); opacity: 0; animation: ember 7s linear infinite; }
   .embers i:nth-child(1) { left: 8%; animation-delay: 0s; }    .embers i:nth-child(2) { left: 16%; animation-delay: 2.4s; animation-duration: 9s; }
@@ -954,7 +965,7 @@
      dots slide across -> barrel opens on the sunset -> gunslinger walks in, draws, fires ->
      orange wash runs down -> barrel opens out into the site. Tap again to skip. */
   .bond { display: none; }
-  .theme-gpl .bond { display: block; position: absolute; inset: 0; z-index: 1; overflow: hidden; background: #140904; opacity: 0; pointer-events: none;
+  .theme-gpl .bond { display: block; position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 1; overflow: hidden; background: #140904; opacity: 0; pointer-events: none;
     --D: min(78vw, 46vh, 380px); }
   .theme-gpl .splash.leaving .bond { animation: bondIn 0.3s ease-out 0.15s forwards; }
   .theme-gpl .splash.leaving .door { opacity: 0.95; }
@@ -978,17 +989,17 @@
   @keyframes barrelZoom { from { opacity: 1; left: 50%; transform: scale(1); } to { opacity: 1; left: 50%; transform: scale(9); } }
 
   /* the rifling around the opening, slowly turning */
-  .bond-rifle { position: absolute; inset: -75%; border-radius: 50%;
+  .bond-rifle { position: absolute; top: -75%; right: -75%; bottom: -75%; left: -75%; border-radius: 50%;
     background:
       radial-gradient(circle, rgba(20,9,4,0) 27%, rgba(20,9,4,0.15) 29%, rgba(20,9,4,0.85) 52%, #140904 64%),
       repeating-conic-gradient(from 0deg, #4A2A19 0deg 9deg, #2A160C 9deg 20deg, #6B3E25 20deg 22deg, #2A160C 22deg 30deg);
     animation: rifle 6s linear infinite; }
   @keyframes rifle { to { transform: rotate(-360deg); } }
-  .bond-hole { position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+  .bond-hole { position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: 50%; overflow: hidden;
     background:
       radial-gradient(circle at 50% 46%, #FFF3DF 0, #FBC891 22%, #F49A5C 45%, #E5702F 70%, #C9561F 100%);
     box-shadow: 0 0 0 3px #2A160C, 0 0 30px 6px rgba(0,0,0,0.6) inset; }
-  .bond-hole::before { content: ''; position: absolute; inset: 0; background: repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,243,223,0.25) 0deg 7deg, rgba(255,243,223,0) 7deg 30deg); }
+  .bond-hole::before { content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,243,223,0.25) 0deg 7deg, rgba(255,243,223,0) 7deg 30deg); }
 
   .bond-man { position: absolute; left: 50%; bottom: 3%; height: 84%; aspect-ratio: 304 / 392; translate: -50% 0; transform: translateX(80%); }
   .splash.leaving .bond-man { animation: walkIn 1.05s cubic-bezier(.25,.6,.4,1) 1.35s forwards; }
@@ -1006,7 +1017,7 @@
     -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%); mask: radial-gradient(circle, #000 30%, transparent 70%); }
   .splash.leaving .bond-flash { animation: flash 0.32s ease-out 2.45s; }
   @keyframes flash { 0% { opacity: 0; transform: scale(0.3) rotate(0deg); } 15% { opacity: 1; transform: scale(1.1) rotate(10deg); } 100% { opacity: 0; transform: scale(1.4) rotate(25deg); } }
-  .bond-white { position: absolute; inset: 0; background: #FFF3DF; opacity: 0; pointer-events: none; }
+  .bond-white { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: #FFF3DF; opacity: 0; pointer-events: none; }
   .splash.leaving .bond-white { animation: whiteFlash 0.28s ease-out 2.45s; }
   @keyframes whiteFlash { 0% { opacity: 0; } 12% { opacity: 0.75; } 100% { opacity: 0; } }
 
@@ -1095,7 +1106,7 @@
   .ev-format summary { cursor: pointer; font-weight: 700; color: #C9561F; }
   .ev-format details p { margin: 6px 0 0; line-height: 1.45; }
   .places-bar { position: relative; margin: 12px 0 4px; height: 30px; border-radius: 999px; overflow: hidden; background: rgba(58,32,19,0.1); }
-  .places-bar .pb-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #F49A5C, #E5702F); }
+  .places-bar .pb-fill { position: absolute; top: 0; right: auto; bottom: 0; left: 0; background: linear-gradient(90deg, #F49A5C, #E5702F); }
   .places-bar.full .pb-fill { background: linear-gradient(90deg, #C9561F, #8A3A12); }
   .places-bar span { position: relative; display: block; text-align: center; line-height: 30px; font-size: 13px; font-weight: 800; color: var(--ink); }
   .places-bar.full span { color: #fff; }
@@ -1232,6 +1243,12 @@
   .rate-bar span { display: block; height: 100%; background: linear-gradient(90deg, #FBC891, #E5702F); }
   .rate-help { font-size: 12.5px; opacity: .75; margin: 8px 0 0; }
   .rate-modal { max-width: 440px; }
+  .host-edit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+    background: rgba(229,112,47,.08); border: 1px dashed rgba(229,112,47,.5); font-size: 14px; }
+  .host-edit span { flex: 1 1 160px; }
+  .host-edit button { flex: none; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #E5702F; color: #fff; font: 600 14px 'Inter', sans-serif; cursor: pointer; }
+  .rate-back { display: inline-block; margin: -4px 0 8px; padding: 8px 2px; border: 0; background: transparent; color: #C9561F; font: 600 15px 'Inter', sans-serif; cursor: pointer; }
+  .rate-saved { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: rgba(46,122,78,.12); color: #1f6b43; font-size: 14px; font-weight: 600; }
   .rate-sub { font-size: 13.5px; margin: 0 0 10px; text-align: center; }
   .rate-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
   .rate-people button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 12px; border: 1.5px solid rgba(58,32,19,.18); background: #fff; cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--ink); }
@@ -1340,7 +1357,8 @@
   .tb-sizes b { color: #FBC891; margin-left: 2px; }
   .ft-ready { margin: 6px 0; padding: 10px; border-radius: 12px; background: rgba(251,200,145,.14); border: 1.5px solid #FBC891; color: #F6EAD5; font-size: 14px; }
   .ltab { font-size: 11px; color: #FBC891; margin-left: 4px; letter-spacing: .03em; }
-  .ft-pop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(0,0,0,.72); display: flex; align-items: center; justify-content: center; padding: 18px; }
+  .ft-pop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(0,0,0,.72); display: flex; align-items: center; justify-content: center;
+    padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom)); }
   .ft-card { width: 100%; max-width: 360px; padding: 22px 18px 16px; border-radius: 18px; background: #2A150B; border: 1.5px solid #E5702F; text-align: center; color: #F6EAD5; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
   .ft-ic { font-size: 40px; line-height: 1; }
   .ft-card h3 { margin: 8px 0 6px; font: 400 28px 'Anton', sans-serif; letter-spacing: .02em; text-transform: uppercase; color: #FBC891; }
@@ -1592,7 +1610,7 @@
   .bs-top span { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
   .bs-top b { color: #FBC891; font-size: 12px; }
   .bs-bar { position: relative; display: block; height: 7px; margin: 6px 0 5px; border-radius: 999px; background: rgba(246,234,213,0.15); overflow: hidden; }
-  .bs-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, #F49A5C, #E5702F); }
+  .bs-bar > span { position: absolute; top: 0; right: auto; bottom: 0; left: 0; border-radius: 999px; background: linear-gradient(90deg, #F49A5C, #E5702F); }
   .bs-bar > i { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(251,200,145,0.55) 0 4px, rgba(251,200,145,0.15) 4px 8px); }
   .bs-tap { display: block; font-size: 11.5px; color: #F3DFC4; opacity: 0.8; }
   .build-card h3 { margin-top: 0; }
@@ -1608,6 +1626,8 @@
   .theme-gpl .soon-hero > .fan { height: clamp(46px, 8svh, 90px); }
   .theme-gpl .soon-hero > .volume-note { padding: 6px 12px; margin-top: 0.6svh; }
   .theme-gpl .soon-big { margin: 0.2svh 0 0.4svh; }
+  /* Full-screen app: a solid strip behind the phone's status bar so nothing scrolls underneath the clock */
+  body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #1E0F07; z-index: 45; pointer-events: none; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
@@ -2024,6 +2044,22 @@
   <div class="modal-card rate-modal">
     <h3 id="rateTitle">⭐ Rate the table</h3>
     <div id="rateBody"></div>
+  </div>
+</div>
+
+<div id="hostModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="hostTitle">
+  <div class="modal-card">
+    <h3 id="hostTitle">🏠 Edit the details</h3>
+    <p class="muted" style="margin:0">You’re hosting, so you can change these. Everyone who’s In or Maybe gets an alert.</p>
+    <div class="row2">
+      <div><label for="hoArrive">Arrive by <span class="opt">(optional)</span></label><input id="hoArrive" type="time"></div>
+      <div><label for="hoStart">Play starts</label><input id="hoStart" type="time"></div>
+    </div>
+    <label for="hoAddress">Address</label><input id="hoAddress" type="text" maxlength="200" autocomplete="street-address">
+    <label for="hoNotes">Notes <span class="opt">(optional)</span></label>
+    <textarea id="hoNotes" maxlength="1000" rows="4" placeholder="e.g. Park on the street, the doorbell’s broken, bring a drink"></textarea>
+    <div class="btnrow"><button id="hoCancel" class="btn secondary" type="button">Cancel</button><button id="hoSave" class="btn" type="button">Save</button></div>
+    <div id="hoMsg" class="msg"></div>
   </div>
 </div>
 
@@ -2875,21 +2911,24 @@
       '<p class="rate-help">Anonymous and just for fun. Nobody sees who gave which score.</p>' +
       '<button type="button" class="btn ' + (done === players.length ? 'secondary ' : '') + 'full" id="rateOpen">' + (done === players.length ? 'Change my ratings' : done ? 'Carry on rating' : 'Rate now') + '</button>';
     card.classList.remove('hidden');
-    $('rateOpen').onclick = () => { ballot.cur = null; paintBallot(); $('rateModal').classList.remove('hidden'); };
+    $('rateOpen').onclick = () => { ballot.cur = null; ballot.saved = null; paintBallot(); $('rateModal').classList.remove('hidden'); };
   }
+  const scrollRateTop = () => { const c = document.querySelector('.rate-modal'); if (c) c.scrollTop = 0; };
   function paintBallot() {
     const b = ballot, body = $('rateBody');
     if (!b.cur) {
-      body.innerHTML = '<p class="rate-sub">' + (b.ev.name ? esc(b.ev.name) + ' · ' : '') + niceDate(b.ev.event_date, true) + '. Tap a player to rate them on all five. Didn’t see enough? Use N/A.</p>' +
+      body.innerHTML = (b.saved ? '<p class="rate-saved">✓ Saved ' + esc(firstName(b.saved)) + '. ' + (b.players.every(p => b.mine[p]) ? 'That’s everyone, thanks!' : 'Pick the next player, or close and finish later.') + '</p>' : '') +
+        '<p class="rate-sub">' + (b.ev.name ? esc(b.ev.name) + ' · ' : '') + niceDate(b.ev.event_date, true) + '. Tap a player to rate them on all five. Didn’t see enough? Use N/A.</p>' +
         '<div class="rate-people">' + b.players.map(id => '<button type="button" data-p="' + id + '" class="' + (b.mine[id] ? 'done' : '') + '">' + avatarHtml(id, 44) +
           '<span>' + esc(firstName(id)) + '</span><i>' + (b.mine[id] ? '✓ Rated' : 'To rate') + '</i></button>').join('') + '</div>' +
         '<button type="button" class="btn secondary full" id="rateClose">Close</button>';
-      body.querySelectorAll('[data-p]').forEach(x => x.onclick = () => { b.cur = x.dataset.p; b.draft = { ...(b.mine[b.cur] || {}) }; paintBallot(); });
+      body.querySelectorAll('[data-p]').forEach(x => x.onclick = () => { b.cur = x.dataset.p; b.draft = { ...(b.mine[b.cur] || {}) }; b.saved = null; paintBallot(); scrollRateTop(); });
       $('rateClose').onclick = () => { $('rateModal').classList.add('hidden'); loadRateCard(); };
       return;
     }
     const id = b.cur;
-    body.innerHTML = '<div class="rate-who">' + avatarHtml(id, 52) + '<b>' + esc(people[id]?.display_name || 'Player') + '</b></div>' +
+    body.innerHTML = '<button type="button" class="rate-back" id="rateBackTop">‹ All players</button>' +
+      '<div class="rate-who">' + avatarHtml(id, 52) + '<b>' + esc(people[id]?.display_name || 'Player') + '</b></div>' +
       RATING_METRICS.map(m => {
         const v = b.draft[m.k];
         const pick = v === undefined ? '' : v === null ? 'N/A' : v;
@@ -2903,7 +2942,7 @@
       '<div class="rate-btns"><button type="button" class="btn secondary" id="rateBack">Back</button><button type="button" class="btn" id="rateSave">Save</button></div>' +
       '<div id="rateMsg" class="msg"></div>';
     body.querySelectorAll('[data-m]').forEach(x => x.onclick = () => { b.draft[x.dataset.m] = x.dataset.v === 'na' ? null : Number(x.dataset.v); paintBallot(); });
-    $('rateBack').onclick = () => { b.cur = null; paintBallot(); };
+    $('rateBack').onclick = $('rateBackTop').onclick = () => { b.cur = null; paintBallot(); scrollRateTop(); };
     $('rateSave').onclick = async () => {
       const missing = RATING_METRICS.filter(m => b.draft[m.k] === undefined);
       if (missing.length) { $('rateMsg').textContent = 'Pick a score (or N/A) for ' + missing.map(m => m.name).join(', ') + '.'; $('rateMsg').className = 'msg error'; return; }
@@ -2911,9 +2950,8 @@
       const { error } = await db.rpc('submit_rating', { p_event: b.ev.id, p_rated: id, p_scores: b.draft });
       if (error) { $('rateSave').disabled = false; $('rateMsg').textContent = 'Couldn’t save: ' + error.message; $('rateMsg').className = 'msg error'; return; }
       b.mine[id] = { ...b.draft }; Sound.chips();
-      const nextId = b.players.find(p => !b.mine[p]);
-      b.cur = nextId || null; b.draft = nextId ? { ...(b.mine[nextId] || {}) } : {};
-      paintBallot(); $('rateBody').scrollTop = 0; document.querySelector('.rate-modal').scrollTop = 0;
+      b.cur = null; b.draft = {}; b.saved = id;                     // back to the list: rate the next one or close
+      paintBallot(); scrollRateTop();
     };
   }
 
@@ -2984,7 +3022,16 @@
       return;
     }
     const pr = (ratingCache.players || []).find(x => x.player_id === id);
-    if (!pr) { box.innerHTML = '<div class="card section ptype"><div class="section-title">Player type</div><p class="empty">No ratings yet. After each night, players rate each other on five metrics, just for fun.</p></div>'; return; }
+    if (!pr) {
+      const w = (ratingCache.waiting || []).find(x => x.player_id === id), need = ratingCache.needed || 3;
+      const who = mine ? 'you' : esc(firstName(id));
+      box.innerHTML = '<div class="card section ptype"><div class="section-title">Player type</div><p class="empty">' +
+        (w ? '<b>' + w.raters + ' of ' + need + '</b> ratings so far from ' + (mine ? 'your' : 'their') + ' last night. A player type shows once at least ' + need +
+             ' people have rated ' + who + ' after the same night, so nobody’s scores can be picked out.'
+           : 'No ratings yet. After each night, players rate each other on five metrics, just for fun. It takes at least ' + need + ' people rating ' + who + ' after the same night.') +
+        '</p></div>';
+      return;
+    }
     const key = playerType(pr.scores), t = key ? PLAYER_TYPES[key] : null;
     const colour = t ? t[1] : '#C9561F', provisional = pr.nights < 2;
     box.innerHTML = '<div class="card section ptype"><div class="section-title">Player type</div>' +
@@ -3257,6 +3304,7 @@
       (meta.length ? '<p class="ev-meta">' + meta.join('<br>') + '</p>' : '') +
       formatBox(ev) +
       (ev.notes ? '<div class="ev-notes">' + esc(ev.notes) + '</div>' : '') +
+      (ev.host_id && ev.host_id === me.id && ev.status === 'upcoming' ? '<div class="host-edit"><span>🏠 You’re hosting this one.</span><button type="button" id="hostEdit">✏️ Edit the details</button></div>' : '') +
       placeLine +
       (closed ? '<div class="closed-banner">' + (ev.is_final ? '🏆 The Last Draw: seats are reserved for the finalists. Can\u2019t make it? Tell Alex or Phil.' : '🚫 Registration is closed. You can still pull out if you need to.') + '</div>' : '') +
       '<div class="replies">' +
@@ -3312,6 +3360,7 @@
     document.querySelectorAll('.replies button').forEach(b => b.onclick = () => saveReply(b.dataset.r));
     bindMoney(ev);
     bindSeating(ev, seats, replies || [], huMatches);
+    if ($('hostEdit')) $('hostEdit').onclick = () => openHostEdit(ev);
     bindLive(ev, busts, replies || [], entries);
     $('saveComment').onclick = () => {
       if (!myReply) { flash('Tap In, Maybe or Out first.', true); return; }
@@ -3359,6 +3408,27 @@
       }
     });
     return html + '</div>';
+  }
+
+  // ---- The host edits the times, address and notes (part 29) ----
+  function openHostEdit(ev) {
+    $('hoArrive').value = ev.arrival_time ? ev.arrival_time.slice(0, 5) : '';
+    $('hoStart').value = ev.start_time ? ev.start_time.slice(0, 5) : '';
+    $('hoAddress').value = ev.address || ''; $('hoNotes').value = ev.notes || '';
+    $('hoMsg').textContent = ''; $('hoMsg').className = 'msg'; $('hoSave').disabled = false;
+    $('hostModal').classList.remove('hidden');
+    $('hoCancel').onclick = () => $('hostModal').classList.add('hidden');
+    $('hoSave').onclick = async () => {
+      const err = (t) => { $('hoMsg').textContent = t; $('hoMsg').className = 'msg error'; };
+      if (!$('hoStart').value) return err('Put in a start time.');
+      $('hoSave').disabled = true;
+      const { data, error } = await db.rpc('host_update_event', { p_event: ev.id, p_arrive: $('hoArrive').value || null, p_start: $('hoStart').value,
+        p_address: $('hoAddress').value, p_notes: $('hoNotes').value });
+      if (error) { $('hoSave').disabled = false; return err('Couldn’t save: ' + error.message); }
+      $('hostModal').classList.add('hidden');
+      if (data && data.changed && data.changed.length) Sound.chips();
+      await loadEvent();
+    };
   }
 
   // ---- Heads Up bracket (part 27): a tab per round, swipe between them, tap the winner ----
@@ -5025,6 +5095,23 @@
   $('msgModal').onclick = (e) => { if (e.target === $('msgModal')) $('msgClose').onclick(); };
 
   // ---- Get the app (add to home screen) ----
+  // Every pop-up gets a ✕ that stays at the top, and tapping the dark background closes it too.
+  // Each one uses the pop-up's own Close button, so whatever that does (saving, refreshing) still happens.
+  const MODAL_CLOSERS = { msgModal: '#msgClose', installModal: '#installClose', memView: '#memClose', memAdd: '#memAddCancel',
+    profileModal: '#pfClose:not(.hidden), #pfLater:not(.hidden)', rateModal: '#rateClose, #rateBack', buildModal: '#buildClose',
+    photoModal: '.photoClose', hostModal: '#hoCancel' };
+  document.querySelectorAll('.modal').forEach(m => {
+    const card = m.querySelector('.modal-card'); if (!card || card.querySelector('.modal-x')) return;
+    const close = () => {
+      if (m.id === 'rateModal') { m.classList.add('hidden'); if (typeof loadRateCard === 'function') loadRateCard(); return; }
+      const c = [...m.querySelectorAll(MODAL_CLOSERS[m.id] || '.none')].find(x => x.offsetParent !== null);
+      if (c) c.click(); else if (!MODAL_CLOSERS[m.id]) m.classList.add('hidden');
+    };
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'modal-x'; x.setAttribute('aria-label', 'Close'); x.textContent = '✕';
+    x.onclick = close; card.prepend(x);
+    m.addEventListener('click', (e) => { if (e.target === m) close(); });
+  });
+
   const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
   const isAndroid = /android/i.test(navigator.userAgent);
   let installPrompt = null;

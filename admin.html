@@ -50,6 +50,10 @@
     border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
   }
   textarea { min-height: 70px; resize: vertical; }
+  /* iPhones give date and time boxes a fixed width that spills out of the card */
+  input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 46px; text-align: left; }
+  input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+  .pdate-row input { min-width: 0; }
   input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
   .row2 { display: flex; gap: 10px; }
   .row2 > div { flex: 1; min-width: 0; }
@@ -219,6 +223,8 @@
   .theme-gpl .tabs button.active { background: linear-gradient(180deg, #EF8443, #D2591D); color: #fff; box-shadow: 0 0 16px rgba(229,112,47,0.55); }
   .theme-gpl .topbar a { border-color: rgba(244,154,92,0.6); color: #F6EAD5; }
   .theme-gpl .badge { background: linear-gradient(180deg, #F7AE79, #E5702F); color: #2A160C; }
+  /* Full-screen app: a solid strip behind the phone's status bar so nothing scrolls underneath the clock */
+  body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--felt-dark); z-index: 45; pointer-events: none; }
 </style>
 </head>
 <body class="theme-west theme-gpl">
