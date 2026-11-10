@@ -145,6 +145,12 @@
   table.res td.posc { width: 52px !important; }
   table.res td.koc { width: 46px !important; }
   table.res th { font-size: 11px !important; }
+  table.stats th[data-sort] { cursor: pointer; user-select: none; }
+  table.stats th.on { color: var(--ink, #3A2013); }
+  table.stats .c { text-align: center; }
+  table.stats td { padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  table.stats td.warn { color: #C9561F; font-weight: 600; }
+  table.stats td small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); }
   table.res td.koc { width: 52px; }
   table.res td.ptsc { width: 50px; text-align: right; font-weight: 800; }
   .tag-in { font-size: 11px; color: #1b7a46; font-weight: 700; }
@@ -391,6 +397,13 @@
       <button id="resReport" class="btn secondary full" type="button" style="margin-top:8px">📊 Download night report (Excel)</button>
       <button id="resClear" class="btn danger full" type="button">Clear all results for this event</button>
       <div id="resMsg" class="msg"></div>
+    </div>
+    <div class="card" id="statsCard">
+      <h2>Player stats</h2>
+      <p class="muted">For each player: events played, late pull-outs and times hosted. A late pull-out is going from In to Out (or Maybe) in the 7 days before the event; riding back in cancels it. Late pull-outs are only counted from when this was switched on. Tap a heading to sort.</p>
+      <label for="statYear">Year</label>
+      <select id="statYear"></select>
+      <div id="statTable"><p class="muted">Loading…</p></div>
     </div>
   </section>
 
@@ -1037,7 +1050,7 @@
     }
     paintFormat();
     $('evHost').value = ev.host || '';
-    const hp = players.find(p => p.can_host && p.display_name === ev.host);
+    const hp = players.find(p => p.can_host && ev.host_id && p.id === ev.host_id) || players.find(p => p.can_host && p.display_name === ev.host);
     $('evHostPick').value = hp ? hp.id : '';
     showHostInfo(hp);
     $('evBuyin').value = ev.buy_in ?? '';
@@ -1093,6 +1106,13 @@
       arrival_time: $('evArrive').value || null,
       venue: $('evVenue').value.trim() || null,
       host: $('evHost').value.trim() || null,
+      host_id: (() => {                     // which player hosted (for the player stats)
+        const t = $('evHost').value.trim().toLowerCase(); if (!t) return null;
+        const pick = players.find(x => x.id === $('evHostPick').value);
+        if (pick && pick.display_name.toLowerCase() === t) return pick.id;
+        const named = players.filter(x => x.display_name.toLowerCase() === t);
+        return named.length === 1 ? named[0].id : null;
+      })(),
       buy_in: buyIn,
       rebuy_price: !rebuysOn() || $('evRebuy').value === '' ? null : Number($('evRebuy').value),
       addon_price: !re || !addonOn() ? null
@@ -1604,7 +1624,37 @@
     const keep = $('repYear').value;
     $('repYear').innerHTML = years.map(y => '<option>' + y + '</option>').join('');
     if (keep && years.includes(keep)) $('repYear').value = keep;
+    const sk = $('statYear').value;
+    $('statYear').innerHTML = years.map(y => '<option>' + y + '</option>').join('');
+    if (sk && years.includes(sk)) $('statYear').value = sk;
+    loadStats();
   }
+
+  // ---- Player stats (part 28) ----
+  let statSort = 'played', statRows = [];
+  async function loadStats() {
+    const y = Number($('statYear').value) || new Date().getFullYear();
+    const { data, error } = await db.rpc('player_stats', { p_year: y });
+    if (error) { $('statsCard').classList.add('hidden'); return; }        // part 28 not run yet
+    $('statsCard').classList.remove('hidden');
+    statRows = data || []; paintStats();
+  }
+  function paintStats() {
+    const nm = (id) => players.find(p => p.id === id)?.display_name || 'Player';
+    const k = statSort;
+    const rows = [...statRows].sort((a, b) => (k === 'name' ? 0 : (b[k] || 0) - (a[k] || 0)) || nm(a.player_id).localeCompare(nm(b.player_id)));
+    const th = (key, label) => '<th data-sort="' + key + '" class="' + (key === k ? 'on' : '') + (key === 'name' ? '' : ' c') + '">' + label + (key === k ? ' ▾' : '') + '</th>';
+    const day = (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const tot = (key) => statRows.reduce((a, r) => a + (r[key] || 0), 0);
+    $('statTable').innerHTML = rows.length ? '<table class="res stats"><thead><tr>' + th('name', 'Player') + th('played', 'Played') + th('late_cancels', 'Late outs') + th('hosted', 'Hosted') +
+      '</tr></thead><tbody>' + rows.map(r => '<tr><td>' + esc(nm(r.player_id)) + '</td><td class="c">' + r.played + '</td>' +
+        '<td class="c' + (r.late_cancels ? ' warn' : '') + '">' + r.late_cancels + (r.last_late ? '<small>last ' + day(r.last_late) + '</small>' : '') + '</td>' +
+        '<td class="c">' + r.hosted + '</td></tr>').join('') +
+      '</tbody></table><p class="muted small-note">' + tot('late_cancels') + ' late pull-out' + (tot('late_cancels') === 1 ? '' : 's') + ' and ' + tot('hosted') + ' hosted night' + (tot('hosted') === 1 ? '' : 's') + ' in ' + $('statYear').value + '.</p>'
+      : '<p class="muted">No players yet.</p>';
+    $('statTable').querySelectorAll('th[data-sort]').forEach(h => h.onclick = () => { statSort = h.dataset.sort; paintStats(); });
+  }
+  $('statYear').onchange = loadStats;
   $('repDownload').onclick = async () => {
     clear('repMsg'); busy($('repDownload'), true, 'Making the report…');
     try { await seasonReport($('repYear').value); msg('repMsg', '✓ Season report for ' + $('repYear').value + ' downloaded.', 'ok'); }
@@ -1615,7 +1665,7 @@
   // ================= POINTS & SETTINGS =================
   // ================= BACKUP =================
   const BACKUP_TABLES = ['profiles', 'league_settings', 'points_table', 'payout_tables', 'events', 'attendance', 'event_entries',
-    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'last_draw_players', 'polls', 'poll_options', 'poll_votes', 'ratings', 'messages', 'memories'];
+    'seating', 'results', 'league_fees', 'busts', 'last_draw', 'last_draw_players', 'polls', 'poll_options', 'poll_votes', 'ratings', 'hu_matches', 'attendance_log', 'messages', 'memories'];
   const BACKUP_LABELS = { profiles: 'players', events: 'events', attendance: 'replies', results: 'results', event_entries: 're-buys/add-ons',
     seating: 'seats', league_fees: 'league fees', messages: 'messages', memories: 'photos listed' };
   function paintBackupDate() {
