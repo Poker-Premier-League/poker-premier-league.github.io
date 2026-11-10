@@ -1819,7 +1819,7 @@
 
   <div class="soon-links">
     <button class="textlink light open-install" type="button">📲 Add It To Your Home Screen</button>
-    <button id="soonAdminLogin" class="textlink light" type="button">Admin Log In</button>
+    <button id="soonAdminLogin" class="textlink light" type="button">Overseer Log In</button>
     <button id="soonLogout" class="textlink light hidden" type="button">Log Out</button>
   </div>
 </div>
@@ -1880,16 +1880,16 @@
 <!-- LOGGED IN -->
 <div id="homeCard" class="hidden">
   <div id="viewAsBar" class="viewas-bar hidden" role="status"><span>👁 You’re viewing as a player</span><button id="viewAsBack" type="button">Back to admin</button></div>
-    <div id="soonBanner" class="soon-banner hidden">🤠 <b>Coming soon mode is on.</b> Only admins can see the site. Open it to everyone in Admin → Settings.</div>
+    <div id="soonBanner" class="soon-banner hidden">🤠 <b>Coming soon mode is on.</b> Only Overseers can see the site. Open it to everyone in Overseers → Settings.</div>
   <div class="userbar">
     <span class="me-wrap">
       <button id="myAvatarBtn" class="av-btn" type="button" title="Change your photo"><span id="myAvatar"></span><span class="av-edit">✎</span></button>
-      <span><span class="hi-word">Hi, </span><strong id="whoName"></strong><span id="adminBadge" class="badge hidden">ADMIN</span></span>
+      <span><span class="hi-word">Hi, </span><strong id="whoName"></strong><span id="adminBadge" class="badge hidden">OVERSEER</span></span>
     </span>
     <span>
       <button id="muteBtn" class="linkbtn icon" type="button" aria-label="Sound on" title="Sound on/off">🔊</button>
       <button id="msgBtn" class="linkbtn icon" type="button" aria-label="Messages" title="Messages">📬<span id="msgDot" class="msg-dot hidden"></span></button>
-      <a id="adminLink" class="linkbtn hidden" href="admin.html">Admin</a>
+      <a id="adminLink" class="linkbtn hidden" href="admin.html">Overseers</a>
       <button id="logoutBtn" class="linkbtn" type="button">Log out</button>
     </span>
   </div>
@@ -1934,7 +1934,7 @@
         <button id="appCardClose" class="app-card-x" type="button" aria-label="Hide this">×</button>
       </div>
       <div id="archiveCard" class="card section hidden"></div>
-      <button id="reviewPreviewBtn" class="textlink light hidden" type="button">Preview season review (only admins see this)</button>
+      <button id="reviewPreviewBtn" class="textlink light hidden" type="button">Preview season review (only Overseers see this)</button>
     </section>
 
     <!-- ===== LEAGUE ===== -->
@@ -2098,7 +2098,7 @@
     </div>
 
     <div id="pfViewAsWrap" class="hidden">
-      <label>Admin</label>
+      <label>Overseers</label>
       <button id="pfViewAs" class="btn secondary full" type="button">👁 View as a player</button>
       <p class="opt" style="margin:4px 0 0">See the app exactly as everyone else does. It only changes your screen.</p>
     </div>
@@ -2940,7 +2940,7 @@
     html += '<div class="card section ld-details"><div class="section-title">The game</div>' +
       (ldInfo && ldInfo.details_shown && ldInfo.details ? '<p class="ld-det">' + esc(ldInfo.details).replace(/\n/g, '<br>') + '</p>'
         : '<p class="ld-lock">🔒 The format and game details are kept under the hat until Alex and Phill reveal them, closer to the night. Seats are drawn at the venue on the night.</p>' +
-          (me.is_admin && ldInfo && ldInfo.details ? '<p class="ld-admin-note">Admins only: your details are saved but hidden. Reveal them in Admin → Settings → The Last Draw.</p>' : '')) + '</div>';
+          (me.is_admin && ldInfo && ldInfo.details ? '<p class="ld-admin-note">Overseers only: your details are saved but hidden. Reveal them in Overseers → Settings → The Last Draw.</p>' : '')) + '</div>';
     box.innerHTML = html;
     box.querySelectorAll('[data-ld]').forEach(b => b.onclick = async () => {
       const a = b.dataset.ld, pid = b.dataset.pid || me.id, who = pid === me.id ? 'you' : firstName(pid);
@@ -3468,7 +3468,7 @@
       (ev.status === 'upcoming' ? '<div class="cal-add"><button type="button" id="calIcs">📅 Add to calendar</button><a id="calGoogle" href="' + esc(googleCalUrl(ev)) + '" target="_blank" rel="noopener">Google Calendar</a></div>' : '') +
       formatBox(ev) +
       (ev.notes ? '<div class="ev-notes">' + esc(ev.notes) + '</div>' : '') +
-      (ev.is_test ? '<div class="test-ev">🧪 <b>Test event.</b> Only admins can see it, alerts only go to admins, and results won’t count in the league.</div>' : '') +
+      (ev.is_test ? '<div class="test-ev">🧪 <b>Test event.</b> Only Overseers can see it, alerts only go to Overseers, and results won’t count in the league.</div>' : '') +
       (ev.host_id && ev.host_id === me.id && ev.status === 'upcoming' ? '<div class="host-edit"><span>🏠 You’re hosting this one.</span><button type="button" id="hostEdit">✏️ Edit the details</button></div>' : '') +
       placeLine +
       (closed ? '<div class="closed-banner">' + (ev.is_final ? '🏆 The Last Draw: seats are reserved for the finalists. Can\u2019t make it? Tell Alex or Phill.' : '🚫 Registration is closed. You can still pull out if you need to.') + '</div>' : '') +
@@ -3739,7 +3739,7 @@
     }
 
     if (admin) {
-      html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div><div class="seat-admin">' +
+      html += '<div class="admin-zone"><div class="az-l">🛠 Overseer controls</div><div class="seat-admin">' +
         (played ? '' : '<button type="button" class="go" id="seatDraw">' + (seats.length ? 'Re-draw' : (hu ? 'Draw matches' : 'Draw seats')) + '</button>') +
         (seats.length && !hu ? '<button type="button" id="seatDealer">' + (seats.some(s => s.is_dealer) ? 'Re-pick dealer' : 'Pick dealer') + '</button>' : '') +
         (seats.length && !played ? '<button type="button" id="seatClear">Clear</button>' : '') + '</div>';
@@ -3846,7 +3846,7 @@
   // ---- Live tournament table (phase 4, step 2) ----
   const clockSecs = (ev) => !ev.clock_started_at ? null : Math.max(0,
     ((ev.clock_paused_at ? Date.parse(ev.clock_paused_at) : Date.now()) - Date.parse(ev.clock_started_at)) / 1000 - (ev.clock_paused_secs || 0));
-  // Re-buys (part 25): open till a blind level, closed by hand by an admin. A Knockout can be a freeze-out.
+  // Re-buys (part 25): open till a blind level, closed by hand by an Overseer. A Knockout can be a freeze-out.
   const canRebuy = (ev) => ev.format === 'rebuy' || (ev.format === 'knockout' && ev.ko_rebuys !== false);
   const hasEntries = (ev) => canRebuy(ev) || (ev.format === 'knockout' && ev.addon_allowed !== false);
   const rebuysOpen = (ev) => canRebuy(ev) && !ev.rebuys_closed && !ev.rebuys_stopped;
@@ -3906,7 +3906,7 @@
       if (!admin || field.length < 2) return '';
       return '<div class="live" id="liveBox"><div class="live-top"><span class="live-dot off"></span><h4>Tournament clock</h4></div>' +
         '<p class="st-sub">' + field.length + ' paid players. Start the clock when the cards are in the air.' + (canRebuy(ev) ? ' Close re-buys from here when the time comes.' : '') + '</p>' +
-        '<div class="admin-zone"><div class="az-l">🛠 Admin only</div><div class="seat-admin"><button type="button" class="go" data-clock="start">⏱ Start the clock</button></div></div></div>';
+        '<div class="admin-zone"><div class="az-l">🛠 Overseers only</div><div class="seat-admin"><button type="button" class="go" data-clock="start">⏱ Start the clock</button></div></div></div>';
     }
     const hasRb = hasEntries(ev);
     const finals = busts.filter(b => b.final);
@@ -3938,7 +3938,7 @@
     if (hasRb) {
       const addons = ev.addon_allowed !== false;
       if (ev.rebuys_closed) html += '<div class="live-rb closed">' + (canRebuy(ev) ? 'Re-buys' + (addons ? ' and add-ons' : '') : 'Add-ons') + ' are closed</div>';
-      else if (rebuysOpen(ev)) html += '<div class="live-rb"><span>🔁 Re-buys open' + (levelText(ev) ? ' till <b>' + esc(levelText(ev)) + '</b>' : ' until an admin closes them') + (addons ? ' · add-ons too' : '') + '</span></div>';
+      else if (rebuysOpen(ev)) html += '<div class="live-rb"><span>🔁 Re-buys open' + (levelText(ev) ? ' till <b>' + esc(levelText(ev)) + '</b>' : ' until an Overseer closes them') + (addons ? ' · add-ons too' : '') + '</span></div>';
       else if (canRebuy(ev)) html += '<div class="live-rb closed">Re-buys are closed' + (addons ? ' · add-ons still open' : '') + '</div>';
       else html += '<div class="live-rb">Freeze-out: no re-buys' + (addons ? ' · add-ons open' : '') + '</div>';
     }
@@ -3952,7 +3952,7 @@
 
     // Admin controls
     if (admin) {
-      html += '<div class="admin-zone"><div class="az-l">🛠 Admin controls</div>' + (winner ? '' : '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>');
+      html += '<div class="admin-zone"><div class="az-l">🛠 Overseer controls</div>' + (winner ? '' : '<div class="seat-admin">' + (paused ? '<button type="button" class="go" data-clock="resume">▶ Resume the clock</button>' : '<button type="button" data-clock="pause">⏸ Pause the clock</button>') + '</div>');
       if (hasRb) html += approvalsBlock(ev, entries);
       if (!winner) html += tableControls(ev, ti);
       if (!winner && canRebuy(ev) && !ev.rebuys_closed)
@@ -3972,7 +3972,7 @@
     html += '<div class="live-h">Still in (' + stillIn.length + ')</div><ul class="live-list">' + stillIn.map(id =>
       '<li' + (id === me.id ? ' class="me"' : '') + '>' + avatarHtml(id, 30) + '<span class="ln">' + esc(id === me.id ? 'You' : firstName(id)) + (multi && ti.tableOf[id] ? ' <small class="ltab">T' + ti.tableOf[id] + '</small>' : '') + '</span>' +
       '<span class="lb">' + (cnt(id, 'rebuy') ? '<i title="Re-buys">🔁' + (cnt(id, 'rebuy') > 1 ? '×' + cnt(id, 'rebuy') : '') + '</i>' : '') +
-      (cnt(id, 'addon') ? '<i title="Add-on">➕</i>' : '') + (pend(id) ? '<i class="pend" title="Waiting for an admin">⏳</i>' : '') +
+      (cnt(id, 'addon') ? '<i title="Add-on">➕</i>' : '') + (pend(id) ? '<i class="pend" title="Waiting for an Overseer">⏳</i>' : '') +
       (kos[id] ? '<i title="Knockouts">💥' + kos[id] + '</i>' : '') + '</span>' +
       (admin && id !== me.id && !winner && ev.format !== 'headsup' ? '<button type="button" class="lo" data-out="' + id + '">Out…</button>' : '') + '</li>').join('') + '</ul>';
 
@@ -4229,7 +4229,7 @@
     let html = '<div class="rebuy-box"><div class="rb-head">🔁 Re-buys and add-ons</div>';
     if (status.length) html += '<div class="rb-mine">You\u2019ve had: ' + status.join(' + ') + '</div>';
     if (ev.rebuys_closed) return html + '<p class="pz-wait">Re-buys and add-ons are closed.</p></div>';
-    const rbTimeUp = canRebuy(ev) && !rebuysOpen(ev);   // an admin has closed re-buys (add-ons may still be open)
+    const rbTimeUp = canRebuy(ev) && !rebuysOpen(ev);   // an Overseer has closed re-buys (add-ons may still be open)
     const noRb = !canRebuy(ev);                          // freeze-out Knockout: add-on only
     const link = ev.pay_link || pay?.default_pay_link || '';
     if (pending) {
@@ -4628,7 +4628,7 @@
     const { rows, qualified, st } = lastLeague;
     const live = !!st.season_review;
     $('reviewPreviewBtn').classList.toggle('hidden', !me.is_admin || live);
-    $('reviewPreviewBtn').textContent = reviewPreview ? 'Hide season review preview' : 'Preview season review (only admins see this)';
+    $('reviewPreviewBtn').textContent = reviewPreview ? 'Hide season review preview' : 'Preview season review (only Overseers see this)';
     if (!live && !reviewPreview) { card.classList.add('hidden'); return; }
 
     const top3 = qualified.slice(0, 3);
@@ -4640,7 +4640,7 @@
     const money = (v) => '£' + Number(v).toLocaleString('en-GB', { maximumFractionDigits: 2 });
 
     card.innerHTML =
-      (live ? '' : '<span class="preview-tag">PREVIEW · ONLY ADMINS CAN SEE THIS</span>') +
+      (live ? '' : '<span class="preview-tag">PREVIEW · ONLY OVERSEERS CAN SEE THIS</span>') +
       '<h2>🏆 ' + esc(st.season_name) + ' review</h2>' +
       '<p class="sub">The year so far, ahead of the final</p>' +
       (top3.length
@@ -4787,7 +4787,7 @@
     $('adminLink').classList.toggle('hidden', !me.is_admin);
     $('viewAsBar').classList.toggle('hidden', !viewing);
     $('pfViewAsWrap').classList.toggle('hidden', !me.real_admin);
-    $('pfViewAs').textContent = viewing ? '🛠 Back to the admin view' : '👁 View as a player';
+    $('pfViewAs').textContent = viewing ? '🛠 Back to the Overseer view' : '👁 View as a player';
     paintTestBanner();
   }
   // Test mode (part 30): admins see a reminder at the top while it's on
@@ -4801,7 +4801,7 @@
     let b = $('testBanner');
     if (!b) { b = document.createElement('a'); b.id = 'testBanner'; b.className = 'test-banner'; b.href = 'admin.html';
       const bar = document.querySelector('.tabbar'); (bar ? bar.parentNode : document.body).insertBefore(b, bar || document.body.firstChild); }
-    b.textContent = '🧪 Test mode is on: players aren’t getting alerts. Turn it off in Admin › Settings.';
+    b.textContent = '🧪 Test mode is on: players aren’t getting alerts. Turn it off in Overseers › Settings.';
     b.classList.toggle('hidden', !testModeOn);
   }
   async function setViewAsPlayer(on) {

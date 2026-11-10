@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Admin · Gunslinger Poker League</title>
+<title>Overseers · Gunslinger Poker League</title>
 <meta name="theme-color" content="#2A160C">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -236,20 +236,20 @@
 
 <header>
   <img class="admin-badge" src="images/gpl-badge-simple.webp" alt="">
-  <h1>League Admin</h1>
+  <h1>League Overseers</h1>
   <div class="admin-sub">Gunslinger Poker League</div>
 </header>
 
 <div id="loading" class="loading">Checking you're allowed in…</div>
 
 <div id="denied" class="card hidden">
-  <p id="deniedText">You need to be an admin to use this page.</p>
+  <p id="deniedText">You need to be an Overseer to use this page.</p>
   <a class="btn" href="index.html">Back to the league</a>
 </div>
 
 <div id="app" class="hidden">
   <div class="topbar">
-    <span><strong id="whoName"></strong> <span class="badge">ADMIN</span></span>
+    <span><strong id="whoName"></strong> <span class="badge">OVERSEER</span></span>
     <a href="index.html">← Back to league</a>
   </div>
 
@@ -303,7 +303,7 @@
             </div>
             <label for="evRbLevel">Re-buy period open till blind level <span class="opt">(optional)</span></label>
             <input id="evRbLevel" type="text" maxlength="40" placeholder="e.g. 6">
-            <p class="muted small-note">An admin closes re-buys by hand on the night, from the live table.</p>
+            <p class="muted small-note">An Overseer closes re-buys by hand on the night, from the live table.</p>
           </div>
           <label>Add-ons</label>
           <div class="seg small" id="evAddonSeg">
@@ -335,7 +335,7 @@
           <div id="evFinalWrap" class="hidden">
             <label for="evFinalAt">Final table when this many players are left</label>
             <input id="evFinalAt" type="number" inputmode="numeric" min="2" max="10" step="1" value="9">
-            <p class="muted small-note">When it’s reached, admins get a pop-up to draw the final table with random seats and dealer.</p>
+            <p class="muted small-note">When it’s reached, Overseers get a pop-up to draw the final table with random seats and dealer.</p>
           </div>
         </div>
         <div class="row2">
@@ -351,7 +351,7 @@
         <label for="evNotes">Notes <span class="opt">(optional)</span></label>
         <textarea id="evNotes" placeholder="e.g. Bring cash. Doors open 7pm."></textarea>
         <label class="check"><input id="evClosed" type="checkbox"> <span>Registration closed <span class="opt">(players can only pull out)</span></span></label>
-        <label class="check test-check"><input id="evTest" type="checkbox"> <span>🧪 Test event <span class="opt">(only admins can see it, alerts only go to admins, results don’t count in the league)</span></span></label>
+        <label class="check test-check"><input id="evTest" type="checkbox"> <span>🧪 Test event <span class="opt">(only Overseers can see it, alerts only go to Overseers, results don’t count in the league)</span></span></label>
         <div id="evStatusWrap" class="hidden">
           <label for="evStatus">Status</label>
           <select id="evStatus">
@@ -446,9 +446,9 @@
   <section id="tab-points" class="hidden">
     <div class="card" id="testModeCard">
       <h2>🧪 Test mode</h2>
-      <p class="muted">Turn this on while you try things out. Every alert then goes to admins only (you and Phill), and players get nothing: new events, ride-ins, seats, results, polls and the daily reminders. For anything players shouldn’t <b>see</b> either, tick “Test event” when you create the event.</p>
+      <p class="muted">Turn this on while you try things out. Every alert then goes to Overseers only (you and Phill), and players get nothing: new events, ride-ins, seats, results, polls and the daily reminders. For anything players shouldn’t <b>see</b> either, tick “Test event” when you create the event.</p>
       <div class="seg" id="testModeSeg">
-        <button type="button" data-v="0" class="on">Off</button><button type="button" data-v="1">On: alerts to admins only</button>
+        <button type="button" data-v="0" class="on">Off</button><button type="button" data-v="1">On: alerts to Overseers only</button>
       </div>
       <div id="testModeMsg" class="msg"></div>
     </div>
@@ -522,7 +522,7 @@
 
     <div class="card">
       <h2>Payout tables</h2>
-      <p class="muted">Only admins can see these. Each row is the percentage of the prize pool for 1st, 2nd, 3rd… and must add up to 100. Players only see the amounts.</p>
+      <p class="muted">Only Overseers can see these. Each row is the percentage of the prize pool for 1st, 2nd, 3rd… and must add up to 100. Players only see the amounts.</p>
       <div class="seg small" id="payKind" style="margin-top:10px">
         <button type="button" data-v="standard" class="on">Freezeout · Re-buy · Knockout</button>
         <button type="button" data-v="headsup">Heads Up</button>
@@ -1712,7 +1712,7 @@
     const { error } = await db.from('league_settings').update({ test_mode: on }).eq('id', 1);
     if (error) return msg('testModeMsg', 'Couldn’t change it: ' + error.message);
     setSeg('testModeSeg', on ? '1' : '0'); paintTestBanner(on);
-    msg('testModeMsg', on ? '✓ Test mode on. Alerts only go to admins.' : '✓ Test mode off. Everyone gets alerts again.', 'ok');
+    msg('testModeMsg', on ? '✓ Test mode on. Alerts only go to Overseers.' : '✓ Test mode off. Everyone gets alerts again.', 'ok');
   });
 
   // ================= POINTS & SETTINGS =================
