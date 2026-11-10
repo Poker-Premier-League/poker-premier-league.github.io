@@ -1633,6 +1633,79 @@
     height: calc(env(safe-area-inset-top, 0px) + var(--tbgap, 8px) + var(--tbh, 54px) + 16px);
     background: linear-gradient(to bottom, #1E0F07 0, #1E0F07 calc(100% - 16px), rgba(30,15,7,0) 100%); }
   .tabband.on { opacity: 1; }
+  /* Loading placeholders */
+  .skel-card { padding: 4px 0; }
+  .skel { display: block; height: 14px; margin: 12px 0; border-radius: 7px;
+    background: linear-gradient(90deg, rgba(58,32,19,.07) 25%, rgba(58,32,19,.15) 37%, rgba(58,32,19,.07) 63%); background-size: 400% 100%; animation: skel 1.3s ease infinite; }
+  .skel.h { height: 26px; width: 55%; } .skel.w90 { width: 90%; } .skel.w75 { width: 75%; } .skel.w60 { width: 60%; }
+  .skel-light .skel, .skel.tile { background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.15) 37%, rgba(255,255,255,.06) 63%); background-size: 400% 100%; }
+  .skel.tile { height: auto; margin: 0; aspect-ratio: 1; border-radius: 12px; }
+  @keyframes skel { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  /* No signal */
+  .net-bar { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 950; width: max-content; max-width: calc(100% - 32px);
+    padding: 10px 16px; border-radius: 14px; background: #3A2013; color: #F6EAD5; border: 1px solid #E5702F; font: 600 13px 'Inter', sans-serif; text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .net-bar.back { background: #1f6b43; border-color: #2E7A4E; color: #fff; }
+  /* Add to calendar */
+  .cal-add { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .cal-add button { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D9C2A3; background: #FFFBF3; color: #3A2013; font: 600 14px 'Inter', sans-serif; cursor: pointer; }
+  .cal-add a { font-size: 13px; color: #C9561F; }
+  .copy-all { display: block; width: 100%; margin-top: 8px; min-height: 42px; font-weight: 700; }
+  /* Big clock */
+  .live-big { flex: none; width: 34px; height: 34px; margin-left: 8px; border-radius: 9px; border: 1px solid rgba(246,234,213,.3); background: rgba(246,234,213,.08); color: #F6EAD5; font-size: 16px; cursor: pointer; }
+  .bigclock { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 980; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; text-align: center;
+    padding: max(20px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px)); color: #F6EAD5;
+    background: radial-gradient(ellipse at 50% 30%, #4A2A1A 0%, #1E0F07 70%); }
+  .bc-x { position: absolute; top: max(14px, env(safe-area-inset-top, 0px)); right: 14px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(246,234,213,.3);
+    background: rgba(246,234,213,.08); color: #F6EAD5; font-size: 18px; cursor: pointer; }
+  .bc-name { font: 400 clamp(18px, 4vw, 34px) 'Anton', sans-serif; letter-spacing: .04em; text-transform: uppercase; color: #FBC891; }
+  .bc-state { font: 600 clamp(14px, 2.6vw, 20px) 'Oswald', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #F49A5C; }
+  .bc-state i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; background: #E5702F; animation: pulse 1.4s ease infinite; vertical-align: 1px; }
+  .bc-state.paused { color: #FBC891; }
+  .bc-time { font: 400 min(24vw, 36vh) 'Anton', sans-serif; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; color: #F6EAD5; text-shadow: 0 6px 30px rgba(229,112,47,.35); }
+  .bc-win { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bc-win b { font: 400 clamp(32px, 8vw, 64px) 'Anton', sans-serif; color: #FBC891; }
+  .bc-win span { font-size: 14px; color: rgba(246,234,213,.75); }
+  .bc-tiles { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .bc-t { min-width: 120px; padding: 12px 18px; border-radius: 16px; background: rgba(246,234,213,.07); border: 1px solid rgba(246,234,213,.16); }
+  .bc-t b { display: block; font: 400 clamp(30px, 7vw, 56px) 'Anton', sans-serif; color: #F6EAD5; line-height: 1.05; }
+  .bc-t b small { font-size: .5em; color: rgba(246,234,213,.6); }
+  .bc-t span { font: 500 12px 'Oswald', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: rgba(246,234,213,.7); }
+  .bc-rb { font: 600 clamp(15px, 3vw, 22px) 'Inter', sans-serif; color: #FBC891; }
+  .bc-foot { font-size: 12px; color: rgba(246,234,213,.5); }
+  /* Results podium */
+  .podium-pop { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 970; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); background: rgba(10,5,2,.78); }
+  .pd-card { position: relative; width: 100%; max-width: 400px; padding: 22px 18px 18px; border-radius: 22px; text-align: center; color: #F6EAD5;
+    background: radial-gradient(ellipse at 50% 0%, #5A321C 0%, #2A150B 70%); border: 1.5px solid #E5702F; box-shadow: 0 20px 60px rgba(0,0,0,.6); animation: pdIn .45s ease both; }
+  .pd-x { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(246,234,213,.3); background: rgba(246,234,213,.08); color: #F6EAD5; font-size: 16px; cursor: pointer; }
+  .pd-k { font: 600 12px 'Oswald', sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #F49A5C; }
+  .pd-card h3 { margin: 4px 0 2px; font: 400 30px 'Anton', sans-serif; letter-spacing: .03em; text-transform: uppercase; color: #FBC891; }
+  .pd-d { margin: 0 0 16px; font-size: 13px; color: rgba(246,234,213,.7); }
+  .pd-stage { display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 250px; }
+  .pd-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .pd-who { display: flex; flex-direction: column; align-items: center; gap: 3px; margin-bottom: 8px; opacity: 0; animation: pdDrop .5s ease both; }
+  .pd-who b { max-width: 100%; font: 600 14px 'Inter', sans-serif; overflow-wrap: anywhere; }
+  .pd-won { font: 400 18px 'Anton', sans-serif; color: #FBC891; }
+  .pd-crown { font-size: 24px; line-height: 1; margin-bottom: -4px; }
+  .pd-block { width: 100%; border-radius: 12px 12px 4px 4px; display: flex; align-items: flex-start; justify-content: center; padding-top: 8px;
+    font: 400 22px 'Anton', sans-serif; color: #1E0F07; transform-origin: bottom; transform: scaleY(0); animation: pdRise .6s cubic-bezier(.2,.9,.3,1.2) both; }
+  .pd-block span { font-size: 15px; letter-spacing: .04em; text-transform: uppercase; }
+  .first .pd-block { height: 110px; background: linear-gradient(180deg, #FBC891, #E0A030); animation-delay: 1.3s; }
+  .second .pd-block { height: 78px; background: linear-gradient(180deg, #F3E6C8, #BDB3A0); animation-delay: .75s; }
+  .third .pd-block { height: 56px; background: linear-gradient(180deg, #F49A5C, #C9561F); animation-delay: .25s; }
+  .first .pd-who { animation-delay: 1.75s; } .second .pd-who { animation-delay: 1.2s; } .third .pd-who { animation-delay: .7s; }
+  .pd-line { margin: 14px 0 0; font-size: 16px; opacity: 0; animation: pdDrop .5s ease 2.1s both; }
+  .pd-conf { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .pd-conf i { position: absolute; top: -20px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: pdFall 3s linear both; }
+  @keyframes pdIn { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes pdRise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes pdDrop { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+  @keyframes pdFall { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0.9; transform: translateY(110vh) rotate(540deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .skel, .pd-card, .pd-who, .pd-block, .pd-line { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .pd-conf { display: none; }
+  }
   .test-banner { display: block; max-width: 560px; margin: 0 auto 10px; padding: 10px 14px; border-radius: 12px; background: #4b2a8a; color: #fff;
     font: 600 14px 'Inter', sans-serif; text-align: center; text-decoration: none; }
   .test-ev { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(120,90,200,.12); border: 1px dashed #9c86d6; color: #4b2a8a; font-size: 14px; }
@@ -1842,7 +1915,7 @@
       </div>
       <div class="card section" id="eventCard">
         <div class="section-title" id="eventTitle" data-t="nextEvent">Next event</div>
-        <div id="eventBody"><p class="empty">Loading…</p></div>
+        <div id="eventBody"><div class="skel-card" aria-label="Loading"><span class="skel h"></span><span class="skel w90"></span><span class="skel w75"></span><span class="skel w60"></span></div></div>
       </div>
       <div id="prizeCard" class="card section prize-card hidden"></div>
       <div id="rateCard" class="card section rate-card hidden"></div>
@@ -1871,19 +1944,19 @@
         <div class="section-title" data-t="league">League table <span id="seasonName" class="season"></span></div>
         <p class="hint">Best <span id="bestN">4</span> finishes count · play <span id="minEv">2</span>+ events<span id="feeHint" class="hidden"> and pay the league fee</span> to qualify. Tap a player to see their results.</p>
         <div id="potLine" class="pot-line hidden"></div>
-        <div id="tableBody"><p class="empty">Loading…</p></div>
+        <div id="tableBody"><div class="skel-card" aria-label="Loading"><span class="skel h"></span><span class="skel w90"></span><span class="skel w75"></span><span class="skel w60"></span></div></div>
       </div>
       <div class="card section">
         <div class="section-title">🏆 The Last Draw</div>
         <p class="hint" id="finalHint">The top 9 qualified players make the final. Starting chips = league points × 10,000.</p>
-        <div id="finalBody"><p class="empty">Loading…</p></div>
+        <div id="finalBody"><div class="skel-card" aria-label="Loading"><span class="skel h"></span><span class="skel w90"></span><span class="skel w75"></span><span class="skel w60"></span></div></div>
         <button type="button" class="btn ld-go" id="ldGo">See the final table ›</button>
       </div>
     </section>
 
     <!-- ===== THE LAST DRAW ===== -->
     <section id="panel-lastdraw" class="panel hidden" role="tabpanel">
-      <div id="ldBody"><p class="empty">Loading…</p></div>
+      <div id="ldBody"><div class="skel-card" aria-label="Loading"><span class="skel h"></span><span class="skel w90"></span><span class="skel w75"></span><span class="skel w60"></span></div></div>
     </section>
 
     <!-- ===== RESULTS ===== -->
@@ -1895,7 +1968,7 @@
       </div>
       <div id="histProfile"></div>
       <h2 class="sec-head">🏆 Results: every night</h2>
-      <div id="histContent"><div class="card section"><p class="empty">Loading…</p></div></div>
+      <div id="histContent"><div class="card section"><div class="skel-card" aria-label="Loading"><span class="skel h"></span><span class="skel w90"></span><span class="skel w75"></span><span class="skel w60"></span></div></div></div>
     </section>
 
     <!-- ===== SALOON WALL (photo memories) ===== -->
@@ -1905,7 +1978,7 @@
         <p class="hint">Memories from our poker nights. Only the group can see these.</p>
         <button id="addMemoryBtn" class="btn" type="button">📷 Add a memory</button>
       </div>
-      <div id="wallGrid" class="wall-grid"><p class="empty light">Loading…</p></div>
+      <div id="wallGrid" class="wall-grid skel-light"><span class="skel tile"></span><span class="skel tile"></span><span class="skel tile"></span><span class="skel tile"></span><span class="skel tile"></span><span class="skel tile"></span></div>
     </section>
   </div>
 </div>
@@ -1922,7 +1995,7 @@
       </div>
       <div id="notifMsg" class="msg"></div>
     </div>
-    <div id="msgList" class="msg-list"><p class="empty">Loading…</p></div>
+    <div id="msgList" class="msg-list"><div class="skel-card" aria-label="Loading"><span class="skel h"></span><span class="skel w90"></span><span class="skel w75"></span><span class="skel w60"></span></div></div>
     <div class="btnrow"><button id="msgClose" class="btn secondary" type="button">Close</button></div>
   </div>
 </div>
@@ -2144,6 +2217,36 @@
   const urlInfo = new URLSearchParams(location.hash.slice(1) + '&' + location.search.slice(1));
   const cameFromReset = urlInfo.get('type') === 'recovery';
   const resetLinkError = urlInfo.get('error_code') || urlInfo.get('error');
+  // No signal (patchy at a host's house): a banner while requests fail, and a refresh when it's back
+  const Net = {
+    off: false,
+    bar() { let b = document.getElementById('netBar');
+      if (!b) { b = document.createElement('div'); b.id = 'netBar'; b.className = 'net-bar hidden'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
+      return b; },
+    fail() { if (this.off) return; this.off = true; const b = this.bar(); b.className = 'net-bar';
+      b.textContent = '📶 No signal. Showing what was last loaded. It’ll update when you’re back.'; },
+    ok() { if (!this.off) return; this.off = false; const b = this.bar(); b.className = 'net-bar back'; b.textContent = '✓ Back online';
+      setTimeout(() => { if (!Net.off) b.className = 'net-bar hidden'; }, 2200);
+      try { if (typeof me !== 'undefined' && me && typeof loadEvent === 'function') loadEvent(); } catch (_) {} }
+  };
+  const realFetch = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    try { const r = await realFetch(...args); Net.ok(); return r; }
+    catch (e) { if (!(e && e.name === 'AbortError')) Net.fail(); throw e; }
+  };
+  window.addEventListener('offline', () => Net.fail());
+  window.addEventListener('online', () => { realFetch(SUPABASE_URL + '/auth/v1/health', { headers: { apikey: SUPABASE_KEY } }).then(() => Net.ok()).catch(() => {}); });
+  if (navigator.onLine === false) document.addEventListener('DOMContentLoaded', () => Net.fail());
+
+  // Keep the screen on while the game is live (phones that support it)
+  const Wake = {
+    lock: null, want: false,
+    async on() { this.want = true; if (this.lock || !('wakeLock' in navigator) || document.hidden) return;
+      try { this.lock = await navigator.wakeLock.request('screen'); this.lock.addEventListener('release', () => { Wake.lock = null; }); } catch (_) {} },
+    off() { this.want = false; if (this.lock) { this.lock.release().catch(() => {}); this.lock = null; } }
+  };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && Wake.want) Wake.on(); });
+
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let inRecovery = cameFromReset;
   db.auth.onAuthStateChange((event) => {
@@ -3209,9 +3312,42 @@
       }).join('') + '</ol>' +
       '<p class="pz-foot">' + rs.length + ' players' + (pot && pot.pot ? ' · ' + moneyH(Number(pot.pot) + Number(pot.bounty_pool || 0)) + ' in prizes' : '') +
         (topKo ? ' · 💥 most knockouts: ' + esc(firstName(topKo.player_id)) + ' (' + topKo.knockouts + ')' : '') + '</p>' +
-      '<button type="button" class="textlink" id="prizeMore">See the full results</button>';
+      '<button type="button" class="textlink" id="prizeMore">See the full results</button>' +
+      '<button type="button" class="textlink" id="prizeReplay">▶ Replay the podium</button>';
     card.classList.remove('hidden');
     $('prizeMore').onclick = () => showPanel('results');
+    const top3 = order.slice(0, 3).map(r => ({ id: r.player_id, pos: r.position, won: wonTotal(won[r.player_id]), label: won[r.player_id]?.label }));
+    $('prizeReplay').onclick = () => showPodium(ev, top3, rs.length);
+    let seen = true; try { seen = !!localStorage.getItem('gpl_podium_' + ev.id); } catch (_) {}
+    if (!seen) { try { localStorage.setItem('gpl_podium_' + ev.id, '1'); } catch (_) {} showPodium(ev, top3, rs.length, true); }
+  }
+
+  // ---- Results reveal: the podium rises the first time each player sees the results ----
+  function showPodium(ev, top3, n, auto, tries = 0) {
+    const busy = [...document.querySelectorAll('.modal:not(.hidden), .splash:not(.hidden), .bond.on')].length || (typeof currentTab !== 'undefined' && currentTab !== 'lobby');
+    if (auto && busy) { if (tries < 20) setTimeout(() => showPodium(ev, top3, n, auto, tries + 1), 1500); return; }
+    let o = $('podiumPop'); if (o) o.remove();
+    o = document.createElement('div'); o.id = 'podiumPop'; o.className = 'podium-pop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Results');
+    const at = (pos) => top3.find(p => p.pos === pos);
+    const col = (p, cls) => !p ? '<div class="pd-col ' + cls + ' empty"></div>' :
+      '<div class="pd-col ' + cls + '"><div class="pd-who">' + (cls === 'first' ? '<span class="pd-crown">👑</span>' : '') + avatarHtml(p.id, cls === 'first' ? 64 : 50) +
+      '<b>' + esc(people[p.id]?.display_name || 'Player') + '</b>' + (p.won ? '<span class="pd-won">' + moneyH(p.won) + '</span>' : '') + '</div>' +
+      '<div class="pd-block"><span>' + (p.label ? esc(p.label) : ordinal(p.pos)) + '</span></div></div>';
+    const w = at(1);
+    let conf = ''; const cols = ['#E5702F', '#FBC891', '#F49A5C', '#F6EAD5', '#C9561F'];
+    for (let i = 0; i < 46; i++) conf += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;background:' + cols[i % 5] + ';animation-delay:' + (1.7 + Math.random() * 1.4).toFixed(2) + 's;animation-duration:' + (2.4 + Math.random() * 1.6).toFixed(2) + 's"></i>';
+    o.innerHTML = '<div class="pd-conf" aria-hidden="true">' + conf + '</div><div class="pd-card">' +
+      '<button type="button" class="pd-x" aria-label="Close">✕</button>' +
+      '<div class="pd-k">The results are in</div><h3>' + esc(ev.name || 'Showdown') + '</h3><p class="pd-d">' + niceDate(ev.event_date, true) + ' · ' + n + ' players</p>' +
+      '<div class="pd-stage">' + col(at(2), 'second') + col(w, 'first') + col(at(3), 'third') + '</div>' +
+      (w ? '<p class="pd-line">🏆 <b>' + esc(people[w.id]?.display_name || 'Player') + '</b> takes it!</p>' : '') +
+      '<button type="button" class="btn full pd-go">See the full results</button></div>';
+    document.body.appendChild(o);
+    const close = () => o.remove();
+    o.querySelector('.pd-x').onclick = close;
+    o.querySelector('.pd-go').onclick = () => { close(); showPanel('results'); };
+    o.addEventListener('click', (e) => { if (e.target === o) close(); });
+    try { Sound.chips(); } catch (_) {}
   }
 
   async function loadEvent() {
@@ -3329,6 +3465,7 @@
     const gameNight = !!ev.clock_started_at || (!!(seats && seats.length) && ev.event_date === todayStr());
     const detailsHtml =
       (meta.length ? '<p class="ev-meta">' + meta.join('<br>') + '</p>' : '') +
+      (ev.status === 'upcoming' ? '<div class="cal-add"><button type="button" id="calIcs">📅 Add to calendar</button><a id="calGoogle" href="' + esc(googleCalUrl(ev)) + '" target="_blank" rel="noopener">Google Calendar</a></div>' : '') +
       formatBox(ev) +
       (ev.notes ? '<div class="ev-notes">' + esc(ev.notes) + '</div>' : '') +
       (ev.is_test ? '<div class="test-ev">🧪 <b>Test event.</b> Only admins can see it, alerts only go to admins, and results won’t count in the league.</div>' : '') +
@@ -3389,6 +3526,7 @@
     bindMoney(ev);
     bindSeating(ev, seats, replies || [], huMatches);
     if ($('hostEdit')) $('hostEdit').onclick = () => openHostEdit(ev);
+    if ($('calIcs')) $('calIcs').onclick = () => downloadIcs(ev);
     bindLive(ev, busts, replies || [], entries);
     $('saveComment').onclick = () => {
       if (!myReply) { flash('Tap In, Maybe or Out first.', true); return; }
@@ -3436,6 +3574,50 @@
       }
     });
     return html + '</div>';
+  }
+
+  // ---- Add to calendar: a calendar file (iPhone, Outlook) or a Google Calendar link ----
+  function calTimes(ev) {
+    const [y, mo, d] = ev.event_date.split('-').map(Number);
+    const [h, mi] = (ev.arrival_time || ev.start_time || '19:30').slice(0, 5).split(':').map(Number);
+    const st = new Date(Date.UTC(y, mo - 1, d, h, mi)), en = new Date(st.getTime() + 5 * 3600e3);      // London clock time, 5 hours
+    const f = (t) => t.getUTCFullYear() + String(t.getUTCMonth() + 1).padStart(2, '0') + String(t.getUTCDate()).padStart(2, '0') + 'T' +
+      String(t.getUTCHours()).padStart(2, '0') + String(t.getUTCMinutes()).padStart(2, '0') + '00';
+    return [f(st), f(en)];
+  }
+  function calText(ev) {
+    const bits = [];
+    if (ev.arrival_time) bits.push('Arrive by ' + niceTime(ev.arrival_time));
+    if (ev.start_time) bits.push('Cards in the air ' + niceTime(ev.start_time));
+    bits.push((FORMAT_INFO[ev.format]?.[0] || 'Poker') + (ev.buy_in != null && !ev.is_final ? ' · buy-in ' + money(ev.buy_in) : ''));
+    if (ev.host) bits.push('Host: ' + ev.host);
+    bits.push('Ride in or out: ' + location.origin + location.pathname);
+    return bits.join('\n');
+  }
+  const calTitle = (ev) => '🤠 ' + (ev.name || 'Gunslinger Poker League');
+  function googleCalUrl(ev) {
+    const [a, b] = calTimes(ev);
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(calTitle(ev)) + '&dates=' + a + '/' + b +
+      '&ctz=Europe/London&details=' + encodeURIComponent(calText(ev)) + '&location=' + encodeURIComponent(ev.address || ev.venue || '');
+  }
+  function downloadIcs(ev) {
+    const [a, b] = calTimes(ev);
+    const tx = (v) => String(v || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Gunslinger Poker League//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VTIMEZONE', 'TZID:Europe/London',
+      'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0000', 'TZOFFSETTO:+0100', 'TZNAME:BST', 'DTSTART:19700329T010000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
+      'BEGIN:STANDARD', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0000', 'TZNAME:GMT', 'DTSTART:19701025T020000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD',
+      'END:VTIMEZONE',
+      'BEGIN:VEVENT', 'UID:gpl-event-' + ev.id + '@poker-premier-league.github.io',
+      'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z',
+      'DTSTART;TZID=Europe/London:' + a, 'DTEND;TZID=Europe/London:' + b,
+      'SUMMARY:' + tx(calTitle(ev)), 'LOCATION:' + tx(ev.address || ev.venue || ''), 'DESCRIPTION:' + tx(calText(ev)),
+      'BEGIN:VALARM', 'TRIGGER:-PT3H', 'ACTION:DISPLAY', 'DESCRIPTION:' + tx(calTitle(ev)), 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = 'gpl-' + ev.event_date + '.ics';
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   // ---- The host edits the times, address and notes (part 29) ----
@@ -3740,7 +3922,12 @@
     const endSecs = winner ? Math.max(...finals.map(b => b.clock_secs || 0)) : null;
     let html = '<div class="live' + (winner ? ' won' : '') + '" id="liveBox"><div class="live-top"><span class="live-dot' + (paused || winner ? ' off' : '') + '"></span><h4>' +
       (winner ? 'Game over' : paused ? 'Paused' : 'Live') + '</h4>' + (winner ? '<span class="live-tbc">Results to be confirmed</span>' : '') +
-      '<span class="live-clock"' + (winner ? '' : ' data-clock-el') + '>' + hms(winner ? endSecs : clockSecs(ev)) + '</span></div>';
+      '<span class="live-clock"' + (winner ? '' : ' data-clock-el') + '>' + hms(winner ? endSecs : clockSecs(ev)) + '</span>' +
+      '<button type="button" class="live-big" data-big="1" aria-label="Big clock" title="Big clock">⛶</button></div>';
+    liveBig = { ev, winner, paused, endSecs, left: stillIn.length, field: field.length,
+      pot: pot ? Number(pot.pot) + Number(pot.bounty_pool || 0) : null, bounty: ev.format === 'knockout' && pot ? pot.bounty_value : null,
+      rebuy: !hasRb ? '' : ev.rebuys_closed ? 'Re-buys closed' : rebuysOpen(ev) ? '🔁 Re-buys open' + (levelText(ev) ? ' till ' + levelText(ev) : '') : canRebuy(ev) ? 'Re-buys closed' : '',
+      kos };
     if (winner) {
       html += '<div class="live-winner">' + avatarHtml(winner, 64) + '<div><span class="lw-k">🏆 Winner</span><b>' + esc(people[winner]?.display_name || 'Player') + '</b>' +
         '<span class="lw-s">' + (kos[winner] ? kos[winner] + ' knockout' + (kos[winner] === 1 ? '' : 's') + ' · ' : '') + 'last of ' + field.length + ' players</span></div></div>' +
@@ -3841,9 +4028,34 @@
       (canRb ? '<p class="ls-p small">A re-buy is sent to Alex and Phil. Pay it, and it counts once they approve it.</p>' : '') + '</div>';
   }
 
+  // ---- Big clock: the clock filling the screen, for a phone or iPad propped up on the table ----
+  let liveBig = null, bigOpen = false;
+  function paintBig() {
+    let o = $('bigClock');
+    if (!bigOpen || !liveBig) { if (o) o.classList.add('hidden'); return; }
+    if (!o) { o = document.createElement('div'); o.id = 'bigClock'; o.className = 'bigclock'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Big clock'); document.body.appendChild(o); }
+    const d = liveBig, ev = d.ev;
+    const tile = (v, k) => '<div class="bc-t"><b>' + v + '</b><span>' + k + '</span></div>';
+    o.innerHTML = '<button type="button" class="bc-x" aria-label="Close">✕</button>' +
+      '<div class="bc-name">' + esc(ev.name || 'Gunslinger Poker League') + '</div>' +
+      '<div class="bc-state' + (d.winner ? ' won' : d.paused ? ' paused' : '') + '">' + (d.winner ? '🏆 Game over' : d.paused ? '⏸ Paused' : '<i></i> Live') + '</div>' +
+      (d.winner ? '<div class="bc-win">' + avatarHtml(d.winner, 84) + '<b>' + esc(people[d.winner]?.display_name || 'Player') + '</b><span>Winner · results to be confirmed</span></div>'
+        : '<div class="bc-time"' + (d.paused ? '' : ' data-clock-el') + '>' + hms(clockSecs(ev)) + '</div>') +
+      '<div class="bc-tiles">' + tile(d.left + '<small>/' + d.field + '</small>', 'Still in') +
+        (d.pot != null ? tile(moneyH(d.pot), 'Prize pool') : '') + (d.bounty != null ? tile(money(d.bounty), 'Bounty') : '') + '</div>' +
+      (d.rebuy && !d.winner ? '<div class="bc-rb">' + esc(d.rebuy) + '</div>' : '') +
+      '<div class="bc-foot">' + ('wakeLock' in navigator ? '🔆 The screen stays on while this is open · ' : '') + 'tap ✕ to close</div>';
+    o.classList.remove('hidden');
+    o.querySelector('.bc-x').onclick = () => { bigOpen = false; paintBig(); };
+  }
+
   function bindLive(ev, busts, replies, entries) {
     clearInterval(liveTimer); clearInterval(livePoll); liveEv = ev;
-    const box = $('liveBox'); if (!box) return;
+    const box = $('liveBox');
+    if (!box) { Wake.off(); liveBig = null; bigOpen = false; paintBig(); return; }
+    if (ev.clock_started_at && !box.classList.contains('won')) Wake.on(); else Wake.off();
+    box.querySelectorAll('[data-big]').forEach(b => b.onclick = () => { bigOpen = true; paintBig(); Wake.on(); });
+    paintBig();
     const rpcRun = async (btn, fn, args, after) => {
       if (btn) btn.disabled = true;
       const { error } = await db.rpc(fn, args);
@@ -3910,7 +4122,7 @@
       const t = clockSecs(ev);
       document.querySelectorAll('[data-clock-el]').forEach(el => el.textContent = hms(t));
     };
-    if (!ev.clock_paused_at && box.querySelector('[data-clock-el]')) liveTimer = setInterval(tick, 1000);
+    if (!ev.clock_paused_at && document.querySelector('[data-clock-el]')) liveTimer = setInterval(tick, 1000);
     // Everyone's phone checks for news every 10 seconds while the game is on
     livePoll = setInterval(() => {
       if (document.hidden || liveSheet || refreshing || busyEditing() || currentTab !== 'lobby') return;
@@ -4118,16 +4330,23 @@
         (hasBank ? '<button id="bankToggle" class="textlink" type="button">' + (link ? 'Can\u2019t use Monzo? Pay by bank transfer' : 'Show bank details') + '</button>' +
           '<div id="bankBox" class="bank' + (link ? ' hidden' : '') + '">' +
             row('Name', pay.bank_name) + row('Sort code', pay.bank_sort_code) + row('Account', pay.bank_account) + row('Reference', ref) +
+            '<button type="button" class="copy copy-all" data-copy="' + esc([pay.bank_name && 'Name: ' + pay.bank_name, pay.bank_sort_code && 'Sort code: ' + pay.bank_sort_code,
+              pay.bank_account && 'Account: ' + pay.bank_account, 'Reference: ' + ref, amount && 'Amount: ' + amount].filter(Boolean).join('\n')) + '">📋 Copy all the details</button>' +
           '</div>' : '')) +
     '</div>';
+  }
+  async function copyText(t) {                 // the clipboard, with a fallback for older phones
+    try { await navigator.clipboard.writeText(t); return true; } catch (_) {}
+    try { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '-1000px';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (_) { return false; }
   }
   function bindPayBox() {
     const t = $('bankToggle');
     if (t) t.onclick = () => $('bankBox').classList.toggle('hidden');
     document.querySelectorAll('.copy').forEach(b => b.onclick = async () => {
-      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied ✓'; }
-      catch (_) { b.textContent = 'Hold to copy'; }
-      setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+      const label = b.dataset.label || (b.dataset.label = b.textContent);
+      b.textContent = (await copyText(b.dataset.copy)) ? 'Copied ✓' : 'Hold to copy';
+      setTimeout(() => { b.textContent = label; }, 1800);
     });
   }
 
