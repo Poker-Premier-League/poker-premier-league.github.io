@@ -122,6 +122,11 @@
   .evlist .fmt { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #C9561F; }
   .evlist .places { font-size: 12px; color: var(--muted); }
   .status.closed { background: #fde3d3; color: #9a3a12; }
+  .status.test { background: #e6defa; color: #4b2a8a; margin-left: 4px; vertical-align: 1px; }
+  .test-check { background: #f3effc; border: 1px dashed #9c86d6; border-radius: 10px; padding: 8px 10px; }
+  .test-note { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: #f3effc; border: 1px dashed #9c86d6; color: #4b2a8a; font-size: 14px; }
+  .test-banner { position: -webkit-sticky; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; margin: 0 -16px 10px; padding: 10px 16px;
+    background: #4b2a8a; color: #fff; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; }
   .evlist li { flex-wrap: wrap; row-gap: 8px; }
   .paytbl { font-size: 13px; }
   .paytbl td { padding: 3px 2px; }
@@ -346,6 +351,7 @@
         <label for="evNotes">Notes <span class="opt">(optional)</span></label>
         <textarea id="evNotes" placeholder="e.g. Bring cash. Doors open 7pm."></textarea>
         <label class="check"><input id="evClosed" type="checkbox"> <span>Registration closed <span class="opt">(players can only pull out)</span></span></label>
+        <label class="check test-check"><input id="evTest" type="checkbox"> <span>🧪 Test event <span class="opt">(only admins can see it, alerts only go to admins, results don’t count in the league)</span></span></label>
         <div id="evStatusWrap" class="hidden">
           <label for="evStatus">Status</label>
           <select id="evStatus">
@@ -438,6 +444,14 @@
 
   <!-- ================= SETTINGS ================= -->
   <section id="tab-points" class="hidden">
+    <div class="card" id="testModeCard">
+      <h2>🧪 Test mode</h2>
+      <p class="muted">Turn this on while you try things out. Every alert then goes to admins only (you and Phil), and players get nothing: new events, ride-ins, seats, results, polls and the daily reminders. For anything players shouldn’t <b>see</b> either, tick “Test event” when you create the event.</p>
+      <div class="seg" id="testModeSeg">
+        <button type="button" data-v="0" class="on">Off</button><button type="button" data-v="1">On: alerts to admins only</button>
+      </div>
+      <div id="testModeMsg" class="msg"></div>
+    </div>
     <div class="card" id="ldCardAdmin">
       <h2>The Last Draw</h2>
       <p class="muted">The season final. Players see the date and venue straight away. The game details stay hidden until you tick “Show the game details to players”.</p>
@@ -606,6 +620,7 @@
     $('app').classList.remove('hidden');
     await Promise.all([loadPlayers(), loadSettings(), loadEvents(), loadPayouts(), loadLastDrawAdmin()]);
     await loadPollsAdmin(); paintPollOpts();
+    await loadTestMode();
     const go = (location.hash.match(/^#results=(\d+)/) || [])[1];         // "Finish the night" from the lobby
     if (go && events.some(e => String(e.id) === go)) {
       $('resEvent').value = go;
@@ -917,7 +932,7 @@
     $('evList').innerHTML = events.length ? events.map(ev => {
       const n = taken[ev.id] || 0;
       return '<li><div class="info">' +
-        '<div class="fmt">' + (FMT_NAME[ev.format] || 'Freezeout') + '</div>' +
+        '<div class="fmt">' + (FMT_NAME[ev.format] || 'Freezeout') + (ev.is_test ? ' <span class="status test">🧪 Test</span>' : '') + '</div>' +
         '<div class="d">' + (ev.name ? esc(ev.name) + ' · ' : '') + niceDate(ev.event_date) + '</div>' +
         '<div class="v">' + esc([ev.is_final ? '🏆 The Last Draw' : '', ev.venue, !ev.is_final && ev.buy_in != null ? '£' + Number(ev.buy_in) : ''].filter(Boolean).join(' · ') || 'No venue yet') + '</div>' +
         '<div class="places">' + n + (ev.max_players ? ' of ' + ev.max_players : '') + ' riding in</div></div>' +
@@ -1043,6 +1058,7 @@
     $('evAddress').value = ev.address || '';
     $('evMax').value = ev.max_players ?? '';
     $('evClosed').checked = !!ev.registration_closed;
+    $('evTest').checked = !!ev.is_test;
     setSeg('evFormat', ev.format || 'freezeout');
     setSeg('evMulti', ev.multi_table ? '1' : '0'); $('evFinalAt').value = ev.final_table_size ?? 9;
     setSeg('evRebuyLimit', ev.rebuy_limit ?? '');
@@ -1107,6 +1123,7 @@
       multi_table: !hu && segVal('evMulti') === '1',
       final_table_size: !hu && segVal('evMulti') === '1' ? Math.min(10, Math.max(2, Number($('evFinalAt').value) || 9)) : null,
       registration_closed: $('evClosed').checked,
+      ...(testReady ? { is_test: $('evTest').checked } : {}),
       event_date: $('evDate').value,
       start_time: $('evTime').value || null,
       arrival_time: $('evArrive').value || null,
@@ -1203,7 +1220,7 @@
     const keep = sel.value;
     const usable = events.filter(e => e.status !== 'cancelled');
     sel.innerHTML = usable.length
-      ? usable.map(e => '<option value="' + e.id + '">' + niceDate(e.event_date) + (e.venue ? ' · ' + esc(e.venue) : '') + ' (' + e.status + ')</option>').join('')
+      ? usable.map(e => '<option value="' + e.id + '">' + (e.is_test ? '🧪 TEST · ' : '') + niceDate(e.event_date) + (e.venue ? ' · ' + esc(e.venue) : '') + ' (' + e.status + ')</option>').join('')
       : '<option value="">No events yet</option>';
     if (keep && usable.some(e => String(e.id) === keep)) sel.value = keep;
     else {
@@ -1232,6 +1249,11 @@
     const eventId = Number($('resEvent').value);
     if (!eventId) { $('resTable').innerHTML = '<p class="muted">Create an event first.</p>'; return; }
     $('resTable').innerHTML = '<p class="muted">Loading…</p>';
+    const isTestEv = !!events.find(e => e.id === eventId)?.is_test;
+    let tn = $('resTestNote');
+    if (!tn) { tn = document.createElement('p'); tn.id = 'resTestNote'; tn.className = 'test-note'; $('resTable').before(tn); }
+    tn.textContent = '🧪 This is a test event: its results won’t count in the league, the Last Draw or player stats.';
+    tn.classList.toggle('hidden', !isTestEv);
 
     const [resR, attR, entR, bustR] = await Promise.all([
       db.from('results').select('player_id, position, rebuys, addons, knockouts').eq('event_id', eventId),
@@ -1667,6 +1689,31 @@
     catch (e) { msg('repMsg', 'Couldn’t make the report: ' + (e.message || e)); }
     busy($('repDownload'), false);
   };
+
+  // ================= TEST MODE (part 30) =================
+  let testReady = false;          // part 30 has been run
+  async function loadTestMode() {
+    const { data, error } = await db.from('league_settings').select('test_mode').maybeSingle();
+    testReady = !error && !!data && ('test_mode' in data);
+    if (!testReady) { $('testModeCard').classList.add('hidden'); $('evTest').closest('label').classList.add('hidden'); return; }
+    setSeg('testModeSeg', data.test_mode ? '1' : '0'); paintTestBanner(data.test_mode);
+  }
+  function paintTestBanner(on) {
+    let b = $('testBanner');
+    if (!b) { b = document.createElement('div'); b.id = 'testBanner'; b.className = 'test-banner'; document.body.prepend(b);
+      b.onclick = () => document.querySelector('.tabs button[data-tab="points"]').click(); }
+    b.textContent = '🧪 Test mode is on: players aren’t getting alerts. Tap to turn it off in Settings.';
+    b.classList.toggle('hidden', !on);
+  }
+  $('testModeSeg').querySelectorAll('button').forEach(b => b.onclick = async () => {
+    const on = b.dataset.v === '1';
+    if (!on && !confirm('Turn test mode off? Players will start getting alerts again.')) return;
+    clear('testModeMsg');
+    const { error } = await db.from('league_settings').update({ test_mode: on }).eq('id', 1);
+    if (error) return msg('testModeMsg', 'Couldn’t change it: ' + error.message);
+    setSeg('testModeSeg', on ? '1' : '0'); paintTestBanner(on);
+    msg('testModeMsg', on ? '✓ Test mode on. Alerts only go to admins.' : '✓ Test mode off. Everyone gets alerts again.', 'ok');
+  });
 
   // ================= POINTS & SETTINGS =================
   // ================= BACKUP =================
