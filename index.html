@@ -2634,7 +2634,11 @@
   }
   const nameOf = (id) => people[id]?.display_name || 'Player';
   // Who won what: paid places go to the finishing order (Heads Up semi-finalists share 3rd and 4th, and so on).
-  // Knockout: each knockout wins one bounty; any bounties left over (the winner's own) go to the winner.
+  // Knockout: each knockout wins the bounty on that player's head (a re-buy can carry a smaller one);
+  // any bounties left over (the winner's own) go to the winner.
+  const rbBounty = (pot) => pot && pot.rebuy_bounty != null ? Number(pot.rebuy_bounty) : Number(pot && pot.bounty_value || 0);
+  const splitBounty = (pot) => !!pot && Number(pot.rebuys || 0) > 0 && rbBounty(pot) !== Number(pot.bounty_value || 0);
+  const bountyEach = (pot) => splitBounty(pot) ? moneyH(pot.bounty_value) + ' entry, ' + moneyH(rbBounty(pot)) + ' re-buy' : moneyH(pot.bounty_value) + ' each';
   function winningsFor(ev, rs, pot) {
     const won = {};
     if (!pot || !rs.length) return won;
@@ -2646,7 +2650,11 @@
     const bv = Number(pot.bounty_value || 0);
     if (ev.format === 'knockout' && bv > 0) {
       let paidOut = 0;
-      rs.forEach(r => { if (r.knockouts) { (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).bounty += r.knockouts * bv; paidOut += r.knockouts * bv; } });
+      const bw = pot.bounty_won && Object.keys(pot.bounty_won).length ? pot.bounty_won : null;   // from the live table's knock-outs
+      rs.forEach(r => {
+        const amt = bw ? Number(bw[r.player_id] || 0) : (r.knockouts || 0) * bv;
+        if (amt > 0) { (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).bounty += amt; paidOut += amt; }
+      });
       const left = Number(pot.bounty_pool || 0) - paidOut, winner = order[0];
       if (left > 0.001 && winner) { (won[winner.player_id] = won[winner.player_id] || { prize: 0, bounty: 0 }).bounty += left; won[winner.player_id].own = left; }
     }
@@ -2716,7 +2724,7 @@
     const anyWon = Object.keys(won).length > 0;
     const potLine = pot && Number(pot.pot) > 0
       ? '<div class="night-pot">🏆 Prize pool <b>' + moneyH(pot.pot) + '</b>' +
-        (Number(pot.bounty_pool) > 0 ? ' · 🎯 Bounties <b>' + moneyH(pot.bounty_pool) + '</b> (' + moneyH(pot.bounty_value) + ' each)' : '') + '</div>'
+        (Number(pot.bounty_pool) > 0 ? ' · 🎯 Bounties <b>' + moneyH(pot.bounty_pool) + '</b> (' + bountyEach(pot) + ')' : '') + '</div>'
       : '';
     return potLine + '<table class="order"><thead><tr><th></th><th>Player</th>' + (anyWon ? '<th class="num">Won</th>' : '') + '<th class="num">Pts</th></tr></thead><tbody>' +
       rs.map(r => {
@@ -3931,7 +3939,7 @@
       '<span class="live-clock"' + (winner ? '' : ' data-clock-el') + '>' + hms(winner ? endSecs : clockSecs(ev)) + '</span>' +
       '<button type="button" class="live-big" data-big="1" aria-label="Big clock" title="Big clock">⛶</button></div>';
     liveBig = { ev, winner, paused, endSecs, left: stillIn.length, field: field.length,
-      pot: pot ? Number(pot.pot) + Number(pot.bounty_pool || 0) : null, bounty: ev.format === 'knockout' && pot ? pot.bounty_value : null,
+      pot: pot ? Number(pot.pot) + Number(pot.bounty_pool || 0) : null, bounty: ev.format === 'knockout' && pot ? money(pot.bounty_value) + (rbBounty(pot) !== Number(pot.bounty_value) && canRebuy(ev) ? ' / ' + money(rbBounty(pot)) : '') : null,
       rebuy: !hasRb ? '' : ev.rebuys_closed ? 'Re-buys closed' : rebuysOpen(ev) ? '🔁 Re-buys open' + (levelText(ev) ? ' till ' + levelText(ev) : '') : canRebuy(ev) ? 'Re-buys closed' : '',
       kos };
     if (winner) {
@@ -3952,7 +3960,7 @@
     // Tiles
     html += '<div class="live-tiles"><div><b>' + stillIn.length + '<small>/' + field.length + '</small></b><span>Still in</span></div>' +
       '<div><b>' + (pot ? money(pot.pot) : '–') + '</b><span>Prize pool</span></div>' +
-      (ev.format === 'knockout' && pot ? '<div><b>' + money(pot.bounty_pool) + '</b><span>Bounties<br>' + money(pot.bounty_value) + ' each</span></div>' : '') +
+      (ev.format === 'knockout' && pot ? '<div><b>' + money(pot.bounty_pool) + '</b><span>Bounties<br>' + (rbBounty(pot) !== Number(pot.bounty_value) && canRebuy(ev) ? money(pot.bounty_value) + ' · re-buy ' + money(rbBounty(pot)) : money(pot.bounty_value) + ' each') + '</span></div>' : '') +
       (hasRb ? '<div><b>' + entries.filter(e => e.kind === 'rebuy' && e.confirmed).length + ' · ' + entries.filter(e => e.kind === 'addon' && e.confirmed).length + '</b><span>Re-buys<br>add-ons</span></div>' : '') +
       '</div>';
 
@@ -4048,7 +4056,7 @@
       (d.winner ? '<div class="bc-win">' + avatarHtml(d.winner, 84) + '<b>' + esc(people[d.winner]?.display_name || 'Player') + '</b><span>Winner · results to be confirmed</span></div>'
         : '<div class="bc-time"' + (d.paused ? '' : ' data-clock-el') + '>' + hms(clockSecs(ev)) + '</div>') +
       '<div class="bc-tiles">' + tile(d.left + '<small>/' + d.field + '</small>', 'Still in') +
-        (d.pot != null ? tile(moneyH(d.pot), 'Prize pool') : '') + (d.bounty != null ? tile(money(d.bounty), 'Bounty') : '') + '</div>' +
+        (d.pot != null ? tile(moneyH(d.pot), 'Prize pool') : '') + (d.bounty != null ? tile(esc(d.bounty), 'Bounty') : '') + '</div>' +
       (d.rebuy && !d.winner ? '<div class="bc-rb">' + esc(d.rebuy) + '</div>' : '') +
       '<div class="bc-foot">' + ('wakeLock' in navigator ? '🔆 The screen stays on while this is open · ' : '') + 'tap ✕ to close</div>';
     o.classList.remove('hidden');
@@ -4140,7 +4148,7 @@
   const FORMAT_INFO = {
     freezeout: ['Freezeout', 'Everyone buys in once and gets the same starting stack. Lose it and you\u2019re out. No re-buys.'],
     rebuy: ['Re-buy', 'Bust out before the re-buy period ends and you can buy back in for a fresh starting stack. When it ends, everyone still in can take one add-on: half the buy-in for half a starting stack.'],
-    knockout: ['Knockout', 'Everyone has a bounty on their head; knock a player out and you collect it. Each entry is split 75% to the prize pot and 25% to the bounty, and every re-buy pays for a new bounty. Add-ons go to the pot only.'],
+    knockout: ['Knockout', 'Everyone has a bounty on their head; knock a player out and you collect it. Each entry is split 75% to the prize pot and 25% to the bounty. A re-buy is split the same way, so a cheaper re-buy puts a smaller bounty on your head. Add-ons go to the pot only.'],
     headsup: ['Heads Up', 'A one-on-one knockout bracket. Win your match to move to the next round, until two players meet in the final.']
   };
   const HU_ROUND_NAMES = { 4: ['Semi-finals', 'Final'], 8: ['Quarter-finals', 'Semi-finals', 'Final'], 16: ['Round of 16', 'Quarter-finals', 'Semi-finals', 'Final'],
@@ -4160,7 +4168,8 @@
         (levelText(ev) ? ' till ' + levelText(ev) : hrs ? ' in the first ' + hrsText(hrs) : '') +
         (ev.rebuy_price != null && ev.buy_in != null && Number(ev.rebuy_price) !== Number(ev.buy_in) ? ' (' + money(ev.rebuy_price) + ' each)' : ''));
       bits.push(ev.addon_allowed !== false ? 'Add-on' + (ev.addon_price != null ? ' ' + money(ev.addon_price) : '') + (canRebuy(ev) ? ' when re-buys close' : ' allowed') : 'No add-ons');
-      if (f === 'knockout' && ev.buy_in != null) bits.push(money(Math.round(ev.buy_in * 25) / 100) + ' bounty on every entry');
+      if (f === 'knockout' && ev.buy_in != null) bits.push(money(Math.round(ev.buy_in * 25) / 100) + ' bounty on every entry' +
+        (canRebuy(ev) && ev.rebuy_price != null && Number(ev.rebuy_price) !== Number(ev.buy_in) ? ', ' + money(Math.round(ev.rebuy_price * 25) / 100) + ' on a re-buy' : ''));
     } else if (f === 'headsup') {
       const names = HU_ROUND_NAMES[ev.max_players] || [];
       if (ev.max_players) bits.push(ev.max_players + '-player bracket');
@@ -4184,7 +4193,8 @@
     let html = '<div class="prize-box"><div class="pz-head">🏆 Prize pool <b>' + money(pot.pot) + '</b></div>' +
       '<div class="pz-sub">' + bits.join(' · ') + '</div>';
     if (ev.format === 'knockout' && pot.bounty_value > 0)
-      html += '<div class="pz-sub">🎯 ' + money(pot.bounty_value) + ' bounty on every entry · ' + money(pot.bounty_pool) + ' in bounties</div>';
+      html += '<div class="pz-sub">🎯 ' + money(pot.bounty_value) + ' bounty on every entry' +
+        (canRebuy(ev) && rbBounty(pot) !== Number(pot.bounty_value) ? ', ' + money(rbBounty(pot)) + ' on a re-buy' : '') + ' · ' + money(pot.bounty_pool) + ' in bounties</div>';
     if (pot.ready && pot.places && pot.places.length) {
       html += '<ol class="pz-places">' + pot.places.map(p => '<li><span>' + placeName(p) + '</span><b>' + money(p.amount) + '</b></li>').join('') + '</ol>';
     } else {

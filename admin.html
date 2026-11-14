@@ -962,7 +962,7 @@
   const FORMATS = {
     freezeout: 'Everyone buys in once and gets the same starting stack. Lose it and you\u2019re out. No re-buys.',
     rebuy: 'Bust out before the re-buy period ends and you can buy back in for a fresh starting stack. When it ends, everyone still in can take one add-on: half the buy-in for half a starting stack.',
-    knockout: 'Everyone has a bounty on their head; knock a player out and you collect it. Always played with re-buys. Each entry is split 75% to the prize pot, 25% to the bounty, and every re-buy pays for a new bounty. Add-ons go to the pot only.',
+    knockout: 'Everyone has a bounty on their head; knock a player out and you collect it. Always played with re-buys. Each entry is split 75% to the prize pot, 25% to the bounty. A re-buy is split the same way, so a cheaper re-buy carries a smaller bounty. Add-ons go to the pot only.',
     headsup: 'A one-on-one knockout bracket. Win your match to move to the next round, until two players meet in the final.'
   };
   const HU_ROUNDS = { 4: ['Semi-finals', 'Final'], 8: ['Quarter-finals', 'Semi-finals', 'Final'],
@@ -982,12 +982,15 @@
   }
   $('evHuPlayers').onchange = () => paintHuStacks();
   function paintKoNote() {
-    const b = Number($('evBuyin').value);
+    const b = Number($('evBuyin').value), rb = Number($('evRebuy').value);
+    const q = (v) => v.toFixed(2).replace(/\.00$/, '');
     $('evKoNote').textContent = segVal('evFormat') === 'knockout' && b > 0
-      ? 'Each £' + b + ' entry: £' + (b * 0.75).toFixed(2).replace(/\.00$/, '') + ' to the prize pot + £' + (b * 0.25).toFixed(2).replace(/\.00$/, '') + ' bounty.'
+      ? 'Each £' + b + ' entry: £' + q(b * 0.75) + ' to the prize pot + £' + q(b * 0.25) + ' bounty.' +
+        (rb > 0 && rb !== b && segVal('evKoRebuys') === '1' ? ' Each £' + rb + ' re-buy: £' + q(rb * 0.75) + ' to the pot + £' + q(rb * 0.25) + ' bounty.' : '')
       : '';
   }
   $('evBuyin').addEventListener('input', paintKoNote);
+  $('evRebuy').addEventListener('input', paintKoNote);
   function paintFormat() {
     const f = segVal('evFormat');
     $('evFormatDesc').textContent = FORMATS[f];
@@ -1536,7 +1539,9 @@
     const bv = Number(pot.bounty_value || 0);
     if (ev.format === 'knockout' && bv > 0) {
       let out = 0;
-      rs.forEach(r => { if (r.knockouts) { (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).bounty += r.knockouts * bv; out += r.knockouts * bv; } });
+      const bw = pot.bounty_won && Object.keys(pot.bounty_won).length ? pot.bounty_won : null;   // from the live table's knock-outs
+      rs.forEach(r => { const amt = bw ? Number(bw[r.player_id] || 0) : (r.knockouts || 0) * bv;
+        if (amt > 0) { (won[r.player_id] = won[r.player_id] || { prize: 0, bounty: 0 }).bounty += amt; out += amt; } });
       const left = Number(pot.bounty_pool || 0) - out;
       if (left > 0.001 && order[0]) (won[order[0].player_id] = won[order[0].player_id] || { prize: 0, bounty: 0 }).bounty += left;
     }
