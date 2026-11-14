@@ -5658,7 +5658,7 @@
     sp._t = setTimeout(done, WEST ? 1350 : 650);
     return null;
   }
-  $('enterBtn').onclick = () => { Sound.unlock(); Sound.welcome(hideSplash(true)); };
+  $('enterBtn').onclick = () => { if (Sound.muted) Sound.setMuted(false); Sound.unlock(); Sound.welcome(hideSplash(true)); };
   $('enterQuiet').onclick = () => { Sound.setMuted(true); hideSplash(false); };
 
   // =========================================================
@@ -5865,7 +5865,7 @@
       // The doors + gunslinger intro plays once each time the app is opened, not when coming back from Admin
       let introSeen = false;
       try { introSeen = sessionStorage.getItem('gpl_intro_seen') === '1'; sessionStorage.setItem('gpl_intro_seen', '1'); } catch (_) {}
-      if (!Sound.muted && !introSeen) showSplash();
+      if (!introSeen) showSplash();          // everyone gets the welcome screen, sound on or off
       await loadHome(data.session.user);
       $('splashHello').textContent = me ? 'Welcome back, ' + me.display_name : '';
     }
